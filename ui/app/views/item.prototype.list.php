@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,8 +19,6 @@
  * @var array $data
  */
 
-$this->addJsFile('multilineinput.js');
-$this->addJsFile('items.js');
 $this->includeJsFile('item.prototype.list.js.php');
 
 $form = (new CForm())
@@ -63,32 +61,44 @@ foreach ($data['items'] as $item) {
 		}
 		else {
 			if ($item['master_item']['source'] === 'itemprototypes') {
-				$name[] = (new CLink($item['master_item']['name']))
+				$item_prototype_url = (new CUrl('zabbix.php'))
+					->setArgument('action', 'popup')
+					->setArgument('popup', 'item.prototype.edit')
+					->setArgument('itemid', $item['master_item']['itemid'])
+					->setArgument('parent_discoveryid', $data['parent_discoveryid'])
+					->setArgument('context', $data['context'])
+					->getUrl();
+
+				$name[] = (new CLink($item['master_item']['name'], $item_prototype_url))
 					->addClass(ZBX_STYLE_LINK_ALT)
-					->addClass(ZBX_STYLE_TEAL)
-					->addClass('js-update-itemprototype')
-					->setAttribute('data-itemid', $item['master_item']['itemid'])
-					->setAttribute('data-parent_discoveryid', $data['parent_discoveryid'])
-					->setAttribute('data-context', $data['context']);
+					->addClass(ZBX_STYLE_TEAL);
 			}
 			else {
-				$name[] = (new CLink($item['master_item']['name']))
+				$item_url = (new CUrl('zabbix.php'))
+					->setArgument('action', 'popup')
+					->setArgument('popup', 'item.edit')
+					->setArgument('itemid', $item['master_item']['itemid'])
+					->setArgument('context', $data['context'])
+					->getUrl();
+
+				$name[] = (new CLink($item['master_item']['name'], $item_url))
 					->addClass(ZBX_STYLE_LINK_ALT)
-					->addClass(ZBX_STYLE_TEAL)
-					->addClass('js-update-item')
-					->setAttribute('data-itemid', $item['master_item']['itemid'])
-					->setAttribute('data-context', $data['context']);
+					->addClass(ZBX_STYLE_TEAL);
 			}
 		}
 
 		$name[] = NAME_DELIMITER;
 	}
 
-	$name[] = (new CLink($item['name']))
-		->addClass('js-update-itemprototype')
-		->setAttribute('data-itemid', $item['itemid'])
-		->setAttribute('data-parent_discoveryid', $data['parent_discoveryid'])
-		->setAttribute('data-context', $data['context']);
+	$item_prototype_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'item.prototype.edit')
+		->setArgument('itemid', $item['itemid'])
+		->setArgument('parent_discoveryid', $data['parent_discoveryid'])
+		->setArgument('context', $data['context'])
+		->getUrl();
+
+	$name[] = new CLink($item['name'], $item_prototype_url);
 
 	$table->addRow([
 		new CCheckBox('itemids['.$item['itemid'].']', $item['itemid']),
@@ -153,7 +163,7 @@ $buttons = [
 	]
 ];
 
-$form->addItem(new CActionButtonList('action', 'itemids', $buttons, $data['parent_discoveryid']));
+$form->addItem(new CActionButtonList('action', 'itemids', $buttons, 'item_prototypes_'.$data['parent_discoveryid']));
 
 (new CHtmlPage())
 	->setTitle(_('Item prototypes'))

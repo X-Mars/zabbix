@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -29,7 +29,6 @@
 #include "zbxalgo.h"
 #include "zbxcacheconfig.h"
 #include "zbxdb.h"
-#include "zbxdbhigh.h"
 #include "zbxipcservice.h"
 #include "zbxstr.h"
 
@@ -1006,7 +1005,7 @@ static int	housekeeping_cleanup(int config_max_hk_delete)
 {
 	zbx_db_result_t		result;
 	zbx_db_row_t		row;
-	int			deleted = 0;
+	int			deleted = 0, tables = 0;
 	zbx_vector_uint64_t	housekeeperids;
 	char			*sql = NULL;
 	size_t			sql_alloc = 0, sql_offset = 0;
@@ -1033,8 +1032,12 @@ static int	housekeeping_cleanup(int config_max_hk_delete)
 		zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, "',");
 
 		zbx_free(table_name_esc);
+		tables++;
 	}
-	sql_offset--;
+
+	if (0 == tables)
+		goto exit;
+	sql_offset--;	/* remove comma from last entry */
 
 	/* order by tablename to effectively use DB cache */
 	zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ") order by tablename");
@@ -1087,7 +1090,7 @@ static int	housekeeping_cleanup(int config_max_hk_delete)
 		zbx_vector_uint64_sort(&housekeeperids, ZBX_DEFAULT_UINT64_COMPARE_FUNC);
 		zbx_db_execute_multiple_query("delete from housekeeper where", "housekeeperid", &housekeeperids);
 	}
-
+exit:
 	zbx_free(sql);
 
 	zbx_vector_uint64_destroy(&housekeeperids);

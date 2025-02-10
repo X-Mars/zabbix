@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -326,7 +326,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			'Name' => '',
 			'Show header' => true,
 			'Refresh interval' => 'Default (1 minute)',
-			'Columns' => [],
+			'Items' => [],
 			'Show lines' => '25',
 			'Override host' => '',
 			'New values' => 'Top',
@@ -340,7 +340,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 		$form->checkValue($default_state);
 
 		// Check required fields.
-		$this->assertEquals(['Columns', 'Show lines'], $form->getRequiredLabels());
+		$this->assertEquals(['Items', 'Show lines'], $form->getRequiredLabels());
 
 		// Check attributes of input elements.
 		$inputs = [
@@ -349,7 +349,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 				'placeholder' => 'default'
 			],
 			'Show lines' => [
-				'maxlength' => '3'
+				'maxlength' => '4'
 			],
 			'id:override_hostid_ms' => [
 				'placeholder' => 'type here to search'
@@ -386,12 +386,12 @@ class testDashboardItemHistoryWidget extends testWidgets {
 		$this->assertEquals($refresh_interval, $form->getField('Refresh interval')->getOptions()->asText());
 
 		// Check Column popup.
-		$form->getFieldContainer('Columns')->query('button:Add')->waitUntilClickable()->one()->click();
+		$form->getFieldContainer('Items')->query('button:Add')->waitUntilClickable()->one()->click();
 		$column_overlay = COverlayDialogElement::find()->all()->last()->waitUntilReady();
 		$this->assertEquals('New column', $column_overlay->getTitle());
 		$column_form = $column_overlay->asForm();
 		$this->assertEquals(['Name', 'Item', 'Base colour', 'Highlights', 'Display', 'Min', 'Max', 'Thresholds',
-				'History data', 'Use monospace font', 'Display local time', 'Show thumbnail'],
+				'History data', 'Use monospace font', 'Display log time', 'Show thumbnail'],
 				$column_form->getLabels()->asText()
 		);
 		$this->assertEquals(['Name', 'Item'], $column_form->getRequiredLabels());
@@ -406,7 +406,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			'History data' => ['value' => 'Auto', 'lables' => ['Auto', 'History', 'Trends']],
 			'id:max_length' => ['value' => 100, 'maxlength' => 3],
 			'Use monospace font' => ['value' => false],
-			'Display local time' => ['value' => false],
+			'Display log time' => ['value' => false],
 			'Show thumbnail' => ['value' => false]
 		];
 
@@ -452,7 +452,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			$this->assertEquals('Host for all item value types: '.$item, $column_form->getField('Name')->getValue());
 
 			$labels = ($item === 'Log item')
-				? ['Name', 'Item', 'Base colour', 'Highlights', 'Display', 'Use monospace font', 'Display local time']
+				? ['Name', 'Item', 'Base colour', 'Highlights', 'Display', 'Use monospace font', 'Display log time']
 				: ['Name', 'Item', 'Base colour', 'Highlights', 'Display', 'Use monospace font'];
 
 			$this->assertEquals($labels, array_values($column_form->getLabels()->filter(CElementFilter::VISIBLE)->asText()));
@@ -474,8 +474,9 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			}
 
 			if ($item === 'Log item') {
-				$this->checkHint($column_form, 'Display local time', 'This setting will display local time'.
-						' instead of the timestamp. "Show timestamp" must also be checked in the advanced configuration.'
+				$this->checkHint($column_form, 'Display log time', 'This setting will display log time'.
+						' instead of item\'s timestamp. "Show timestamp" must also be checked in the advanced'.
+						' configuration.'
 				);
 			}
 		}
@@ -512,7 +513,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 				->filter(CElementFilter::CLICKABLE)->asText()
 		);
 
-		$visible_labels = ['Type', 'Show header', 'Name', 'Refresh interval', 'Layout', 'Columns', 'Show lines',
+		$visible_labels = ['Type', 'Show header', 'Name', 'Refresh interval', 'Layout', 'Items', 'Show lines',
 				'Override host', 'Advanced configuration'
 		];
 		$hidden_labels = ['New values', 'Show timestamp', 'Show column header', 'Time period', 'Widget', 'From', 'To'];
@@ -572,7 +573,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			[
 				[
 					'expected' => TEST_BAD,
-					'error' => 'Invalid parameter "Columns": cannot be empty.'
+					'error' => 'Invalid parameter "Items": cannot be empty.'
 				]
 			],
 			// #1.
@@ -582,7 +583,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Show lines' => ''
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -593,7 +594,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 							]
 						]
 					],
-					'error' => ['Invalid parameter "Show lines": value must be one of 1-100.']
+					'error' => ['Invalid parameter "Show lines": value must be one of 1-1000.']
 				]
 			],
 			// #2.
@@ -603,7 +604,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Show lines' => '0'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -614,7 +615,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 							]
 						]
 					],
-					'error' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #3.
@@ -622,9 +623,9 @@ class testDashboardItemHistoryWidget extends testWidgets {
 				[
 					'expected' => TEST_BAD,
 					'fields' => [
-						'Show lines' => '101'
+						'Show lines' => '1001'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -635,7 +636,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 							]
 						]
 					],
-					'error' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #4.
@@ -645,7 +646,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Show lines' => ' '
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -656,7 +657,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 							]
 						]
 					],
-					'error' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #5.
@@ -667,8 +668,8 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Show lines' => ''
 					],
 					'error' => [
-						'Invalid parameter "Columns": cannot be empty.',
-						'Invalid parameter "Show lines": value must be one of 1-100.'
+						'Invalid parameter "Items": cannot be empty.',
+						'Invalid parameter "Show lines": value must be one of 1-1000.'
 					]
 				]
 			],
@@ -678,9 +679,9 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'expected' => TEST_GOOD,
 					'same_host' => 'ЗАББИКС Сервер',
 					'fields' => [
-						'Name' => '2 columns from one host'
+						'Name' => '2 items from one host'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -709,7 +710,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => ''
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -738,7 +739,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Test custom name'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -767,7 +768,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Test custom name2'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -797,7 +798,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Name' => 'Custom refresh',
 						'Refresh interval' => 'Default (1 minute)'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -824,7 +825,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Show timestamp' => true,
 						'Show column header' => 'Horizontal'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -848,7 +849,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Advanced configuration' => true,
 						'Show column header' => 'Off'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -868,7 +869,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Refresh interval' => '30 seconds'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -888,7 +889,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Refresh interval' => '1 minute'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -909,7 +910,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Show lines' => '1',
 						'Refresh interval' => '2 minutes'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -930,7 +931,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Show lines' => '100',
 						'Refresh interval' => '10 minutes'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -950,7 +951,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Refresh interval' => '15 minutes'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -970,7 +971,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Refresh interval' => '10 minutes'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -991,7 +992,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Override host' => 'Dashboard',
 						'Refresh interval' => '2 minutes'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -1012,7 +1013,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Override host' => 'Dashboard',
 						'Refresh interval' => '1 minute'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -1034,7 +1035,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Refresh interval' => '30 seconds',
 						'Show lines' => ' 5 '
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -1059,7 +1060,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Show lines' => '50',
 						'Override host' => 'Dashboard'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Name' => 'Column1',
@@ -1079,7 +1080,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Empty name in column'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1100,7 +1101,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Binary column with color'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1121,7 +1122,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Character column with color and highlights'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1153,7 +1154,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Duplicated highlights'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1184,7 +1185,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Character column with empty Highlight'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1211,7 +1212,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Character column with 0 max length'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1234,7 +1235,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Character column with text in max length'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1257,7 +1258,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Character column with too large max length'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1279,7 +1280,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float column with text in min'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1301,7 +1302,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float column with text in max'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1322,7 +1323,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float column with Bar display and calculated min/max'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1341,7 +1342,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float column with Bar display and negative min/max'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1362,7 +1363,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float column with Bar display and float min/max'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1383,7 +1384,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Unsigned column with Indicators display and float min/max'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1405,7 +1406,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float column with Indicators display and text in min'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1426,7 +1427,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Unsigned column with Indicators display and calculated min/max'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1446,7 +1447,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Duplicated Thresholds'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1474,7 +1475,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Text in Thresholds'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1499,7 +1500,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float with negative Thresholds'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1536,7 +1537,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float with different colors Thresholds'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1569,7 +1570,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Float with empty Threshold'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1593,7 +1594,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Log item column'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1601,7 +1602,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 									'context' => ['values' => 'Host for all item value types']
 								],
 								'Use monospace font' => true,
-								'Display local time' => true
+								'Display log time' => true
 							]
 						]
 					]
@@ -1614,7 +1615,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'fields' => [
 						'Name' => 'Text item column'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1636,7 +1637,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Advanced configuration' => true,
 						'Time period' => 'Widget'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1660,7 +1661,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'From' => '',
 						'To' => ''
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1687,7 +1688,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'From' => 'test_1',
 						'To' => 'test_2'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1712,7 +1713,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Advanced configuration' => true,
 						'Time period' => 'Custom'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1735,7 +1736,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'From' => 'now-1y',
 						'To' => 'now-1M'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1757,7 +1758,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Advanced configuration' => true,
 						'Time period' => 'Custom'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1780,7 +1781,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Advanced configuration' => true,
 						'Time period' => 'Custom'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1805,7 +1806,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'From' => 'now-1M',
 						'To' => 'now-2M'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1827,7 +1828,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Advanced configuration' => true,
 						'Time period' => 'Custom'
 					],
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1853,7 +1854,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 						'Widget' => 'Classic graph for time period reference'
 					],
 					'clear_custom' => true,
-					'Columns' => [
+					'Items' => [
 						[
 							'fields' => [
 								'Item' => [
@@ -1971,12 +1972,10 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			$data['check_time'] = $period['From'].' – '.$period['To'];
 		}
 
-		$values = $form->getValues();
-
-		// Fill Columns field.
-		if (array_key_exists('Columns', $data)) {
-			foreach ($data['Columns'] as $column) {
-				$form->getFieldContainer('Columns')->query('button:Add')->one()->waitUntilClickable()->click();
+		// Fill Items field.
+		if (array_key_exists('Items', $data)) {
+			foreach ($data['Items'] as $column) {
+				$form->getFieldContainer('Items')->query('button:Add')->one()->waitUntilClickable()->click();
 				$column_overlay = COverlayDialogElement::find()->all()->last()->waitUntilReady();
 				$column_overlay_form = $column_overlay->asForm();
 				$column_overlay_form->fill($column['fields']);
@@ -2003,6 +2002,8 @@ class testDashboardItemHistoryWidget extends testWidgets {
 		}
 
 		if (!array_key_exists('column_error', $data)) {
+			$form->fill($data['fields']);
+			$values = $form->getValues();
 			$form->submit();
 		}
 
@@ -2080,9 +2081,9 @@ class testDashboardItemHistoryWidget extends testWidgets {
 
 			// Count is minus one row because of Add button row.
 			$columns_count = $table->getRows()->count() - 1;
-			$this->assertEquals(count($data['Columns']), $columns_count);
+			$this->assertEquals(count($data['Items']), $columns_count);
 
-			foreach ($data['Columns'] as $i => $column) {
+			foreach ($data['Items'] as $i => $column) {
 				$row = $table->getRow($i);
 
 				$column_name = (array_key_exists('Name', $column['fields']))
@@ -2091,7 +2092,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 
 				$this->assertEquals($column_name, $row->getColumn('Name')->getText());
 				$this->assertEquals($column['fields']['Item']['context']['values'].': '.$column['fields']['Item']['values'],
-						$row->getColumn('Data')->getText()
+						$row->getColumn('Item')->getText()
 				);
 			}
 
@@ -2161,7 +2162,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 			'Refresh interval' => '15 minutes'
 		]);
 
-		$form->getFieldContainer('Columns')->query('button:Add')->waitUntilClickable()->one()->click();
+		$form->getFieldContainer('Items')->query('button:Add')->waitUntilClickable()->one()->click();
 		$column_overlay = COverlayDialogElement::find()->all()->last()->waitUntilReady();
 		$column_overlay->asForm()->fill([
 			'Item' => [
@@ -2429,15 +2430,15 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					'result' => [
 						[
 							'Name' => 'Host name',
-							'Value' => 'lon...'
+							'Value' => 'lon…'
 						],
 						[
 							'Name' => 'Host name',
-							'Value' => '<sp...'
+							'Value' => '<sp…'
 						],
 						[
 							'Name' => 'Host name',
-							'Value' => '<b>...'
+							'Value' => '<b>…'
 						],
 						[
 							'Name' => 'Master item',
@@ -2647,7 +2648,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 				'From' => 'now-1y',
 				'To' => 'now/d'
 			],
-			'columns' => [
+			'items' => [
 				'Host name' => ['id:display' => 'As is'],
 				'Master item' => ['History data' => 'History']
 			]
@@ -2658,7 +2659,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 					CTestArrayHelper::get($data, 'edit_columns', [])
 			);
 			$this->assertTableData($data['result']);
-			$this->widgetConfigurationChange($default_values['fields'], $dashboard, $default_values['columns']);
+			$this->widgetConfigurationChange($default_values['fields'], $dashboard, $default_values['items']);
 		}
 
 		if (array_key_exists('host_select', $data)) {
@@ -2700,7 +2701,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 
 		if ($edit_columns !== []) {
 			foreach ($edit_columns as $name => $settings) {
-				$form->getFieldContainer('Columns')->asTable()->findRow('Name', $name)
+				$form->getFieldContainer('Items')->asTable()->findRow('Name', $name)
 						->query('button:Edit')->one()->click();
 				$column_overlay = COverlayDialogElement::find()->all()->last()->waitUntilReady();
 				$column_overlay->asForm()->fill($settings);
@@ -2744,7 +2745,7 @@ class testDashboardItemHistoryWidget extends testWidgets {
 		$container->query('button:Add')->one()->click();
 		$input = $form->query('xpath:.//input[contains(@id, '.CXPathHelper::escapeQuotes($i.$selector).')]')->one();
 		$this->assertTrue($input->isVisible());
-		$this->assertEquals('FF465C', $container->query('xpath:.//div[@class="color-picker"]')
+		$this->assertEquals('E65660', $container->query('xpath:.//div[@class="color-picker"]')
 				->asColorPicker()->one()->getValue()
 		);
 		$container->query('xpath:.//button[contains(@id, '.CXPathHelper::escapeQuotes($i.'_remove').')]')

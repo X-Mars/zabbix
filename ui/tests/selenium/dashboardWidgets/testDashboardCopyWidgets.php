@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -212,6 +212,7 @@ class testDashboardCopyWidgets extends CWebTest {
 
 		// Wait until widget is pasted and loading spinner disappeared.
 		sleep(1);
+		$dashboard->waitUntilReady();
 		$this->query('xpath://div[contains(@class, "is-loading")]')->waitUntilNotPresent();
 		$copied_widget = $dashboard->getWidgets()->last()->waitUntilReady();
 
@@ -220,6 +221,7 @@ class testDashboardCopyWidgets extends CWebTest {
 			$copied_widget_form = $copied_widget->edit();
 			$copied_widget_form->fill(['Map' => 'Test copy Map navigation tree']);
 			$copied_widget_form->submit();
+			COverlayDialogElement::ensureNotPresent();
 
 			$copied_widget = $dashboard->waitUntilReady()->getWidget($widget_name);
 		}

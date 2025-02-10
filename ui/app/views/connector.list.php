@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,7 +19,6 @@
  * @var array $data
  */
 
-$this->addJsFile('class.form.fieldset.collapsible.js');
 $this->includeJsFile('connector.list.js.php');
 
 $filter = (new CFilter())
@@ -85,12 +84,16 @@ foreach ($data['connectors'] as $connectorid => $connector) {
 			->addClass('js-enable-connector')
 			->setAttribute('data-connectorid', $connectorid);
 
+	$connector_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'connector.edit')
+		->setArgument('connectorid', $connectorid)
+		->getUrl();
+
 	$row = [
 		new CCheckBox('connectorids['.$connectorid.']', $connectorid),
 		(new CCol(
-			(new CLink($connector['name']))
-				->addClass('js-edit-connector')
-				->setAttribute('data-connectorid', $connectorid)
+			new CLink($connector['name'], $connector_url)
 		))->addClass(ZBX_STYLE_WORDBREAK),
 		$connector['data_type'] == ZBX_CONNECTOR_DATA_TYPE_ITEM_VALUES ? _('Item values') : _('Events'),
 		$status_tag

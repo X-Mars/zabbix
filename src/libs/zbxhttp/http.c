@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -298,10 +298,10 @@ char	*zbx_http_parse_header(char **headers)
 	return NULL;
 }
 
-int	zbx_http_get(const char *url, const char *header, long timeout, const char *ssl_cert_file,
+int	zbx_http_req(const char *url, const char *header, long timeout, const char *ssl_cert_file,
 		const char *ssl_key_file, const char *config_source_ip, const char *config_ssl_ca_location,
 		const char *config_ssl_cert_location, const char *config_ssl_key_location, char **out,
-		long *response_code, char **error)
+		const char *post_data, long *response_code, char **error)
 {
 	CURL			*easyhandle;
 	CURLcode		err;
@@ -318,6 +318,16 @@ int	zbx_http_get(const char *url, const char *header, long timeout, const char *
 	{
 		*error = zbx_strdup(NULL, "Cannot initialize cURL library");
 		goto clean;
+	}
+
+	if (NULL != post_data)
+	{
+		if (CURLE_OK != (err = curl_easy_setopt(easyhandle, CURLOPT_POSTFIELDS, post_data)))
+		{
+			*error = zbx_dsprintf(*error, "Cannot specify data to POST: %s",
+					curl_easy_strerror(err));
+			goto clean;
+		}
 	}
 
 	if (SUCCEED != zbx_http_prepare_callbacks(easyhandle, &response_header, &body, zbx_curl_ignore_cb,
@@ -643,12 +653,6 @@ int	zbx_http_handle_response(CURL *easyhandle, zbx_http_context_t *context, CURL
 	switch (context->retrieve_mode)
 	{
 		case ZBX_RETRIEVE_MODE_CONTENT:
-			if (NULL == context->body.data)
-			{
-				*error = zbx_strdup(NULL, "Server returned empty content");
-				return FAIL;
-			}
-
 			zbx_http_convert_to_utf8(easyhandle, &context->body.data, &context->body.offset,
 					&context->body.allocated);
 
@@ -692,11 +696,6 @@ int	zbx_http_handle_response(CURL *easyhandle, zbx_http_context_t *context, CURL
 			}
 			break;
 		case ZBX_RETRIEVE_MODE_BOTH:
-			if (NULL == context->body.data)
-			{
-				*error = zbx_dsprintf(NULL, "Server returned empty content");
-				return FAIL;
-			}
 
 			zbx_replace_invalid_utf8(context->header.data);
 
@@ -918,6 +917,9 @@ void	zbx_http_convert_to_utf8(CURL *easyhandle, char **body, size_t *size, size_
 {
 	char		*charset;
 	const char	*content_type;
+
+	if (NULL == *body)
+		return;
 
 	content_type = zbx_curl_content_type(easyhandle);
 

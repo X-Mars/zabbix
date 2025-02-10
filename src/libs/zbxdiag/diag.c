@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -210,10 +210,8 @@ static int	diag_compare_pair_second_desc(const void *d1, const void *d2)
 	const zbx_uint64_pair_t	*p1 = (const zbx_uint64_pair_t *)d1;
 	const zbx_uint64_pair_t	*p2 = (const zbx_uint64_pair_t *)d2;
 
-	if (p1->second < p2->second)
-		return 1;
-	if (p1->second > p2->second)
-		return -1;
+	ZBX_RETURN_IF_NOT_EQUAL(p2->second, p1->second);
+
 	return 0;
 }
 
@@ -536,7 +534,7 @@ static void	diag_prepare_default_request(struct zbx_json *j, unsigned int flags)
 		diag_add_section_request(j, ZBX_DIAG_VALUECACHE, "values", "request.values", NULL);
 
 	if (0 != (flags & (1 << ZBX_DIAGINFO_PREPROCESSING)))
-		diag_add_section_request(j, ZBX_DIAG_PREPROCESSING, "sequences", NULL);
+		diag_add_section_request(j, ZBX_DIAG_PREPROCESSING, "peak", "sequences", NULL);
 
 	if (0 != (flags & (1 << ZBX_DIAGINFO_LLD)))
 		diag_add_section_request(j, ZBX_DIAG_LLD, "values", NULL);
@@ -745,6 +743,7 @@ static void	diag_log_preprocessing(struct zbx_json_parse *jp, char **out, size_t
 	zbx_free(msg);
 
 	diag_log_top_view(jp, "top.sequences", "$.top.sequences", out, out_alloc, out_offset);
+	diag_log_top_view(jp, "top.peak", "$.top.peak", out, out_alloc, out_offset);
 
 	zbx_strlog_alloc(LOG_LEVEL_INFORMATION, out, out_alloc, out_offset, "==");
 }

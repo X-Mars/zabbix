@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -522,6 +522,18 @@ class CControllerPopupGeneric extends CController {
 				'table_columns' => [
 					_('Media type')
 				]
+			],
+			'host_inventory' => [
+				'title' => _('Inventory'),
+				'min_user_type' => USER_TYPE_ZABBIX_USER,
+				'allowed_src_fields' => 'id,name',
+				'form' => [
+					'name' => 'inventory_form',
+					'id' => 'inventory_form'
+				],
+				'table_columns' => [
+					_('Name')
+				]
 			]
 		];
 	}
@@ -783,7 +795,7 @@ class CControllerPopupGeneric extends CController {
 		}
 
 		if ($this->hasInput('monitored_hosts')) {
-			$group_options['monitored_hosts'] = 1;
+			$group_options['with_monitored_hosts'] = 1;
 			$host_options['monitored_hosts'] = 1;
 		}
 		elseif ($this->hasInput('real_hosts')) {
@@ -1256,7 +1268,7 @@ class CControllerPopupGeneric extends CController {
 
 			case 'users':
 				$options += [
-					'output' => ['userid', 'username', 'name', 'surname', 'type', 'theme', 'lang']
+					'output' => ['userid', 'username', 'name', 'surname']
 				];
 
 				if ($this->hasInput('exclude_provisioned')) {
@@ -1815,10 +1827,21 @@ class CControllerPopupGeneric extends CController {
 				break;
 
 			case 'media_types':
-				$options += ['output' => ['name']];
+				$options += ['output' => ['mediatypeid', 'name']];
 
 				$records = API::MediaType()->get($options);
 				CArrayHelper::sort($records, ['name']);
+				break;
+
+			case 'host_inventory':
+				$records = [];
+
+				foreach (getHostInventories(true) as $inventory_field) {
+					$records[$inventory_field['nr']] = [
+						'id' => $inventory_field['nr'],
+						'name' => $inventory_field['title']
+					];
+				}
 				break;
 		}
 

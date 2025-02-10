@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -15,6 +15,7 @@
 #include "zbxsysinfo.h"
 #include "../sysinfo.h"
 #include "../specsysinfo.h"
+#include "../common/stats.h"
 
 static zbx_metric_t	parameters_specific[] =
 /*	KEY			FLAG		FUNCTION		TEST PARAMETERS */

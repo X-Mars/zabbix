@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,8 +20,7 @@
 
 /******************************************************************************
  *                                                                            *
- * Purpose: resolves macros in trigger expression                             *
- *         (ZBX_MACRO_TYPE_TRIGGER_EXPRESSION) context                        *
+ * Purpose: resolves macros in trigger expression context                     *
  *                                                                            *
  * Parameters: p          - [IN] macro resolver data structure                *
  *             args       - [IN] list of variadic parameters                  *

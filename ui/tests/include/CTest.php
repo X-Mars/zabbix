@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -31,6 +31,7 @@ define('USER_ACTION_ADD', 'add');
 define('USER_ACTION_UPDATE', 'update');
 define('USER_ACTION_REMOVE', 'remove');
 
+define('INT_255', str_repeat(1, 255));
 define('STRING_6000', str_repeat('long_string_', 500));
 define('STRING_2200', substr(STRING_6000, 0, 2200));
 define('STRING_2048', substr(STRING_6000, 0, 2048));

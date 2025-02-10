@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -264,7 +264,7 @@ class testTemplate extends CAPITest {
 	/**
 	 * @dataProvider dataProviderCreate
 	 */
-	public function testTemplate_Create(array $request, string $expected_error = null, array $user = null) {
+	public function testTemplate_Create(array $request, ?string $expected_error = null, ?array $user = null) {
 		if ($user !== null) {
 			$this->authorize($user['user'], $user['password']);
 		}
@@ -573,7 +573,7 @@ class testTemplate extends CAPITest {
 	/**
 	 * @dataProvider dataProviderUpdate
 	 */
-	public function testTemplate_Update(array $request, string $expected_error = null, array $user = null) {
+	public function testTemplate_Update(array $request, ?string $expected_error = null, ?array $user = null) {
 		if ($user !== null) {
 			$this->authorize($user['user'], $user['password']);
 		}

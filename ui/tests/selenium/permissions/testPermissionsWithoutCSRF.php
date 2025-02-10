@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -94,7 +94,7 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM sysmaps',
-					'link' => 'sysmaps.php?form=update&sysmapid=3',
+					'link' => 'sysmaps.php?form=update&sysmapid=1',
 					'incorrect_request' => true
 				]
 			],
@@ -102,28 +102,28 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM hstgrp',
-					'link' => 'zabbix.php?action=hostgroup.edit'
+					'link' => 'zabbix.php?action=popup&popup=hostgroup.edit'
 				]
 			],
 			// #3 Host group update.
 			[
 				[
 					'db' => 'SELECT * FROM hstgrp',
-					'link' => 'zabbix.php?action=hostgroup.edit&groupid=50012'
+					'link' => 'zabbix.php?action=popup&popup=hostgroup.edit&groupid=50012'
 				]
 			],
 			// #4 Template group create.
 			[
 				[
 					'db' => 'SELECT * FROM hstgrp',
-					'link' => 'zabbix.php?action=templategroup.edit'
+					'link' => 'zabbix.php?action=popup&popup=templategroup.edit'
 				]
 			],
 			// #5 Template group update.
 			[
 				[
 					'db' => 'SELECT * FROM hstgrp',
-					'link' => 'zabbix.php?action=templategroup.edit&groupid=14'
+					'link' => 'zabbix.php?action=popup&popup=templategroup.edit&groupid=14'
 				]
 			],
 			// #6 Template create.
@@ -146,14 +146,15 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM hosts',
-					'link' => 'zabbix.php?action=host.edit'
+					'link' => 'zabbix.php?action=host.list',
+					'overlay' => 'create'
 				]
 			],
 			// #9 Host update.
 			[
 				[
 					'db' => 'SELECT * FROM hosts',
-					'link' => 'zabbix.php?action=host.edit&hostid=99062'
+					'link' => 'zabbix.php?action=popup&popup=host.edit&hostid=99062'
 				]
 			],
 			// #10 Item update.
@@ -192,7 +193,7 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM graphs',
-					'link' => 'graphs.php?form=update&graphid=700026&filter_hostids%5B0%5D=99202&context=host',
+					'link' => 'graphs.php?form=update&graphid=700008&filter_hostids%5B0%5D=50001&context=host',
 					'incorrect_request' => true
 				]
 			],
@@ -208,7 +209,7 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM host_discovery',
-					'link' => 'host_discovery.php?form=update&itemid=99107&context=host',
+					'link' => 'host_discovery.php?form=update&itemid=400430&context=host',
 					'incorrect_request' => true
 				]
 			],
@@ -216,7 +217,7 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM host_discovery',
-					'link' => 'host_discovery.php?form=create&hostid=99202&context=host',
+					'link' => 'host_discovery.php?form=create&hostid=50001&context=host',
 					'incorrect_request' => true
 				]
 			],
@@ -706,9 +707,9 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'token' => true,
-					'token_url' => 'host_discovery.php?form=update&hostid=99202&itemid=99107&context=host',
+					'token_url' => 'host_discovery.php?form=update&hostid=50001&itemid=400430&context=host',
 					'db' => 'SELECT * FROM items',
-					'link' => 'host_discovery.php?form=update&hostid=99202&itemid=99107&context=host&name=test'.
+					'link' => 'host_discovery.php?form=update&hostid=50001&itemid=400430&context=host&name=test'.
 						'&description=&key=trap%5B4%5D&type=2&value_type=3&inventory_link=0&trapper_hosts=&units=UNIT'.
 						'&lifetime=1&formula=test&evaltype=1&update=Update&_csrf_token=',
 					'error' => self::INCORRECT_REQUEST

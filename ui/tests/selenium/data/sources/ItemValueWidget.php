@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -147,7 +147,7 @@ class ItemValueWidget {
 								'name' => 'New widget',
 								'x' => 0,
 								'y' => 0,
-								'width' => 36,
+								'width' => 24,
 								'height' => 4,
 								'fields' => [
 									[
@@ -206,9 +206,9 @@ class ItemValueWidget {
 								'type' => 'item',
 								'name' => 'Widget with thresholds',
 								'x' => 0,
-								'y' => 6,
-								'width' => 30,
-								'height' => 3,
+								'y' => 4,
+								'width' => 24,
+								'height' => 4,
 								'fields' => [
 									[
 										'type' => ZBX_WIDGET_FIELD_TYPE_ITEM,
@@ -238,9 +238,39 @@ class ItemValueWidget {
 								]
 							],
 							[
+								'type' => 'graph',
+								'name' => 'Graph (classic) for time period',
+								'x' => 24,
+								'y' => 0,
+								'width' => 12,
+								'height' => 4,
+								'fields' => [
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_GRAPH,
+										'name' => 'graphid.0',
+										'value' => 2232 // Linux: CPU utilization.
+									],
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
+										'name' => 'time_period.from',
+										'value' => 'now-2h'
+									],
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
+										'name' => 'time_period.to',
+										'value' => 'now-1h'
+									],
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
+										'name' => 'reference',
+										'value' => 'EDTTX'
+									]
+								]
+							],
+							[
 								'type' => 'item',
 								'name' => 'Widget to delete',
-								'x' => 39,
+								'x' => 36,
 								'y' => 0,
 								'width' => 12,
 								'height' => 4,
@@ -269,6 +299,26 @@ class ItemValueWidget {
 				'pages' => [
 					[
 						'name' => 'Page with widgets'
+					],
+					[
+						'name' => 'Page for macrofunctions',
+						'widgets' => [
+							[
+								'type' => 'item',
+								'name' => 'Widget for macro function check',
+								'x' => 0,
+								'y' => 0,
+								'width' => 54,
+								'height' => 4,
+								'fields' => [
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_ITEM,
+										'name' => 'itemid.0',
+										'value' => 42230 // Linux: CPU user time.
+									]
+								]
+							]
+						]
 					]
 				]
 			],

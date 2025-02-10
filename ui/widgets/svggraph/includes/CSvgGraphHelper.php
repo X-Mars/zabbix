@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -68,6 +68,8 @@ class CSvgGraphHelper {
 		self::sortByDataset($metrics);
 		// Apply overrides for previously selected $metrics.
 		self::applyOverrides($metrics, $options['templateid'], $options['override_hostid'], $options['overrides']);
+		// Reset unused Y-scale axes while taking overrides into account.
+		self::resetUnusedAxes($metrics, $options['axes']);
 		self::applyUnits($metrics, $options['axes']);
 		// Apply time periods for each $metric, based on graph/dashboard time as well as metric level time shifts.
 		self::getTimePeriods($metrics, $options['time_period']);
@@ -177,19 +179,23 @@ class CSvgGraphHelper {
 			}
 
 			if ($templateid === '') {
-				// Find hosts.
-				$hosts = API::Host()->get([
-					'output' => [],
-					'search' => [
-						'name' => self::processPattern($data_set['hosts'])
-					],
-					'searchWildcardsEnabled' => true,
-					'searchByAny' => true,
-					'preservekeys' => true
-				]);
+				if ($data_set['override_hostid']) {
+					$options['hostids'] = $data_set['override_hostid'];
+				}
+				else {
+					$hosts = API::Host()->get([
+						'output' => [],
+						'search' => [
+							'name' => self::processPattern($data_set['hosts'])
+						],
+						'searchWildcardsEnabled' => true,
+						'searchByAny' => true,
+						'preservekeys' => true
+					]);
 
-				if ($hosts) {
-					$options['hostids'] = array_keys($hosts);
+					if ($hosts) {
+						$options['hostids'] = array_keys($hosts);
+					}
 				}
 			}
 			else {
@@ -246,7 +252,18 @@ class CSvgGraphHelper {
 				break;
 			}
 
-			if ($templateid !== '' && $override_hostid !== '') {
+			$dataset_override_hostid = null;
+
+			if ($templateid === '') {
+				if ($data_set['override_hostid']) {
+					$dataset_override_hostid = $data_set['override_hostid'][0];
+				}
+			}
+			elseif ($override_hostid !== '') {
+				$dataset_override_hostid = $override_hostid;
+			}
+
+			if ($dataset_override_hostid !== null) {
 				$tmp_items = API::Item()->get([
 					'output' => ['key_'],
 					'itemids' => $data_set['itemids'],
@@ -265,7 +282,7 @@ class CSvgGraphHelper {
 
 					$items = API::Item()->get([
 						'output' => ['itemid', 'key_'],
-						'hostids' => [$override_hostid],
+						'hostids' => [$dataset_override_hostid],
 						'webitems' => true,
 						'filter' => [
 							'key_' => array_keys($keys_index)
@@ -465,6 +482,29 @@ class CSvgGraphHelper {
 				}
 				unset($metric);
 			}
+		}
+	}
+
+	private static function resetUnusedAxes(array $metrics, array &$axis_options): void {
+		$left_side_has_metrics = false;
+		$right_side_has_metrics = false;
+
+		foreach ($metrics as $metric) {
+			if ($metric['options']['axisy'] == GRAPH_YAXIS_SIDE_LEFT) {
+				$left_side_has_metrics = true;
+			}
+
+			if ($metric['options']['axisy'] == GRAPH_YAXIS_SIDE_RIGHT) {
+				$right_side_has_metrics = true;
+			}
+		}
+
+		if (!$left_side_has_metrics) {
+			$axis_options['show_left_y_axis'] = false;
+		}
+
+		if (!$right_side_has_metrics) {
+			$axis_options['show_right_y_axis'] = false;
 		}
 	}
 
@@ -733,11 +773,7 @@ class CSvgGraphHelper {
 		unset($metric);
 
 		foreach ($metrics as &$metric) {
-			if ($metric['options']['aggregate_function'] == AGGREGATE_NONE) {
-				continue;
-			}
-
-			if (!$metric['items']) {
+			if ($metric['options']['aggregate_function'] == AGGREGATE_NONE || !$metric['items']) {
 				continue;
 			}
 
@@ -746,46 +782,103 @@ class CSvgGraphHelper {
 				$metric['options']['aggregate_function'], $metric['options']['aggregate_interval']
 			);
 
-			if ($result) {
-				$metric_points = [];
+			if (!$result) {
+				continue;
+			}
 
-				$period = $metric['time_period']['time_to'] - $metric['time_period']['time_from'];
-				$approximation_tick_delta = ($period / $metric['options']['aggregate_interval']) > $width
-					? ceil($period / $width)
-					: 0;
+			$metric_points = [];
 
-				foreach ($result as $points) {
-					$tick = 0;
+			$period = $metric['time_period']['time_to'] - $metric['time_period']['time_from'];
+			$approximation_tick_delta = ($period / $metric['options']['aggregate_interval']) > $width
+				? ceil($period / $width)
+				: 0;
 
-					usort($points['data'],
-						static function (array $point_a, array $point_b): int {
-							return $point_a['clock'] <=> $point_b['clock'];
-						}
-					);
+			foreach ($result as $points) {
+				$tick = 0;
 
-					foreach ($points['data'] as $point) {
-						if ($point['tick'] > ($tick + $approximation_tick_delta)) {
-							$tick = $point['tick'];
-						}
-						if (array_key_exists('count', $point)) {
-							$metric_points[$tick]['value'][] = $point['count'];
-						}
-						if (array_key_exists('value', $point)) {
-							$metric_points[$tick]['value'][] = $point['value'];
+				usort($points['data'],
+					static function (array $point_a, array $point_b): int {
+						return $point_a['clock'] <=> $point_b['clock'];
+					}
+				);
+
+				foreach ($points['data'] as $point) {
+					if ($point['tick'] > ($tick + $approximation_tick_delta)) {
+						$tick = $point['tick'];
+					}
+
+					$metric_points[$tick][] = $point;
+				}
+			}
+
+			$approximation_functions = ['min', 'avg', 'max'];
+
+			switch ($metric['options']['aggregate_function']) {
+				case AGGREGATE_MIN:
+					foreach ($metric_points as $tick => $points) {
+						$metric['points'][$tick] = array_fill_keys($approximation_functions,
+							min(array_column($points, 'value'))
+						);
+					}
+					break;
+
+				case AGGREGATE_MAX:
+					foreach ($metric_points as $tick => $points) {
+						$metric['points'][$tick] = array_fill_keys($approximation_functions,
+							max(array_column($points, 'value'))
+						);
+					}
+					break;
+
+				case AGGREGATE_AVG:
+					if ($metric['options']['aggregate_grouping'] == GRAPH_AGGREGATE_BY_DATASET) {
+						foreach ($metric_points as $tick => $points) {
+							$value_sum = 0;
+							$num_sum = 0;
+
+							foreach ($points as $point) {
+								$value_sum += $point['value'] * $point['num'];
+								$num_sum += $point['num'];
+							}
+
+							$metric['points'][$tick] = array_fill_keys($approximation_functions, $value_sum / $num_sum);
 						}
 					}
-				}
+					else {
+						foreach ($metric_points as $tick => $points) {
+							$metric['points'][$tick] = array_fill_keys($approximation_functions,
+								CMathHelper::safeAvg(array_column($points, 'value'))
+							);
+						}
+					}
+					break;
 
-				foreach ($metric_points as $tick => $point) {
-					$metric['points'][$tick] = [
-						'min' => min($point['value']),
-						'avg' => CMathHelper::safeAvg($point['value']),
-						'max' => max($point['value'])
-					];
-				}
+				case AGGREGATE_COUNT:
+				case AGGREGATE_SUM:
+					foreach ($metric_points as $tick => $points) {
+						$metric['points'][$tick] = array_fill_keys($approximation_functions,
+							array_sum(array_column($points, 'value'))
+						);
+					}
+					break;
 
-				ksort($metric['points'], SORT_NUMERIC);
+				case AGGREGATE_FIRST:
+				case AGGREGATE_LAST:
+					foreach ($metric_points as $tick => $points) {
+						usort($points, static fn(array $point_a, array $point_b): int =>
+							[$point_a['clock'], $point_a['ns']] <=> [$point_b['clock'], $point_b['ns']]
+						);
+
+						$point = $metric['options']['aggregate_function'] == AGGREGATE_FIRST
+							? $points[0]
+							: $points[count($points) - 1];
+
+						$metric['points'][$tick] = array_fill_keys($approximation_functions, $point['value']);
+					}
+					break;
 			}
+
+			ksort($metric['points'], SORT_NUMERIC);
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -39,8 +39,10 @@
 		var old_value = $textarea.val(),
 			new_value = old_value
 				.replace(/\r?\n+$/g, '')
-				.replace(/\r?\n/g, ' '),
-			scroll_pos = $(window).scrollTop();
+				.replace(/\r?\n/g, ' ');
+
+		const scrollable = getScrollableParent($textarea[0]);
+		const scrollable_pos = scrollable !== null ? scrollable.scrollTop : 0;
 
 		if (old_value !== new_value) {
 			var pos = $textarea[0].selectionStart;
@@ -49,15 +51,47 @@
 			$textarea[0].setSelectionRange(pos, pos);
 		}
 
-		// Resize textarea.
-		$textarea
-			.height(0)
-			.innerHeight($textarea[0].scrollHeight);
+		updateHeight($textarea);
 
 		// Fire event.
 		$textarea.trigger('resize');
 
-		$(window).scrollTop(scroll_pos);
+		if (scrollable !== null) {
+			scrollable.scrollTop = scrollable_pos;
+		}
+	}
+
+	function getScrollableParent(element) {
+		while (element !== null) {
+			if (['auto', 'scroll'].includes(getComputedStyle(element).overflowY)) {
+				return element;
+			}
+
+			element = element.parentElement;
+		}
+
+		return null;
+	}
+
+	// Update textarea height.
+	function updateHeight($textarea) {
+		if ($textarea.val() === '' && $textarea.attr('placeholder') !== '') {
+			// Calculation of scrollHeight property in firefox do not count placeholder dimension when value is empty.
+			const $clone = $textarea.clone()
+				.css('position', 'absolute')
+				.insertAfter($textarea)
+				.height(0)
+				.val($textarea.attr('placeholder'));
+
+			$textarea.innerHeight($clone[0].scrollHeight);
+			$clone.remove();
+
+			return;
+		}
+
+		$textarea
+			.height(0)
+			.innerHeight($textarea[0].scrollHeight);
 	}
 
 	var methods = {
@@ -69,6 +103,22 @@
 					.off('input keydown paste', update)
 					.on('input keydown paste', update)
 					.trigger('input');
+
+				const intersection = new IntersectionObserver(entries => {
+					if (entries[0].isIntersecting) {
+						$textarea.trigger('input');
+						intersection.disconnect();
+					}
+				});
+
+				intersection.observe(this);
+			});
+		},
+		updateHeight: function() {
+			return this.each(function() {
+				const $textarea = $(this);
+
+				updateHeight($textarea);
 			});
 		},
 		clean: function() {

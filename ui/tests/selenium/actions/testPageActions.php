@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -205,13 +205,11 @@ class testPageActions extends CLegacyWebTest {
 		switch ($action['status']) {
 			case ACTION_STATUS_ENABLED:
 				$this->zbxTestClickXpath('//a[contains(@data-actionid,"'.$action['actionid'].'") and (text()="Enabled")]');
-				$this->page->acceptAlert();
 				$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'Action disabled');
 				$newStatus = ACTION_STATUS_DISABLED;
 				break;
 			case ACTION_STATUS_DISABLED:
 				$this->zbxTestClickXpath('//a[contains(@data-actionid,"'.$action['actionid'].'") and (text()="Disabled")]');
-				$this->page->acceptAlert();
 				$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'Action enabled');
 				$newStatus = ACTION_STATUS_ENABLED;
 				break;

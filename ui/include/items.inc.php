@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -603,19 +603,27 @@ function makeItemTemplatesHtml($itemid, array $parent_templates, $flag, bool $pr
 				$name = new CLink($template['name'], $url);
 			}
 			elseif ($flag == ZBX_FLAG_DISCOVERY_PROTOTYPE) {
-				$name = (new CLink($template['name']))
-					->setAttribute('data-action', 'item.prototype.edit')
-					->setAttribute('data-itemid', $parent_templates['links'][$itemid]['itemid'])
-					->setAttribute('data-parent_discoveryid', $parent_templates['links'][$itemid]['lld_ruleid'])
-					->setAttribute('data-context', 'template');
+				$item_url = (new CUrl('zabbix.php'))
+					->setArgument('action', 'popup')
+					->setArgument('popup', 'item.prototype.edit')
+					->setArgument('context', 'template')
+					->setArgument('itemid', $parent_templates['links'][$itemid]['itemid'])
+					->setArgument('parent_discoveryid', $parent_templates['links'][$itemid]['lld_ruleid'])
+					->getUrl();
+
+				$name = new CLink($template['name'], $item_url);
 			}
 			// ZBX_FLAG_DISCOVERY_NORMAL
 			else {
-				$name = (new CLink($template['name']))
-					->setAttribute('data-action', 'item.edit')
-					->setAttribute('data-hostid', $parent_templates['links'][$itemid]['hostid'])
-					->setAttribute('data-itemid', $parent_templates['links'][$itemid]['itemid'])
-					->setAttribute('data-context', 'template');
+				$item_url = (new CUrl('zabbix.php'))
+					->setArgument('action', 'popup')
+					->setArgument('popup', 'item.edit')
+					->setArgument('context', 'template')
+					->setArgument('hostid', $parent_templates['links'][$itemid]['hostid'])
+					->setArgument('itemid', $parent_templates['links'][$itemid]['itemid'])
+					->getUrl();
+
+				$name = new CLink($template['name'], $item_url);
 			}
 		}
 		else {
@@ -632,237 +640,6 @@ function makeItemTemplatesHtml($itemid, array $parent_templates, $flag, bool $pr
 	}
 
 	return $list;
-}
-
-/**
- * Collect latest value and actual severity value for each item of Data overview table.
- *
- * @param array $db_items
- * @param array $data
- * @param int   $show_suppressed
- *
- * @return array
- */
-function getDataOverviewCellData(array $db_items, array $data, int $show_suppressed): array {
-	$history = Manager::History()->getLastValues($db_items, 1,
-		timeUnitToSeconds(CSettingsHelper::get(CSettingsHelper::HISTORY_PERIOD))
-	);
-
-	$db_triggers = getTriggersWithActualSeverity([
-		'output' => ['triggerid', 'priority', 'value'],
-		'selectItems' => ['itemid'],
-		'itemids' => array_keys($db_items),
-		'monitored' => true,
-		'preservekeys' => true
-	], ['show_suppressed' => $show_suppressed]);
-
-	$itemid_to_triggerids = [];
-	foreach ($db_triggers as $triggerid => $db_trigger) {
-		foreach ($db_trigger['items'] as $item) {
-			if (!array_key_exists($item['itemid'], $itemid_to_triggerids)) {
-				$itemid_to_triggerids[$item['itemid']] = [];
-			}
-			$itemid_to_triggerids[$item['itemid']][] = $triggerid;
-		}
-	}
-
-	// Apply values and trigger severity to each $data cell.
-	foreach ($data as &$data_clusters) {
-		foreach ($data_clusters as &$data_cluster) {
-			foreach ($data_cluster as &$item) {
-				$itemid = $item['itemid'];
-
-				if (array_key_exists($itemid, $itemid_to_triggerids)) {
-					$max_priority = -1;
-					$max_priority_triggerid = -1;
-					foreach ($itemid_to_triggerids[$itemid] as $triggerid) {
-						$trigger = $db_triggers[$triggerid];
-
-						// Bump lower priority triggers of value "true" ahead of triggers with value "false".
-						$multiplier = ($trigger['value'] == TRIGGER_VALUE_TRUE) ? TRIGGER_SEVERITY_COUNT : 0;
-						if ($trigger['priority'] + $multiplier > $max_priority) {
-							$max_priority_triggerid = $triggerid;
-							$max_priority = $trigger['priority'] + $multiplier;
-						}
-					}
-					$trigger = $db_triggers[$max_priority_triggerid];
-				}
-				else {
-					$trigger = null;
-				}
-
-				$item += [
-					'value' => array_key_exists($itemid, $history) ? $history[$itemid][0]['value'] : null,
-					'trigger' => $trigger
-				];
-			}
-		}
-	}
-	unset($data_clusters, $data_cluster, $item);
-
-	return $data;
-}
-
-/**
- * @param array  $groupids
- * @param array  $hostids
- * @param array  $tags
- * @param int    $evaltype
- *
- * @return array
- */
-function getDataOverviewItems(?array $groupids, ?array $hostids, ?array $tags, int $evaltype): array {
-	if ($hostids === null) {
-		$limit = CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT);
-		$db_hosts = API::Host()->get([
-			'output' => ['name'],
-			'groupids' => $groupids,
-			'monitored_hosts' => true,
-			'with_monitored_items' => true,
-			'sortfield' => ['name'],
-			'limit' => $limit,
-			'preservekeys' => true
-		]);
-
-		CArrayHelper::sort($db_hosts, ['name']);
-		$db_hosts = array_slice($db_hosts, 0, CSettingsHelper::get(CSettingsHelper::MAX_OVERVIEW_TABLE_SIZE) + 1, true);
-
-		$hostids = array_keys($db_hosts);
-	}
-
-	$db_items = CArrayHelper::renameObjectsKeys(API::Item()->get([
-		'output' => ['itemid', 'hostid', 'name_resolved', 'value_type', 'units', 'valuemapid'],
-		'selectHosts' => ['name'],
-		'selectValueMap' => ['mappings'],
-		'hostids' => $hostids,
-		'groupids' => $groupids,
-		'evaltype' => $evaltype,
-		'tags' => $tags,
-		'monitored' => true,
-		'webitems' => true,
-		'preservekeys' => true
-	]), ['name_resolved' => 'name']);
-
-	CArrayHelper::sort($db_items, [
-		['field' => 'name', 'order' => ZBX_SORT_UP],
-		['field' => 'itemid', 'order' => ZBX_SORT_UP]
-	]);
-
-	return $db_items;
-}
-
-/**
- * @param array  $groupids
- * @param array  $hostids
- * @param array  $filter
- * @param array  $filter['tags']
- * @param int    $filter['evaltype']
- * @param int    $filter['show_suppressed']
- *
- * @return array
- */
-function getDataOverview(?array $groupids, ?array $hostids, array $filter): array {
-	$tags = (array_key_exists('tags', $filter) && $filter['tags']) ? $filter['tags'] : null;
-	$evaltype = array_key_exists('evaltype', $filter) ? $filter['evaltype'] : TAG_EVAL_TYPE_AND_OR;
-
-	$db_items = getDataOverviewItems($groupids, $hostids, $tags, $evaltype);
-
-	$data = [];
-	$item_counter = [];
-	$db_hosts = [];
-
-	foreach ($db_items as $db_item) {
-		$item_name = $db_item['name'];
-		$host_name = $db_item['hosts'][0]['name'];
-		$db_hosts[$db_item['hostid']] = $db_item['hosts'][0];
-
-		if (!array_key_exists($host_name, $item_counter)) {
-			$item_counter[$host_name] = [];
-		}
-
-		if (!array_key_exists($item_name, $item_counter[$host_name])) {
-			$item_counter[$host_name][$item_name] = 0;
-		}
-
-		$item_place = $item_counter[$host_name][$item_name];
-		$item_counter[$host_name][$item_name]++;
-
-		$item = [
-			'itemid' => $db_item['itemid'],
-			'value_type' => $db_item['value_type'],
-			'units' => $db_item['units'],
-			'valuemap' => $db_item['valuemap'],
-			'acknowledged' => array_key_exists('acknowledged', $db_item) ? $db_item['acknowledged'] : 0
-		];
-
-		if (array_key_exists('triggerid', $db_item)) {
-			$item += [
-				'triggerid' => $db_item['triggerid'],
-				'severity' => $db_item['priority'],
-				'tr_value' => $db_item['value']
-			];
-		}
-		else {
-			$item += [
-				'triggerid' => null,
-				'severity' => null,
-				'tr_value' => null
-			];
-		}
-
-		$data[$item_name][$item_place][$host_name] = $item;
-	}
-
-	CArrayHelper::sort($db_hosts, [
-		['field' => 'name', 'order' => ZBX_SORT_UP]
-	]);
-
-	$data_display_limit = (int) CSettingsHelper::get(CSettingsHelper::MAX_OVERVIEW_TABLE_SIZE);
-	$has_hidden_data = count($data) > $data_display_limit || count($db_hosts) > $data_display_limit;
-	$db_hosts = array_slice($db_hosts, 0, $data_display_limit, true);
-	$host_names = array_column($db_hosts, 'name', 'name');
-
-	$itemids = [];
-	$items_left = $data_display_limit;
-
-	foreach ($data as &$item_columns) {
-		if ($items_left != 0) {
-			$item_columns = array_slice($item_columns, 0, min($data_display_limit, $items_left));
-			$items_left -= count($item_columns);
-		}
-		else {
-			$item_columns = null;
-			break;
-		}
-
-		foreach ($item_columns as &$item_column) {
-			CArrayHelper::ksort($item_column);
-			$item_column = array_slice($item_column, 0, $data_display_limit, true);
-
-			foreach ($item_column as $host_name => $item) {
-				if (array_key_exists($host_name, $host_names)) {
-					$itemids[$item['itemid']] = true;
-				}
-				else {
-					unset($item_column[$host_name]);
-				}
-			}
-		}
-		unset($item_column);
-
-		$item_columns = array_filter($item_columns);
-	}
-	unset($item_columns);
-
-	$data = array_filter($data);
-	$data = array_slice($data, 0, $data_display_limit, true);
-
-	$has_hidden_data = $has_hidden_data || count($db_items) != count($itemids);
-
-	$db_items = array_intersect_key($db_items, $itemids);
-	$data = getDataOverviewCellData($db_items, $data, $filter['show_suppressed']);
-
-	return [$data, $db_hosts, $has_hidden_data];
 }
 
 /**
@@ -977,40 +754,6 @@ function getSnmpV3PrivProtocols(): array {
 		ITEM_SNMPV3_PRIVPROTOCOL_AES192C => 'AES192C',
 		ITEM_SNMPV3_PRIVPROTOCOL_AES256C => 'AES256C'
 	];
-}
-
-/**
- * @param array $item
- * @param array $trigger
- *
- * @return CCol
- */
-function getItemDataOverviewCell(array $item, ?array $trigger = null): CCol {
-	$ack = null;
-	$css = '';
-	$value = UNKNOWN_VALUE;
-
-	if ($trigger && $trigger['value'] == TRIGGER_VALUE_TRUE) {
-		$css = CSeverityHelper::getStyle((int) $trigger['priority']);
-
-		if ($trigger['problem']['acknowledged'] == 1) {
-			$ack = [' ', (new CSpan())->addClass(ZBX_ICON_CHECK)];
-		}
-	}
-
-	if ($item['value'] !== null) {
-		$value = $item['value_type'] == ITEM_VALUE_TYPE_BINARY
-			? italic(_('binary value'))->addClass(ZBX_STYLE_GREY)
-			: formatHistoryValue($item['value'], $item);
-	}
-
-	$col = (new CCol([$value, $ack]))
-		->addClass($css)
-		->addClass(ZBX_STYLE_NOWRAP)
-		->setMenuPopup(CMenuPopupHelper::getHistory($item['itemid']))
-		->addClass(ZBX_STYLE_CURSOR_POINTER);
-
-	return $col;
 }
 
 /**
@@ -1207,46 +950,57 @@ function formatHistoryValueRaw($value, array $item, bool $trim = true, array $co
 }
 
 /**
- * Converts seconds to the biggest unit of measure with decimals.
+ * Get power to time-unit relation in descending order of power.
  *
- * @param int|float|string  $value            Time period in seconds
- * @param bool              $ignore_millisec  Ignores milliseconds
- * @param int               $decimals         Max number of first non-zero decimals to display
- * @param bool              $decimals_exact   Display exactly this number of decimals instead of first non-zeros
+ * @return array
+ */
+function getUnitsSPowerData(): array {
+	return [
+		5	=> ['suffix' => _x('y', 'year short'),			'base' => SEC_PER_YEAR],
+		4	=> ['suffix' => _x('M', 'month short'),			'base' => SEC_PER_MONTH],
+		3	=> ['suffix' => _x('d', 'day short'),			'base' => SEC_PER_DAY],
+		2	=> ['suffix' => _x('h', 'hour short'),			'base' => SEC_PER_HOUR],
+		1	=> ['suffix' => _x('m', 'minute short'),		'base' => SEC_PER_MIN],
+		0	=> ['suffix' => _x('s', 'second short'),		'base' => 1],
+		-1	=> ['suffix' => _x('ms', 'millisecond short'),	'base' => 0.001]
+	];
+}
+
+/**
+ * Convert seconds to a single time unit with decimals.
+ *
+ * @param int|float|string $value                Number of seconds.
+ * @param bool             $ignore_milliseconds  Do not use milliseconds.
+ * @param int              $decimals             Max number of first non-zero decimals to display.
+ * @param bool             $decimals_exact       Display exactly this number of decimals instead of first non-zeros.
  *
  * @return string
  */
-function convertUnitSWithDecimals($value, bool $ignore_millisec = false, int $decimals = ZBX_UNITS_ROUNDOFF_SUFFIXED,
-		bool $decimals_exact = false): string {
-	$value = (float)$value;
-	$part = '';
-	$result = 0;
+function convertUnitsSWithDecimals($value, bool $ignore_milliseconds, int $decimals, bool $decimals_exact): string {
+	$value = (float) $value;
 
-	foreach ([
-		'y' => SEC_PER_YEAR,
-		'M' => SEC_PER_MONTH,
-		'd' => SEC_PER_DAY,
-		'h' => SEC_PER_HOUR,
-		'm' => SEC_PER_MIN,
-		's' => 1
-	] as $key => $sec_per_part) {
-		if (floor($value / $sec_per_part) > 0) {
-			$part = $key;
-			$result = $value / $sec_per_part;
+	if ($value == 0) {
+		return '0';
+	}
+
+	$power_data = getUnitsSPowerData();
+	$power = -1;
+
+	foreach ($power_data as $_power => $power_datum) {
+		if ($value >= $power_datum['base']) {
+			$power = $_power;
 			break;
 		}
 	}
 
-	if ($part === '' && $ignore_millisec) {
-		$part = 's';
-		$result = $value;
-	}
-	elseif ($part === '') {
-		$part = 'ms';
-		$result = $value * 1000;
+	if ($power === -1 && $ignore_milliseconds) {
+		$power = 0;
 	}
 
-	return formatFloat($result, ['decimals' => $decimals, 'decimals_exact' => $decimals_exact]).$part;
+	return formatFloat($value / $power_data[$power]['base'], [
+		'decimals' => $decimals,
+		'decimals_exact' => $decimals_exact
+	]).$power_data[$power]['suffix'];
 }
 
 /**
@@ -1258,6 +1012,55 @@ function convertUnitSWithDecimals($value, bool $ignore_millisec = false, int $de
  */
 function isBinaryUnits(string $units): bool {
 	return $units === 'B' || $units === 'Bps';
+}
+
+/**
+ * Get units value base for specified power.
+ *
+ * Examples: 'Bps', 0 => 1; 'Bps', 1 => 1024; 's', 0 => 1; 's', 1 => 60; 's', 2 => 3600; '', 3 => 1000000000.
+ *
+ * @param string $units
+ * @param int    $power
+ *
+ * @return float
+ */
+function getUnitsBase(string $units, int $power): float {
+	switch ($units) {
+		case 's':
+			return getUnitsSPowerData()[$power]['base'];
+
+		default:
+			return pow(isBinaryUnits($units) ? ZBX_KIBIBYTE : 1000, $power);
+	}
+}
+
+/**
+ * Get units power for specified value.
+ *
+ * Used for displaying multiple values at fixed power.
+ * @see convertUnits
+ *
+ * Examples: 1023 B => 0; 1024 B => 1; 999 => 0; 1000 => 1; 1000000 => 2; 59s => 0, 60s => 1, 0.9s => 0.1.
+ *
+ * @param string $units  Units, like 's', 'Bps', 'uptime' or empty string.
+ * @param float  $value  Numeric value, for which power will be calculated.
+ *
+ * @return int
+ */
+function getUnitsPower(string $units, float $value): int {
+	switch ($units) {
+		case 's':
+			foreach (getUnitsSPowerData() as $power => $power_datum) {
+				if ($value >= $power_datum['base']) {
+					return $power;
+				}
+			}
+
+			return -1;
+
+		default:
+			return (int) min(8, max(0, floor(log($value, isBinaryUnits($units) ? ZBX_KIBIBYTE : 1000))));
+	}
 }
 
 /**
@@ -2608,7 +2411,7 @@ function getInheritedTimeouts(string $proxyid): array {
  *
  * @return array
  */
-function getItemTypeCountByHostId(int $item_type, array $hostids): array {
+function getEnabledItemTypeCountByHostId(int $item_type, array $hostids): array {
 	if (!$hostids) {
 		return [];
 	}
@@ -2617,8 +2420,28 @@ function getItemTypeCountByHostId(int $item_type, array $hostids): array {
 		'countOutput' => true,
 		'groupCount' => true,
 		'hostids' => $hostids,
-		'filter' => ['type' => $item_type]
+		'filter' => ['type' => $item_type, 'status' => ITEM_STATUS_ACTIVE]
 	]);
 
 	return $items_count ? array_column($items_count, 'rowscount', 'hostid') : [];
+}
+
+/**
+ * @param array $interfaceids
+ *
+ * @return array
+ */
+function getEnabledItemsCountByInterfaceIds(array $interfaceids): array {
+	if (!$interfaceids) {
+		return [];
+	}
+
+	$items_count = API::Item()->get([
+		'countOutput' => true,
+		'groupCount' => true,
+		'interfaceids' => $interfaceids,
+		'filter' => ['status' => ITEM_STATUS_ACTIVE]
+	]);
+
+	return $items_count ? array_column($items_count, 'rowscount', 'interfaceid') : [];
 }

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,9 +21,6 @@
 $this->addJsFile('gtlc.js');
 $this->addJsFile('flickerfreescreen.js');
 $this->addJsFile('layout.mode.js');
-$this->addJsFile('class.tagfilteritem.js');
-$this->addJsFile('items.js');
-$this->addJsFile('multilineinput.js');
 
 $this->includeJsFile('monitoring.web.view.js.php');
 

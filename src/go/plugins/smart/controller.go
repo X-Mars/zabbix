@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -87,7 +87,7 @@ func (s *SmartCtl) Execute(args ...string) ([]byte, error) {
 	if err != nil {
 		exitErr := &exec.ExitError{}
 		if errors.As(err, &exitErr) {
-			return out, nil
+			return nil, errs.Wrapf(err, "%q", strings.TrimSuffix(string(out), "\n"))
 		}
 
 		return nil, errs.Wrap(
@@ -95,6 +95,10 @@ func (s *SmartCtl) Execute(args ...string) ([]byte, error) {
 			"failed to get combined output of stdout and stderr for smartctl process",
 		)
 	}
+
+	s.logr.Debugf(
+		"executed smartctl command: %s %s Got output: %q", cmd, strings.Join(cmdArgs, " "), out,
+	)
 
 	return out, nil
 }

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -15,8 +15,8 @@
 
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type,Authorization');
+header('Access-Control-Allow-Methods: POST,OPTIONS');
 header('Access-Control-Max-Age: 1000');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -57,21 +57,25 @@ try {
 	$jsonRpc = new CJsonRpc($apiClient, $data);
 	echo $jsonRpc->execute($http_request);
 }
-catch (Exception $e) {
-	// decode input json request to get request's id
-	$jsonData = json_decode($data, true);
+catch (Throwable $e) {
+	$json_data = json_decode($data, true);
 
-	$response = [
-		'jsonrpc' => '2.0',
-		'error' => [
-			'code' => 1,
-			'message' => $e->getMessage(),
-			'data' => ''
-		],
-		'id' => (isset($jsonData['id']) ? $jsonData['id'] : null)
-	];
+	if (array_key_exists('id', $json_data)) {
+		$user_type = CUser::$userData === null ? USER_TYPE_ZABBIX_USER : CUser::$userData['type'];
+		$data = ($e instanceof DBException && $user_type != USER_TYPE_SUPER_ADMIN && $e->getCode() != DB::INIT_ERROR)
+			? _('System error occurred. Please contact Zabbix administrator.')
+			: $e->getMessage();
 
-	echo json_encode($response);
+		echo json_encode([
+			'jsonrpc' => '2.0',
+			'error' => [
+				'code' => -32603,
+				'message' => _('Internal error.'),
+				'data' => $data
+			],
+			'id' => $json_data['id']
+		]);
+	}
 }
 
 session_write_close();

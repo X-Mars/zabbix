@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -27,7 +27,7 @@ class testFormTagsDiscoveredHost extends testFormTags {
 	public $clone_name = 'Discovered host from prototype 11';
 	public $remove_name = 'Discovered host from prototype 1';
 	public $link = 'zabbix.php?action=host.list';
-	public $saved_link = 'zabbix.php?action=host.edit&hostid=';
+	public $saved_link = 'zabbix.php?action=popup&popup=host.edit&hostid=';
 
 	/**
 	 * Test update of Discovered Host with tags.

@@ -7,7 +7,7 @@ This template is designed for the effortless deployment of OpenWeatherMap monito
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -16,7 +16,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -62,7 +62,7 @@ This template has been tested on:
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|There are errors in requests to OpenWeatherMap API|<p>Zabbix has received errors in requests to OpenWeatherMap API.</p>|`length(last(/OpenWeatherMap by HTTP/openweathermap.get.errors))>0`|Average|**Manual close**: Yes|
+|OpenWeatherMap: There are errors in requests to OpenWeatherMap API|<p>Zabbix has received errors in requests to OpenWeatherMap API.</p>|`length(last(/OpenWeatherMap by HTTP/openweathermap.get.errors))>0`|Average|**Manual close**: Yes|
 
 ### LLD rule Locations discovery
 
@@ -90,8 +90,8 @@ This template has been tested on:
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|[{#LOCATION}, {#COUNTRY}]: Temperature is too high|<p>Temperature value is too high.</p>|`min(/OpenWeatherMap by HTTP/openweathermap.temp[{#ID}],#3)>{$TEMP.CRIT.HIGH}`|Average|**Manual close**: Yes|
-|[{#LOCATION}, {#COUNTRY}]: Temperature is too low|<p>Temperature value is too low.</p>|`max(/OpenWeatherMap by HTTP/openweathermap.temp[{#ID}],#3)<{$TEMP.CRIT.LOW}`|Average|**Manual close**: Yes|
+|OpenWeatherMap: [{#LOCATION}, {#COUNTRY}]: Temperature is too high|<p>Temperature value is too high.</p>|`min(/OpenWeatherMap by HTTP/openweathermap.temp[{#ID}],#3)>{$TEMP.CRIT.HIGH}`|Average|**Manual close**: Yes|
+|OpenWeatherMap: [{#LOCATION}, {#COUNTRY}]: Temperature is too low|<p>Temperature value is too low.</p>|`max(/OpenWeatherMap by HTTP/openweathermap.temp[{#ID}],#3)<{$TEMP.CRIT.LOW}`|Average|**Manual close**: Yes|
 
 ## Feedback
 

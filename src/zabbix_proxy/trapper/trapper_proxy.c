@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -17,9 +17,11 @@
 #include "../taskmanager/taskmanager_proxy.h"
 #include "../proxyconfigwrite/proxyconfigwrite.h"
 
+#include "zbxcomms.h"
 #include "zbxcommshigh.h"
 #include "zbxtasks.h"
 #include "zbxmutexs.h"
+#include "zbxdb.h"
 #include "zbxdbwrap.h"
 #include "zbxproxybuffer.h"
 #include "zbxcompress.h"
@@ -177,8 +179,6 @@ static void	send_proxy_data(zbx_socket_t *sock, const zbx_timespec_t *ts,
 		if (0 != areg_lastid)
 			zbx_pb_autoreg_set_lastid(areg_lastid);
 
-		zbx_pb_update_state(more);
-
 		if (0 != tasks.values_num)
 		{
 			zbx_tm_update_task_status(&tasks, ZBX_TM_STATUS_DONE);
@@ -195,6 +195,8 @@ static void	send_proxy_data(zbx_socket_t *sock, const zbx_timespec_t *ts,
 		}
 
 		zbx_db_commit();
+
+		zbx_pb_update_state(more);
 
 		zbx_dc_set_proxy_lastonline(ts->sec);
 	}

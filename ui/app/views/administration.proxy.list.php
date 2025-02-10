@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -94,12 +94,16 @@ foreach ($data['proxies'] as $proxyid => $proxy) {
 	$proxy_name_prefix = [];
 
 	if ($proxy['proxyGroup']) {
+		$proxy_group_url = (new CUrl('zabbix.php'))
+			->setArgument('action', 'popup')
+			->setArgument('popup', 'proxygroup.edit')
+			->setArgument('proxy_groupid', $proxy['proxy_groupid'])
+			->getUrl();
+
 		$proxy_name_prefix[] = $data['user']['can_edit_proxy_groups']
-			? (new CLink($proxy['proxyGroup']['name']))
+			? (new CLink($proxy['proxyGroup']['name'], $proxy_group_url))
 				->addClass(ZBX_STYLE_LINK_ALT)
 				->addClass(ZBX_STYLE_GREY)
-				->addClass('js-edit-proxy-group')
-				->setAttribute('data-proxy_groupid', $proxy['proxy_groupid'])
 			: $proxy['proxyGroup']['name'];
 		$proxy_name_prefix[] = NAME_DELIMITER;
 	}
@@ -177,11 +181,15 @@ foreach ($data['proxies'] as $proxyid => $proxy) {
 				$can_enable_disable_hosts = true;
 			}
 
+			$host_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'host.edit')
+				->setArgument('hostid', $host['hostid'])
+				->getUrl();
+
 			$hosts[] = $data['user']['can_edit_hosts']
-				? (new CLink($host['name']))
+				? (new CLink($host['name'], $host_url))
 					->addClass($host['status'] == HOST_STATUS_NOT_MONITORED ? ZBX_STYLE_RED : null)
-					->addClass('js-edit-host')
-					->setAttribute('data-hostid', $host['hostid'])
 				: (new CSpan($host['name']))
 					->addClass($host['status'] == HOST_STATUS_NOT_MONITORED ? ZBX_STYLE_RED : null);
 			$hosts[] = ', ';
@@ -196,15 +204,19 @@ foreach ($data['proxies'] as $proxyid => $proxy) {
 		$host_count_total = (new CSpan($proxy['host_count_total']))->addClass(ZBX_STYLE_ENTITY_COUNT);
 	}
 
+	$proxy_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'proxy.edit')
+		->setArgument('proxyid', $proxyid)
+		->getUrl();
+
 	$proxy_list->addRow([
 		(new CCheckBox('proxyids['.$proxyid.']', $proxyid))
 			->setAttribute('data-actions', $can_enable_disable_hosts ? 'enable_hosts disable_hosts' : null),
 		(new CCol([
 			$proxy_name_prefix,
-			(new CLink($proxy['name']))
-				->addClass('js-edit-proxy')
-				->setAttribute('data-proxyid', $proxyid)
-		]))->addClass(ZBX_STYLE_NOWRAP),
+			new CLink($proxy['name'], $proxy_url)
+		]))->addClass(ZBX_STYLE_WORDBREAK),
 		$proxy['operating_mode'] == PROXY_OPERATING_MODE_ACTIVE ? _('Active') : _('Passive'),
 		$encryption,
 		$state,
@@ -215,7 +227,7 @@ foreach ($data['proxies'] as $proxyid => $proxy) {
 		array_key_exists('item_count', $proxy) ? $proxy['item_count'] : '',
 		array_key_exists('vps_total', $proxy) ? $proxy['vps_total'] : '',
 		(new CCol($host_count_total))->addClass(ZBX_STYLE_CELL_WIDTH),
-		$hosts
+		(new CCol($hosts))->addClass(ZBX_STYLE_WORDBREAK)
 	]);
 }
 

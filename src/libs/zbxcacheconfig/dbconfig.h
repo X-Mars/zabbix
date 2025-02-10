@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,6 +22,7 @@
 #include "zbxvault.h"
 #include "zbx_trigger_constants.h"
 #include "zbx_host_constants.h"
+#include "zbxmutexs.h"
 
 #define ZBX_MAINTENANCE_IDLE		0
 #define ZBX_MAINTENANCE_RUNNING		1
@@ -101,13 +102,15 @@ ZBX_DC_FUNCTION;
 
 typedef struct
 {
-	zbx_vector_uint64_pair_t	dep_itemids;
+	zbx_hashset_t	dep_itemids;
+	zbx_uint64_t	revision;
 }
 ZBX_DC_MASTERITEM;
 
 typedef struct
 {
 	zbx_vector_ptr_t	preproc_ops;
+	zbx_uint64_t		revision;
 }
 ZBX_DC_PREPROCITEM;
 
@@ -266,6 +269,16 @@ ZBX_DC_ITEMVALUETYPE;
 
 typedef struct
 {
+	zbx_uint64_t	itemtagid;
+	const char	*tag;
+	const char	*value;
+}
+zbx_dc_item_tag_t;
+
+ZBX_VECTOR_DECL(dc_item_tag, zbx_dc_item_tag_t)
+
+typedef struct
+{
 	zbx_uint64_t		itemid;
 	zbx_uint64_t		hostid;
 	zbx_uint64_t		interfaceid;
@@ -285,7 +298,7 @@ typedef struct
 	zbx_uint64_t		templateid;
 	ZBX_DC_PREPROCITEM	*preproc_item;
 	ZBX_DC_MASTERITEM	*master_item;
-	zbx_vector_ptr_t	tags;
+	zbx_vector_dc_item_tag_t	tags;
 	int			nextcheck;
 	int			mtime;
 	int			data_expected_from;
@@ -302,6 +315,12 @@ typedef struct
 	unsigned char		update_triggers;
 }
 ZBX_DC_ITEM;
+
+typedef struct
+{
+	ZBX_DC_ITEM	*item;
+}
+ZBX_DC_ITEM_REF;
 
 typedef struct
 {
@@ -405,7 +424,7 @@ typedef struct
 						/* 'config->interfaces' hashset */
 
 	zbx_vector_dc_httptest_ptr_t	httptests;
-	zbx_vector_dc_item_ptr_t	items;
+	zbx_hashset_t			items;
 }
 ZBX_DC_HOST;
 
@@ -622,6 +641,7 @@ typedef struct
 	const char	*default_timezone;
 	int		auditlog_enabled;
 	int		auditlog_mode;
+	int		proxy_secrets_provider;
 
 	/* database configuration data for ZBX_CONFIG_DB_EXTENSION_* extensions */
 	zbx_config_db_t	db;
@@ -685,14 +705,6 @@ typedef struct
 }
 zbx_dc_trigger_tag_t;
 
-typedef struct
-{
-	zbx_uint64_t	itemtagid;
-	zbx_uint64_t	itemid;
-	const char	*tag;
-	const char	*value;
-}
-zbx_dc_item_tag_t;
 
 typedef struct
 {
@@ -964,6 +976,7 @@ typedef struct
 	unsigned int		auto_registration_actions;	/* number of enabled auto resistration actions */
 
 	zbx_dc_revision_t	revision;
+	int		        itservices_num;
 
 	/* maintenance processing management */
 	unsigned char		maintenance_update;		/* flag to trigger maintenance update by timers  */
@@ -1003,7 +1016,6 @@ typedef struct
 	zbx_hashset_t		actions;
 	zbx_hashset_t		action_conditions;
 	zbx_hashset_t		trigger_tags;
-	zbx_hashset_t		item_tags;
 	zbx_hashset_t		host_tags;
 	zbx_hashset_t		host_tags_index;	/* host tag index by hostid */
 	zbx_hashset_t		correlations;
@@ -1023,7 +1035,6 @@ typedef struct
 	zbx_hashset_t		psks;			/* for keeping PSK-identity and PSK pairs and for searching */
 							/* by PSK identity */
 #endif
-	zbx_hashset_t		data_sessions;
 	zbx_hashset_t		drules;
 	zbx_hashset_t		dchecks;
 	zbx_hashset_t		httptests;
@@ -1063,21 +1074,18 @@ zbx_dc_config_t	*get_dc_config(void);
 /* for cmocka */
 void	set_dc_config(zbx_dc_config_t *in);
 
-#define	RDLOCK_CACHE	rdlock_cache()
-#define	WRLOCK_CACHE	wrlock_cache()
-#define	UNLOCK_CACHE	unlock_cache()
+int		zbx_get_sync_in_progress(void);
+zbx_rwlock_t	zbx_get_config_lock(void);
 
-void	rdlock_cache(void);
-void	wrlock_cache(void);
-void	unlock_cache(void);
+#define	RDLOCK_CACHE	do { if (0 == zbx_get_sync_in_progress()) zbx_rwlock_rdlock(zbx_get_config_lock()); } while(0)
+#define	WRLOCK_CACHE	do { if (0 == zbx_get_sync_in_progress()) zbx_rwlock_wrlock(zbx_get_config_lock()); } while(0)
+#define	UNLOCK_CACHE	do { if (0 == zbx_get_sync_in_progress()) zbx_rwlock_unlock(zbx_get_config_lock()); } while(0)
 
-void	rdlock_cache_config_history(void);
-void	wrlock_cache_config_history(void);
-void	unlock_cache_config_history(void);
+zbx_rwlock_t	zbx_get_config_history_lock(void);
 
-#define	RDLOCK_CACHE_CONFIG_HISTORY	rdlock_cache_config_history()
-#define	WRLOCK_CACHE_CONFIG_HISTORY	wrlock_cache_config_history()
-#define	UNLOCK_CACHE_CONFIG_HISTORY	unlock_cache_config_history()
+#define	RDLOCK_CACHE_CONFIG_HISTORY	zbx_rwlock_rdlock(zbx_get_config_history_lock())
+#define	WRLOCK_CACHE_CONFIG_HISTORY	zbx_rwlock_wrlock(zbx_get_config_history_lock())
+#define	UNLOCK_CACHE_CONFIG_HISTORY	zbx_rwlock_unlock(zbx_get_config_history_lock())
 
 #define ZBX_IPMI_DEFAULT_AUTHTYPE	-1
 #define ZBX_IPMI_DEFAULT_PRIVILEGE	2
@@ -1137,8 +1145,7 @@ int		DCitem_nextcheck_update(ZBX_DC_ITEM *item, const ZBX_DC_INTERFACE *interfac
 #define ZBX_TRIGGER_TIMER_FUNCTION		(ZBX_TRIGGER_TIMER_FUNCTION_TIME | ZBX_TRIGGER_TIMER_FUNCTION_TREND)
 
 zbx_um_cache_t	*um_cache_sync(zbx_um_cache_t *cache, zbx_uint64_t revision, zbx_dbsync_t *gmacros,
-		zbx_dbsync_t *hmacros, zbx_dbsync_t *htmpls, const zbx_config_vault_t *config_vault,
-		unsigned char program_type);
+		zbx_dbsync_t *hmacros, zbx_dbsync_t *htmpls, const zbx_config_vault_t *config_vault);
 
 void	dc_host_deregister_proxy(ZBX_DC_HOST *host, zbx_uint64_t proxyid, zbx_uint64_t revision);
 void	dc_host_register_proxy(ZBX_DC_HOST *host, zbx_uint64_t proxyid, zbx_uint64_t revision);
@@ -1151,8 +1158,9 @@ ZBX_DC_PSK	*dc_psk_sync(char *tls_psk_identity, char *tls_psk, const char *name,
 		zbx_hashset_t *psk_owners, ZBX_DC_PSK *tls_dc_psk);
 #endif
 
-void	dbconfig_shmem_free_func(void *ptr);
-void	*dbconfig_shmem_realloc_func(void *old, size_t size);
-void	*dbconfig_shmem_malloc_func(void *old, size_t size);
+void		dbconfig_shmem_free_func(void *ptr);
+void		*dbconfig_shmem_realloc_func(void *old, size_t size);
+void		*dbconfig_shmem_malloc_func(void *old, size_t size);
+zbx_uint64_t	dbconfig_used_size(void);
 
 #endif

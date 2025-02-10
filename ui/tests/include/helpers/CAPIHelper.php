@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -48,7 +48,7 @@ class CAPIHelper {
 	 *
 	 * @throws Exception      if API call fails.
 	 */
-	public static function callRaw($data, string $sessionid = null) {
+	public static function callRaw($data, ?string $sessionid = null) {
 		global $URL;
 		if (!is_string($URL)) {
 			$URL = PHPUNIT_URL.'api_jsonrpc.php';

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -29,7 +29,7 @@ class CWidgetFieldIntegerBox extends CWidgetField {
 	 * @param int $min  Minimal allowed value.
 	 * @param int $max  Maximal allowed value.
 	 */
-	public function __construct(string $name, string $label = null, int $min = 0, int $max = ZBX_MAX_INT32) {
+	public function __construct(string $name, ?string $label = null, int $min = 0, int $max = ZBX_MAX_INT32) {
 		parent::__construct($name, $label);
 
 		$this->min = $min;

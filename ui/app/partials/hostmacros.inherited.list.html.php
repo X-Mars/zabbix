@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -160,9 +160,13 @@ else {
 
 		if (array_key_exists('template', $macro)) {
 			if ($macro['template']['rights'] == PERM_READ_WRITE) {
-				$link = (new CLink($macro['template']['name']))
-					->addClass('js-edit-linked-template')
-					->setAttribute('data-templateid', $macro['template']['templateid']);
+				$template_url = (new CUrl('zabbix.php'))
+					->setArgument('action', 'popup')
+					->setArgument('popup', 'template.edit')
+					->setArgument('templateid', $macro['template']['templateid'])
+					->getUrl();
+
+				$link = new CLink($macro['template']['name'], $template_url);
 			}
 			else {
 				$link = new CSpan($macro['template']['name']);

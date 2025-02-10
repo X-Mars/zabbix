@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -140,7 +140,7 @@ func (c *ConnManager) create(uri uri.URI) (*RedisConn, error) {
 	AuthConnFunc := func(scheme, addr string) (conn radix.Conn, err error) {
 		conn, err = radix.Dial(scheme, addr,
 			radix.DialTimeout(c.timeout),
-			radix.DialAuthPass(uri.Password()))
+			radix.DialAuthUser(uri.User(), uri.Password()))
 
 		// Set name for connection. It will be showed in "client list" output.
 		if err == nil {

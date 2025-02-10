@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -16,6 +16,7 @@ package redis
 
 import (
 	"golang.zabbix.com/sdk/conf"
+	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/plugin"
 )
 
@@ -25,6 +26,9 @@ type Session struct {
 
 	// Password to send to a protected Redis server.
 	Password string `conf:"optional"`
+
+	// User to send to a protected Redis server.
+	User string `conf:"optional"`
 }
 
 type PluginOptions struct {
@@ -44,7 +48,7 @@ type PluginOptions struct {
 // Configure implements the Configurator interface.
 // Initializes configuration structures.
 func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
-	if err := conf.Unmarshal(options, &p.options); err != nil {
+	if err := conf.UnmarshalStrict(options, &p.options); err != nil {
 		p.Errf("cannot unmarshal configuration options: %s", err)
 	}
 
@@ -61,9 +65,9 @@ func (p *Plugin) Validate(options interface{}) error {
 		err  error
 	)
 
-	err = conf.Unmarshal(options, &opts)
+	err = conf.UnmarshalStrict(options, &opts)
 	if err != nil {
-		return err
+		return errs.Wrap(err, "plugin config validation failed")
 	}
 
 	return err

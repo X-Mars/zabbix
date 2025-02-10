@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -162,11 +162,9 @@ class CMenuHelper {
 		$submenu_data_collection = [
 			CWebUser::checkAccess(CRoleHelper::UI_CONFIGURATION_TEMPLATE_GROUPS)
 				? (new CMenuItem(_('Template groups')))->setAction('templategroup.list')
-					->setAliases(['templategroup.edit'])
 				: null,
 			CWebUser::checkAccess(CRoleHelper::UI_CONFIGURATION_HOST_GROUPS)
 				? (new CMenuItem(_('Host groups')))->setAction('hostgroup.list')
-					->setAliases(['hostgroup.edit'])
 				: null,
 			CWebUser::checkAccess(CRoleHelper::UI_CONFIGURATION_TEMPLATES)
 				? (new CMenuItem(_('Templates')))
@@ -186,7 +184,7 @@ class CMenuHelper {
 						'item.list?context=host', 'trigger.list?context=host', 'graphs.php?context=host',
 						'host_discovery.php?context=host', 'item.prototype.list?context=host',
 						'trigger.prototype.list?context=host', 'host_prototypes.php?context=host',
-						'httpconf.php?context=host', 'host.edit'
+						'httpconf.php?context=host'
 					])
 				: null,
 			CWebUser::checkAccess(CRoleHelper::UI_CONFIGURATION_MAINTENANCE)

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -330,7 +330,7 @@ if ($data['action'] === 'user.edit' || CWebUser::$data['type'] > USER_TYPE_ZABBI
 	$media_table_info = (new CTable())
 		->setId('media-table')
 		->setAttribute('style', 'width: 100%;')
-		->setHeader([_('Type'), _('Send to'), _('When active'), _('Use if severity'), _('Status'), _('Action')]);
+		->setHeader([_('Type'), _('Send to'), _('When active'), _('Use if severity'), _('Status'), _('Actions')]);
 
 	foreach ($data['medias'] as $index => $media) {
 		if (!array_key_exists($media['mediatypeid'], $data['mediatypes'])) {
@@ -366,7 +366,7 @@ if ($data['action'] === 'user.edit' || CWebUser::$data['type'] > USER_TYPE_ZABBI
 			'period' => $media['period'],
 			'severity' => $media['severity'],
 			'active' => $media['active'],
-			'userdirectory_mediaid' => $media['userdirectory_mediaid']
+			'provisioned' => $media['provisioned']
 		];
 
 		if ($media['mediatype'] === MEDIA_TYPE_EMAIL) {
@@ -423,7 +423,7 @@ if ($data['action'] === 'user.edit' || CWebUser::$data['type'] > USER_TYPE_ZABBI
 								{dialogue_class: "modal-popup-generic"});'
 							),
 						(new CButtonLink(_('Remove')))
-							->setEnabled(!$parameters['userdirectory_mediaid'])
+							->setEnabled($parameters['provisioned'] == CUser::PROVISION_STATUS_NO)
 							->onClick('removeMedia('.$index.');')
 					])
 				))->addClass(ZBX_STYLE_NOWRAP)

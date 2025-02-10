@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -43,10 +43,55 @@ class CMacroFunctionTest extends TestCase {
 		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionFmttime.json'), true);
 	}
 
+	public function dataProviderRegrepl(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionRegrepl.json'), true);
+	}
+
+	public function dataProviderTr(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionTr.json'), true);
+	}
+
+	public function dataProviderBtoa(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionBtoa.json'), true);
+	}
+
+	public function dataProviderUrlencode(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionUrlencode.json'), true);
+	}
+
+	public function dataProviderHtmlencode(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionHtmlencode.json'), true);
+	}
+
+	public function dataProviderUrldecode(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionUrldecode.json'), true);
+	}
+
+	public function dataProviderHtmldecode(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionHtmldecode.json'), true);
+	}
+
+	public function dataProviderLowercase(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionLowercase.json'), true);
+	}
+
+	public function dataProviderUppercase(): array {
+		return json_decode(file_get_contents(__DIR__.'/CMacroFunctionUppercase.json'), true);
+	}
+
 	/**
 	 * @dataProvider dataProviderRegsub
 	 * @dataProvider dataProviderFmtnum
 	 * @dataProvider dataProviderFmttime
+	 * @dataProvider dataProviderRegrepl
+	 * @dataProvider dataProviderTr
+	 * @dataProvider dataProviderBtoa
+	 * @dataProvider dataProviderUrlencode
+	 * @dataProvider dataProviderHtmlencode
+	 * @dataProvider dataProviderUrldecode
+	 * @dataProvider dataProviderHtmldecode
+	 * @dataProvider dataProviderLowercase
+	 * @dataProvider dataProviderUppercase
 	 */
 	public function testResolveItemDescriptions(string $value, array $macrofunc, string $expected): void {
 		$this->assertSame($expected, CMacroFunction::calcMacrofunc($value, $macrofunc));

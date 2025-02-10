@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -75,7 +75,6 @@ class CMaintenance extends CApiService {
 			'searchWildcardsEnabled'	=> null,
 			// output
 			'output'					=> API_OUTPUT_EXTEND,
-			'selectGroups'				=> null,
 			'selectHostGroups'			=> null,
 			'selectHosts'				=> null,
 			'selectTags'				=> null,
@@ -88,8 +87,6 @@ class CMaintenance extends CApiService {
 			'limit'						=> null
 		];
 		$options = zbx_array_merge($defOptions, $options);
-
-		$this->checkDeprecatedParam($options, 'selectGroups');
 
 		// editable + PERMISSION CHECK
 		if (self::$userData['type'] != USER_TYPE_SUPER_ADMIN && !$options['nopermissions']) {
@@ -128,6 +125,8 @@ class CMaintenance extends CApiService {
 		}
 
 		if ($options['groupids'] !== null) {
+			zbx_value2array($options['groupids']);
+
 			$sqlParts['where'][] = '('.
 				'EXISTS ('.
 					'SELECT NULL'.
@@ -146,6 +145,8 @@ class CMaintenance extends CApiService {
 		}
 
 		if ($options['hostids'] !== null) {
+			zbx_value2array($options['hostids']);
+
 			$sqlParts['where'][] = 'EXISTS ('.
 				'SELECT NULL'.
 				' FROM maintenances_hosts mh'.
@@ -199,11 +200,12 @@ class CMaintenance extends CApiService {
 
 		if ($result) {
 			$result = $this->addRelatedObjects($options, $result);
+
+			if (!$options['preservekeys']) {
+				$result = array_values($result);
+			}
 		}
 
-		if (!$options['preservekeys']) {
-			$result = zbx_cleanHashes($result);
-		}
 		return $result;
 	}
 
@@ -260,8 +262,6 @@ class CMaintenance extends CApiService {
 										]],
 										['else' => true, 'type' => API_UNEXPECTED]
 			]],
-			'groupids' =>			['type' => API_IDS, 'flags' => API_DEPRECATED, 'uniq' => true],
-			'hostids' =>			['type' => API_IDS, 'flags' => API_DEPRECATED, 'uniq' => true],
 			'groups' =>				['type' => API_OBJECTS, 'flags' => API_NORMALIZE, 'uniq' => [['groupid']], 'fields' => [
 				'groupid' =>			['type' => API_ID, 'flags' => API_REQUIRED]
 			]],
@@ -303,27 +303,6 @@ class CMaintenance extends CApiService {
 		if (!CApiInputValidator::validate($api_input_rules, $maintenances, '/', $error)) {
 			self::exception(ZBX_API_ERROR_PARAMETERS, $error);
 		}
-
-		foreach ($maintenances as &$maintenance) {
-			if (array_key_exists('groupids', $maintenance)) {
-				if (array_key_exists('groups', $maintenance)) {
-					self::exception(ZBX_API_ERROR_PARAMETERS, _s('Parameter "%1$s" is deprecated.', 'groupids'));
-				}
-
-				$maintenance['groups'] = zbx_toObject($maintenance['groupids'], 'groupid');
-				unset($maintenance['groupids']);
-			}
-
-			if (array_key_exists('hostids', $maintenance)) {
-				if (array_key_exists('hosts', $maintenance)) {
-					self::exception(ZBX_API_ERROR_PARAMETERS, _s('Parameter "%1$s" is deprecated.', 'hostids'));
-				}
-
-				$maintenance['hosts'] = zbx_toObject($maintenance['hostids'], 'hostid');
-				unset($maintenance['hostids']);
-			}
-		}
-		unset($maintenance);
 
 		foreach ($maintenances as &$maintenance) {
 			$maintenance['active_since'] -= $maintenance['active_since'] % SEC_PER_MIN;
@@ -390,37 +369,14 @@ class CMaintenance extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	protected function validateUpdate(array &$maintenances, array &$db_maintenances = null): void {
+	protected function validateUpdate(array &$maintenances, ?array &$db_maintenances = null): void {
 		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_NOT_EMPTY | API_NORMALIZE | API_ALLOW_UNEXPECTED, 'uniq' => [['maintenanceid']], 'fields' => [
-			'maintenanceid' =>	['type' => API_ID, 'flags' => API_REQUIRED],
-			'groupids' =>		['type' => API_IDS, 'flags' => API_DEPRECATED, 'uniq' => true],
-			'hostids' =>		['type' => API_IDS, 'flags' => API_DEPRECATED, 'uniq' => true]
+			'maintenanceid' =>	['type' => API_ID, 'flags' => API_REQUIRED]
 		]];
 
 		if (!CApiInputValidator::validate($api_input_rules, $maintenances, '/', $error)) {
 			self::exception(ZBX_API_ERROR_PARAMETERS, $error);
 		}
-
-		foreach ($maintenances as &$maintenance) {
-			if (array_key_exists('groupids', $maintenance)) {
-				if (array_key_exists('groups', $maintenance)) {
-					self::exception(ZBX_API_ERROR_PARAMETERS, _s('Parameter "%1$s" is deprecated.', 'groupids'));
-				}
-
-				$maintenance['groups'] = zbx_toObject($maintenance['groupids'], 'groupid');
-				unset($maintenance['groupids']);
-			}
-
-			if (array_key_exists('hostids', $maintenance)) {
-				if (array_key_exists('hosts', $maintenance)) {
-					self::exception(ZBX_API_ERROR_PARAMETERS, _s('Parameter "%1$s" is deprecated.', 'hostids'));
-				}
-
-				$maintenance['hosts'] = zbx_toObject($maintenance['hostids'], 'hostid');
-				unset($maintenance['hostids']);
-			}
-		}
-		unset($maintenance);
 
 		$db_maintenances = $this->get([
 			'output' => ['maintenanceid', 'name', 'maintenance_type', 'description', 'active_since', 'active_till',
@@ -583,7 +539,7 @@ class CMaintenance extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validateDelete(array $maintenanceids, array &$db_maintenances = null): void {
+	private function validateDelete(array $maintenanceids, ?array &$db_maintenances = null): void {
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];
 
 		if (!CApiInputValidator::validate($api_input_rules, $maintenanceids, '/', $error)) {
@@ -658,7 +614,7 @@ class CMaintenance extends CApiService {
 	 *
 	 * @throws APIException if maintenance names are not unique.
 	 */
-	protected static function checkDuplicates(array $maintenances, array $db_maintenances = null): void {
+	protected static function checkDuplicates(array $maintenances, ?array $db_maintenances = null): void {
 		$names = [];
 
 		foreach ($maintenances as $maintenance) {
@@ -695,7 +651,7 @@ class CMaintenance extends CApiService {
 	 *
 	 * @throws APIException if groups are not valid.
 	 */
-	private static function checkGroups(array $maintenances, array $db_maintenances = null): void {
+	private static function checkGroups(array $maintenances, ?array $db_maintenances = null): void {
 		$edit_groupids = [];
 
 		foreach ($maintenances as $maintenance) {
@@ -741,7 +697,7 @@ class CMaintenance extends CApiService {
 	 *
 	 * @throws APIException if hosts are not valid.
 	 */
-	private static function checkHosts(array $maintenances, array $db_maintenances = null): void {
+	private static function checkHosts(array $maintenances, ?array $db_maintenances = null): void {
 		$edit_hostids = [];
 
 		foreach ($maintenances as $maintenance) {
@@ -786,7 +742,7 @@ class CMaintenance extends CApiService {
 	 * @param array      $maintenances
 	 * @param array|null $db_maintenances
 	 */
-	private static function updateTags(array &$maintenances, array $db_maintenances = null): void {
+	private static function updateTags(array &$maintenances, ?array $db_maintenances = null): void {
 		$ins_maintenance_tags = [];
 		$del_maintenancetagids = [];
 
@@ -854,7 +810,7 @@ class CMaintenance extends CApiService {
 	 * @param array      $maintenances
 	 * @param array|null $db_maintenances
 	 */
-	private static function updateGroups(array &$maintenances, array $db_maintenances = null): void {
+	private static function updateGroups(array &$maintenances, ?array $db_maintenances = null): void {
 		$ins_groups = [];
 		$del_groupids = [];
 
@@ -916,7 +872,7 @@ class CMaintenance extends CApiService {
 	 * @param array      $maintenances
 	 * @param array|null $db_maintenances
 	 */
-	private static function updateHosts(array &$maintenances, array $db_maintenances = null): void {
+	private static function updateHosts(array &$maintenances, ?array $db_maintenances = null): void {
 		$ins_maintenances_hosts = [];
 		$del_maintenance_hostids = [];
 
@@ -980,7 +936,7 @@ class CMaintenance extends CApiService {
 	 * @param array      $maintenances
 	 * @param array|null $db_maintenances
 	 */
-	private static function updateTimeperiods(array &$maintenances, array $db_maintenances = null): void {
+	private static function updateTimeperiods(array &$maintenances, ?array $db_maintenances = null): void {
 		$ins_timeperiods = [];
 		$ins_maintenances_windows = [];
 		$del_timeperiodids = [];
@@ -1188,8 +1144,7 @@ class CMaintenance extends CApiService {
 	protected function addRelatedObjects(array $options, array $result): array {
 		$result = parent::addRelatedObjects($options, $result);
 
-		$this->addRelatedGroups($options, $result, 'selectGroups');
-		$this->addRelatedGroups($options, $result, 'selectHostGroups');
+		$this->addRelatedHostGroups($options, $result);
 
 		// selectHosts
 		if ($options['selectHosts'] !== null && $options['selectHosts'] != API_OUTPUT_COUNT) {
@@ -1235,33 +1190,21 @@ class CMaintenance extends CApiService {
 		return $result;
 	}
 
-	/**
-	 * Adds related host groups requested by "select*" options to the resulting object set.
-	 *
-	 * @param array  $options [IN] Original input options.
-	 * @param array  $result  [IN/OUT] Result output.
-	 * @param string $option  [IN] Possible values:
-	 *                               - "selectGroups" (deprecated);
-	 *                               - "selectHostGroups" (or any other value).
-	 */
-	private function addRelatedGroups(array $options, array &$result, string $option): void {
-		if ($options[$option] === null || $options[$option] === API_OUTPUT_COUNT) {
+	private function addRelatedHostGroups(array $options, array &$result): void {
+		if ($options['selectHostGroups'] === null || $options['selectHostGroups'] === API_OUTPUT_COUNT) {
 			return;
 		}
 
-		$groups = [];
-		$relationMap = $this->createRelationMap($result, 'maintenanceid', 'groupid', 'maintenances_groups');
-		$related_ids = $relationMap->getRelatedIds();
-
-		if ($related_ids) {
-			$groups = API::HostGroup()->get([
-				'output' => $options[$option],
+		$relation_map = $this->createRelationMap($result, 'maintenanceid', 'groupid', 'maintenances_groups');
+		$related_ids = $relation_map->getRelatedIds();
+		$groups = $related_ids
+			? API::HostGroup()->get([
+				'output' => $options['selectHostGroups'],
 				'groupids' => $related_ids,
 				'preservekeys' => true
-			]);
-		}
+			])
+			: [];
 
-		$output_tag = $option === 'selectGroups' ? 'groups' : 'hostgroups';
-		$result = $relationMap->mapMany($result, $groups, $output_tag);
+		$result = $relation_map->mapMany($result, $groups, 'hostgroups');
 	}
 }

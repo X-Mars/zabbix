@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -647,6 +647,9 @@ class testAlarmNotification extends CWebTest {
 			// Check close button.
 			$alarm_dialog->query('xpath:.//button[@title="Close"]')->one()->click()->waitUntilNotVisible();
 		}
+
+		// Delete the events so they don't appear in the next test case.
+		DB::delete('events', ['eventid' => self::$eventids]);
 	}
 
 	/**

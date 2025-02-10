@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -34,7 +34,9 @@ class testDiscoveryRules extends CIntegrationTest {
 	/* For tests with real SNMP agent */
 	const SNMPAGENT_VALID_OID = 'iso.3.6.1.2.1.1.1.0';
 	const SNMPAGENT_INVALID_OID = 'invalid.OID';
-	const SNMPAGENT_EXPECTED_INVALID_OID_ERR_MSG = "'SNMPv2c agent' checks failed: " . '"snmp_parse_oid(): cannot parse OID "' . self::SNMPAGENT_INVALID_OID . '"."';
+	const SNMPAGENT_EXPECTED_INVALID_OID_ERR_MSG = "'SNMPv2c agent' checks failed: " .
+		'"snmp_parse_oid(): cannot parse OID "' .
+		self::SNMPAGENT_INVALID_OID . '": Generic error (Sub-id not found: (top) -> invalid)"';
 
 	/* For tests with simulated SNMP agent */
 	const SNMPSIM_HOST_IP = '127.0.10.3';

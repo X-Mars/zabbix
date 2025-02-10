@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -54,7 +54,7 @@ static int	config_forks[ZBX_PROCESS_TYPE_COUNT] = {
 	0, /* ZBX_PROCESS_TYPE_IPMIMANAGER */
 	1, /* ZBX_PROCESS_TYPE_ALERTMANAGER */
 	1, /* ZBX_PROCESS_TYPE_PREPROCMAN */
-	3, /* ZBX_PROCESS_TYPE_PREPROCESSOR */
+	16, /* ZBX_PROCESS_TYPE_PREPROCESSOR */
 	1, /* ZBX_PROCESS_TYPE_LLDMANAGER */
 	2, /* ZBX_PROCESS_TYPE_LLDWORKER */
 	1, /* ZBX_PROCESS_TYPE_ALERTSYNCER */
@@ -71,8 +71,11 @@ static int	config_forks[ZBX_PROCESS_TYPE_COUNT] = {
 	1, /* ZBX_PROCESS_TYPE_HTTPAGENT_POLLER */
 	1, /* ZBX_PROCESS_TYPE_AGENT_POLLER */
 	1, /* ZBX_PROCESS_TYPE_SNMP_POLLER */
+	0, /* ZBX_PROCESS_TYPE_INTERNAL_POLLER */
 	0, /* ZBX_PROCESS_TYPE_DBCONFIGWORKER */
-	0 /* ZBX_PROCESS_TYPE_BROWSERPOLLER */
+	0, /* ZBX_PROCESS_TYPE_PG_MANAGER */
+	0, /* ZBX_PROCESS_TYPE_BROWSERPOLLER */
+	0 /* ZBX_PROCESS_TYPE_HA_MANAGER */
 };
 
 int	get_config_forks(unsigned char process_type)

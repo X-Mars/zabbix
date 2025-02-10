@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,7 +21,7 @@ window.condition_popup = new class {
 		if (overlays_stack.stack.includes('operation-condition')) {
 			this.overlay = overlays_stack.getById('operation-condition');
 		}
-		else if (overlays_stack.stack[0] === 'action-edit') {
+		else if (overlays_stack.stack[0] === 'action.edit') {
 			this.overlay = overlays_stack.getById('action-condition');
 		}
 
@@ -138,7 +138,7 @@ window.condition_popup = new class {
 
 	selectServices() {
 		const overlay = PopUp('popup.services', {title: <?= json_encode(_('Services')) ?>},
-			{dialogueid: 'services', dialogue_class: 'modal-popup-generic'}
+			{dialogueid: 'services'}
 		);
 		overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => {
 			const data = [];

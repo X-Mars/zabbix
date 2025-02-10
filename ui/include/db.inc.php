@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -204,7 +204,7 @@ function DBselect(string $query, ?int $limit = null, int $offset = 0) {
 
 		case ZBX_DB_POSTGRESQL:
 			if (!$result = pg_query($DB['DB'], $query)) {
-				error('Error in query ['.$query.'] ['.pg_last_error($DB['DB']).']', true);
+				trigger_error('Error in query ['.$query.'] ['.pg_last_error($DB['DB']).']', E_USER_WARNING);
 			}
 
 			break;
@@ -332,7 +332,7 @@ function DBfetch($cursor, $convertNulls = true) {
 }
 
 function zbx_sql_mod($x, $y) {
-	return ' MOD('.$x.','.$y.')';
+	return 'MOD('.$x.','.$y.')';
 }
 
 function get_dbid($table, $field) {
@@ -407,7 +407,8 @@ function zbx_db_search($table, $options, &$sql_parts) {
 
 	$search = [];
 	foreach ($options['search'] as $field => $patterns) {
-		if (!isset($tableSchema['fields'][$field]) || $patterns === null) {
+		if ($patterns === null || !array_key_exists($field, $tableSchema['fields'])
+				|| ($tableSchema['fields'][$field]['type'] & DB::SUPPORTED_SEARCH_TYPES) == 0) {
 			continue;
 		}
 
@@ -416,12 +417,6 @@ function zbx_db_search($table, $options, &$sql_parts) {
 		});
 
 		if (!$patterns) {
-			continue;
-		}
-
-		if ($tableSchema['fields'][$field]['type'] !== DB::FIELD_TYPE_CHAR
-				&& $tableSchema['fields'][$field]['type'] !== DB::FIELD_TYPE_TEXT
-				&& $tableSchema['fields'][$field]['type'] !== DB::FIELD_TYPE_CUID) {
 			continue;
 		}
 

@@ -10,7 +10,7 @@ Template `Kubernetes Controller manager by HTTP` - collects metrics by HTTP agen
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -19,7 +19,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -66,7 +66,7 @@ For example, for clusters created with `kubeadm` it can be set in the following 
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Too many HTTP client errors|<p>"Kubernetes Controller manager is experiencing high error rate (with 5xx HTTP code).</p>|`min(/Kubernetes Controller manager by HTTP/kubernetes.controller.client_http_requests_500.rate,5m)>{$KUBE.CONTROLLER.HTTP.CLIENT.ERROR}`|Warning||
+|Kubernetes Controller manager: Too many HTTP client errors|<p>"Kubernetes Controller manager is experiencing high error rate (with 5xx HTTP code).</p>|`min(/Kubernetes Controller manager by HTTP/kubernetes.controller.client_http_requests_500.rate,5m)>{$KUBE.CONTROLLER.HTTP.CLIENT.ERROR}`|Warning||
 
 ### LLD rule Workqueue metrics discovery
 

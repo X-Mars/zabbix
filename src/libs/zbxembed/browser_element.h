@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -33,6 +33,7 @@ zbx_wd_element_t;
 void	wd_element_free(zbx_wd_element_t *el);
 void	wd_element_create(duk_context *ctx, zbx_webdriver_t *wd, const char *elementid);
 void	wd_element_create_array(duk_context *ctx, zbx_webdriver_t *wd, const zbx_vector_str_t *elements);
+const char	*wd_element_get_id(void *el);
 
 #endif
 

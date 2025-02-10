@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -97,7 +97,7 @@ class CControllerDashboardWidgetView extends CController {
 
 	protected function doAction(): void {
 		$this->setResponse(new CControllerResponseData([
-			'name' => $this->getInput('name', $this->widget->getName()),
+			'name' => $this->getInput('name', $this->widget->getDefaultName()),
 			'user' => [
 				'debug_mode' => $this->getDebugMode()
 			]

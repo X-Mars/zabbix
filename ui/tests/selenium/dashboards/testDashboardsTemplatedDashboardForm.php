@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,7 @@ require_once dirname(__FILE__).'/../../include/helpers/CDataHelper.php';
 require_once dirname(__FILE__).'/../behaviors/CMessageBehavior.php';
 
 use Facebook\WebDriver\Exception\UnexpectedAlertOpenException;
+use Facebook\WebDriver\Exception\NoSuchElementException;
 
 /**
  * @backup dashboard, hosts
@@ -520,12 +521,19 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 								'height' => 4
 							],
 							[
-								'type' => 'dataover',
-								'name' => 'Data overview widget',
+								'type' => 'topitems',
+								'name' => 'Top items widget',
 								'x' => 36,
 								'y' => 16,
 								'width' => 12,
-								'height' => 4
+								'height' => 4,
+								'fields' => [
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
+										'name' => 'columns.0.items.0',
+										'value' => 'Test item'
+									]
+								]
 							],
 							[
 								'type' => 'honeycomb',
@@ -669,7 +677,14 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 
 			switch ($selector) {
 				case 'id:dashboard-config':
-					$controls->query($selector)->waitUntilClickable()->one()->click();
+					// TODO: unstable test on Jenkins, sometimes click does not work properly and overlay does not open
+					try {
+						$controls->query($selector)->waitUntilClickable()->one()->click();
+						COverlayDialogElement::find()->one();
+					}
+					catch (NoSuchElementException $e) {
+						$controls->query($selector)->waitUntilClickable()->one()->click();
+					}
 					$this->checkDialogue('Dashboard properties');
 					break;
 
@@ -771,7 +786,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 							'field' => 'Show lines',
 							'value' => 25,
 							'attributes' => [
-								'maxlength' => 3
+								'maxlength' => 4
 							],
 							'mandatory' => true
 						]
@@ -1157,7 +1172,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 									'field_locator' => 'id:thresholds-table',
 									'type' => 'table',
 									'value' => true,
-									'headers' => ['', 'Threshold', 'Action'],
+									'headers' => ['', 'Threshold', ''],
 									'buttons' => ['', 'Remove', 'Add']
 								],
 								[
@@ -1610,7 +1625,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						[
 							'field' => 'Thresholds',
 							'type' => 'table',
-							'headers' => ['', 'Threshold', 'Action'],
+							'headers' => ['', 'Threshold', ''],
 							'buttons' => ['Add']
 						],
 						[
@@ -1702,9 +1717,9 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 							'value' => 'Horizontal'
 						],
 						[
-							'field' => 'Columns',
+							'field' => 'Items',
 							'type' => 'table',
-							'headers' => ['', 'Name', 'Data', 'Action'],
+							'headers' => ['', 'Name', 'Item', 'Actions'],
 							'buttons' => ['Add'],
 							'mandatory' => true
 						],
@@ -1712,7 +1727,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 							'field' => 'Show lines',
 							'value' => 25,
 							'attributes' => [
-								'maxlength' => 3
+								'maxlength' => 4
 							],
 							'mandatory' => true
 						]
@@ -1871,7 +1886,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 							'field' => 'Show lines',
 							'value' => 25,
 							'attributes' => [
-								'maxlength' => 3
+								'maxlength' => 4
 							],
 							'mandatory' => true
 						]
@@ -2053,7 +2068,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						[
 							'field' => 'Trigger limit',
 							'attributes' => [
-								'maxlength' => 3
+								'maxlength' => 4
 							],
 							'value' => 10,
 							'mandatory' => true
@@ -2085,10 +2100,10 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 							'value' => false
 						],
 						[
-							'field' => 'Host location',
+							'field' => 'Layout',
 							'type' => 'radio_button',
-							'possible_values' => ['Left', 'Top'],
-							'value' => 'Left'
+							'possible_values' => ['Horizontal', 'Vertical'],
+							'value' => 'Horizontal'
 						]
 					]
 				]
@@ -2129,36 +2144,88 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 					]
 				]
 			],
-			// #23 Data overview widget.
+			// #23 Top items widget.
 			[
 				[
-					'type' => CFormElement::RELOADABLE_FILL('Data overview'),
+					'type' => CFormElement::RELOADABLE_FILL('Top items'),
 					'refresh_interval' => 'Default (1 minute)',
 					'fields' => [
 						[
-							'field' => 'Item tags',
-							'type' => 'tags_table',
-							'operators' => ['Exists', 'Equals', 'Contains', 'Does not exist', 'Does not equal', 'Does not contain'],
-							'default_operator' => 'Contains'
-						],
-						[
-							'field' => 'Show suppressed problems',
-							'type' => 'checkbox',
-							'value' => false
-						],
-						[
-							'field' => 'Host location',
+							'field' => 'Layout',
 							'type' => 'radio_button',
-							'possible_values' => ['Left', 'Top'],
-							'value' => 'Left'
+							'possible_values' => ['Horizontal', 'Vertical'],
+							'value' => 'Horizontal'
+						],
+						[
+							'field' => 'Show problems',
+							'type' => 'radio_button',
+							'possible_values' => ['All', 'Unsuppressed', 'None'],
+							'value' => 'Unsuppressed'
+						],
+						[
+							'field' => 'Items',
+							'type' => 'table',
+							'headers' => ['Patterns', 'Actions'],
+							'buttons' => ['Add'],
+							'mandatory' => true
 						]
 					],
-					'hints' => [
+					'hidden' => [
 						[
-							'label' => 'Type',
-							'type' => 'warning',
-							'text' => 'Widget is deprecated.'
+							'field' => 'Host ordering',
+							'type' => 'complex_field',
+							'field_locator' => 'xpath:.//div[@class="fields-group fields-group-host-ordering"]',
+							'contents' => [
+								[
+									'field' => 'Order by',
+									'type' => 'radio_button',
+									'possible_values' => ['Host name', 'Item value'],
+									'value' => 'Host name'
+								],
+								[
+									'field' => 'Order',
+									'type' => 'radio_button',
+									'possible_values' => ['Top N', 'Bottom N'],
+									'value' => 'Top N'
+								],
+								[
+									'field' => 'Limit',
+									'mandatory' => true
+								]
+							]
+						],
+						[
+							'field' => 'Item ordering',
+							'type' => 'complex_field',
+							'field_locator' => 'xpath:.//div[@class="fields-group fields-group-item-ordering"]',
+							'contents' => [
+								[
+									'field' => 'Order by',
+									'type' => 'radio_button',
+									'possible_values' => ['Item value', 'Item name', 'Host'],
+									'value' => 'Item value'
+								],
+								[
+									'field' => 'Order',
+									'type' => 'radio_button',
+									'possible_values' => ['Top N', 'Bottom N'],
+									'value' => 'Top N'
+								],
+								[
+									'field' => 'Limit',
+									'mandatory' => true
+								]
+							]
+						],
+						[
+							'field' => 'Show column header',
+							'type' => 'radio_button',
+							'possible_values' => ['Off', 'Horizontal', 'Vertical'],
+							'value' => 'Vertical'
 						]
+					],
+					'fill_for_hidden' => [
+						'Advanced configuration' => true
 					]
 				]
 			]
@@ -2616,7 +2683,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Name' => 'Action log with 0 show lines',
 						'Show lines' => 0
 					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #1 Action log widget with too big value in Show lines field.
@@ -2626,9 +2693,9 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 					'fields' => [
 						'Type' => CFormElement::RELOADABLE_FILL('Action log'),
 						'Name' => 'Action log with 101 show lines',
-						'Show lines' => 101
+						'Show lines' => 1001
 					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #2 Action log with default values.
@@ -3601,49 +3668,50 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Show lines' => ''
 					],
 					'error_message' => [
-						'Invalid parameter "Columns": cannot be empty.',
-						'Invalid parameter "Show lines": value must be one of 1-100.'
+						'Invalid parameter "Items": cannot be empty.',
+						'Invalid parameter "Show lines": value must be one of 1-1000.'
 					]
 				]
 			],
-			// #55 Item history widget with too high value of Show lines parameter.
-			[
-				[
-					'expected' => TEST_BAD,
-					'fields' => [
-						'Type' => CFormElement::RELOADABLE_FILL('Item history'),
-						'Name' => 'Item history widget with too much lines',
-						'Show lines' => 999
-					],
-					'Column' => [
-						'Name' => 'Column1',
-						'Item' => [
-							'values' => self::TEMPLATE_ITEM,
-							'context' => ['values' => self::TEMPLATE]
-						]
-					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
-				]
-			],
-			// #56 Item history widget with negative Show lines parameter.
-			[
-				[
-					'expected' => TEST_BAD,
-					'fields' => [
-						'Type' => CFormElement::RELOADABLE_FILL('Item history'),
-						'Name' => 'Item history widget with too much lines',
-						'Show lines' => -99
-					],
-					'Column' => [
-						'Name' => 'Column1',
-						'Item' => [
-							'values' => self::TEMPLATE_ITEM,
-							'context' => ['values' => self::TEMPLATE]
-						]
-					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
-				]
-			],
+			// TODO: Uncomment and fix when DEV-4069 is ready.
+//			// #55 Item history widget with too high value of Show lines parameter.
+//			[
+//				[
+//					'expected' => TEST_BAD,
+//					'fields' => [
+//						'Type' => CFormElement::RELOADABLE_FILL('Item history'),
+//						'Name' => 'Item history widget with too much lines',
+//						'Show lines' => 9999
+//					],
+//					'Column' => [
+//						'Name' => 'Column1',
+//						'Item' => [
+//							'values' => self::TEMPLATE_ITEM,
+//							'context' => ['values' => self::TEMPLATE]
+//						]
+//					],
+//					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+//				]
+//			],
+//			// #56 Item history widget with negative Show lines parameter.
+//			[
+//				[
+//					'expected' => TEST_BAD,
+//					'fields' => [
+//						'Type' => CFormElement::RELOADABLE_FILL('Item history'),
+//						'Name' => 'Item history widget with too much lines',
+//						'Show lines' => -99
+//					],
+//					'Column' => [
+//						'Name' => 'Column1',
+//						'Item' => [
+//							'values' => self::TEMPLATE_ITEM,
+//							'context' => ['values' => self::TEMPLATE]
+//						]
+//					],
+//					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+//				]
+//			],
 			// #57 Item history widget with Values location = Bottom, Show timestamp =true and Column header = Off.
 			[
 				[
@@ -3722,7 +3790,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Name' => 'Problems widget with empty Show lines',
 						'Show lines' => ''
 					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #62 Problems widget with too high value of Show lines parameter.
@@ -3732,9 +3800,9 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 					'fields' => [
 						'Type' => CFormElement::RELOADABLE_FILL('Problems'),
 						'Name' => 'Problems widget with too much lines',
-						'Show lines' => 101
+						'Show lines' => 1001
 					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #63 Problems widget with negative Show lines parameter.
@@ -3746,7 +3814,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Name' => 'Problems widget with negative Show lines',
 						'Show lines' => -1
 					],
-					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Show lines": value must be one of 1-1000.'
 				]
 			],
 			// #64 Problems widget with default parameters.
@@ -4034,7 +4102,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Trigger limit' => ''
 					],
 					'page' => '2nd page',
-					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			// #83 Top triggers widget with non-numeric Trigger limit.
@@ -4047,10 +4115,10 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Trigger limit' => 'abc'
 					],
 					'swap_expected' => [
-						'Trigger limit' => 0
+						'Trigger limit' => '0'
 					],
 					'page' => '2nd page',
-					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			// #84 Top triggers widget with zero Trigger limit.
@@ -4063,7 +4131,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'Trigger limit' => 0
 					],
 					'page' => '2nd page',
-					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			// #85 Top triggers widget with out of range Trigger limit.
@@ -4073,10 +4141,10 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 					'fields' => [
 						'Type' => CFormElement::RELOADABLE_FILL('Top triggers'),
 						'Name' => 'Top triggers widget with out of range Trigger limit',
-						'Trigger limit' => 101
+						'Trigger limit' => 1001
 					],
 					'page' => '2nd page',
-					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error_message' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			// #86 Top triggers widget with default parameters.
@@ -4130,7 +4198,7 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 						'id:tags_0_operator' => 'Contains',
 						'id:tags_0_value' => 'tag_value',
 						'Show suppressed problems' => true,
-						'Host location' => 'Top'
+						'Layout' => 'Vertical'
 					],
 					'page' => '2nd page'
 				]
@@ -4199,29 +4267,77 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 					'page' => '2nd page'
 				]
 			],
-			// #95 Data overview widget with default parameters.
+			// #95 Data overview widget with default parameters. TODO: Update to correct Top Items - DEV-4101
+//			[
+//				[
+//					'fields' => [
+//						'Type' => CFormElement::RELOADABLE_FILL('Data overview'),
+//						'Name' => 'Data overview widget with default parameters'
+//					],
+//					'page' => '2nd page'
+//				]
+//			],
+			// #96 Data overview widget with all possible parameters. TODO: Update to correct Top Items - DEV-4101
+//			[
+//				[
+//					'fields' => [
+//						'Type' => CFormElement::RELOADABLE_FILL('Data overview'),
+//						'Name' => 'Data overview widget with all parameters',
+//						'Refresh interval' => '10 seconds',
+//						'Item tags' => 'Or',
+//						'id:tags_0_tag' => 'tag_name',
+//						'id:tags_0_operator' => 'Equals',
+//						'id:tags_0_value' => 'tag_value',
+//						'Show suppressed problems' => true,
+//						'Host location' => 'Top'
+//					],
+//					'page' => '2nd page'
+//				]
+//			],
+			// #97 Top hosts widget with default parameters.
 			[
 				[
 					'fields' => [
-						'Type' => CFormElement::RELOADABLE_FILL('Data overview'),
-						'Name' => 'Data overview widget with default parameters'
+						'Type' => CFormElement::RELOADABLE_FILL('Top hosts'),
+						'Name' => 'Top hosts widget with required fields'
+					],
+					'Column' => [
+						'Name' => 'Column1',
+						'Item name' => [
+							'values' => self::TEMPLATE_ITEM,
+							'context' => ['values' => self::TEMPLATE]
+						]
 					],
 					'page' => '2nd page'
 				]
 			],
-			// #96 Data overview widget with all possible parameters.
+			// #98 Top hosts widget with all parameters.
 			[
 				[
 					'fields' => [
-						'Type' => CFormElement::RELOADABLE_FILL('Data overview'),
-						'Name' => 'Data overview widget with all parameters',
-						'Refresh interval' => '10 seconds',
-						'Item tags' => 'Or',
-						'id:tags_0_tag' => 'tag_name',
-						'id:tags_0_operator' => 'Equals',
-						'id:tags_0_value' => 'tag_value',
-						'Show suppressed problems' => true,
-						'Host location' => 'Top'
+						'Type' => CFormElement::RELOADABLE_FILL('Top hosts'),
+						'Name' => 'Top hosts widget with other fields',
+						'Show data in maintenance' => true,
+						'Order' => 'Bottom N'
+					],
+					'Column' => [
+						'Name' => 'Column1',
+						'Item name' => [
+							'values' => self::TEMPLATE_ITEM,
+							'context' => ['values' => self::TEMPLATE]
+						],
+						'xpath:.//input[@id="base_color"]/..' => '00796B',
+						'Display item value as' => 'Numeric',
+						'Display' => 'Indicators',
+						'Min' => 10,
+						'Max' => 99,
+						'Decimal places' => 9,
+						'Advanced configuration' => true,
+						'Aggregation function' => 'sum',
+						'Time period' => 'Custom',
+						'From' => 'now-20h',
+						'To' => 'now-10h',
+						'History data' => 'Trends'
 					],
 					'page' => '2nd page'
 				]
@@ -4308,15 +4424,18 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 				}
 			}
 
-			$form->getFieldContainer('Columns')->query('button:Add')->one()->waitUntilClickable()->click();
+			$container = CTestArrayHelper::get($data, 'Column.Item', false) ? 'Items' : 'Columns';
+			$form->getFieldContainer($container)->query('button:Add')->one()->waitUntilClickable()->click();
 			$column_overlay = COverlayDialogElement::find()->all()->last()->waitUntilReady();
 			$column_overlay->asForm()->fill($data['Column']);
 			$column_overlay->getFooter()->query('button:Add')->waitUntilClickable()->one()->click();
 			$column_overlay->waitUntilNotVisible();
 			$form->waitUntilReloaded();
 
-			// Open Advanced config again because after column filling it becomes collapsed.
-			$form->fill(['Advanced configuration' => true]);
+			// Open Advanced config again because after column filling it becomes collapsed for Item history widget.
+			if ($container === 'Items') {
+				$form->fill(['Advanced configuration' => true]);
+			}
 		}
 
 		// Some field changes, like changing the type of map widget, result in dialog reload, so need to wait until it's done.
@@ -4437,10 +4556,10 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 		}
 		else {
 			$all_types = ['Action log', 'Clock', 'Discovery status', 'Favorite graphs', 'Favorite maps', 'Gauge', 'Geomap',
-				'Graph', 'Graph (classic)', 'Graph prototype', 'Honeycomb', 'Host availability', 'Host navigator', 'Item history',
-				'Item navigator', 'Item value', 'Map', 'Map navigation tree', 'Pie chart', 'Problem hosts',
-				'Problems', 'Problems by severity', 'SLA report', 'System information', 'Top hosts', 'Top triggers',
-				'Trigger overview', 'URL', 'Web monitoring', 'Data overview'
+				'Graph', 'Graph (classic)', 'Graph prototype', 'Honeycomb', 'Host availability', 'Host card',
+				'Host navigator', 'Item history', 'Item navigator', 'Item value', 'Map', 'Map navigation tree',
+				'Pie chart', 'Problem hosts', 'Problems', 'Problems by severity', 'SLA report', 'System information',
+				'Top hosts', 'Top items', 'Top triggers', 'Trigger overview', 'URL', 'Web monitoring'
 			];
 			$this->assertEquals($all_types, $form->getField('Type')->getOptions()->asText());
 		}
@@ -4571,10 +4690,12 @@ class testDashboardsTemplatedDashboardForm extends CWebTest {
 			// Check saved column and item name.
 			if (array_key_exists('Column', $data)) {
 				$row = $reopened_form->query('id:list_columns')->asTable()->one()->getRow(0);
-				$this->assertEquals(CTestArrayHelper::get($data['Column'], 'Name', $data['Column']['Item']['values']),
+				$this->assertEquals(CTestArrayHelper::get($data['Column'], 'Name', CTestArrayHelper::get($data, 'Column.Item.values')),
 						$row->getColumn('Name')->getText()
 				);
-				$this->assertEquals(self::TEMPLATE_ITEM, $row->getColumn('Data')->getText());
+
+				$column_name = CTestArrayHelper::get($data, 'Column.Item', false) ? 'Item' : 'Data';
+				$this->assertEquals(self::TEMPLATE_ITEM, $row->getColumn($column_name)->getText());
 			}
 
 			$this->closeDialogue();

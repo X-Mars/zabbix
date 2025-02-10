@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -123,7 +123,7 @@ if (count($data['tags']) > 0) {
 					->addClass(ZBX_STYLE_SUBFILTER)
 					->addClass(ZBX_STYLE_SUBFILTER_ENABLED);
 
-				$selected_tags[$tag_name][] = $element['name'];
+				$selected_tags[urlencode($tag_name)][] = $element['name'];
 			}
 			else {
 				if ($element['count'] == 0) {

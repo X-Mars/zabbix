@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -32,7 +32,7 @@ $form_grid = new CFormGrid();
 $new_tag_filter_table = (new CTable())
 	->setId('new-tag-filter-table')
 	->setAttribute('style', 'min-width: '.ZBX_TEXTAREA_FILTER_STANDARD_WIDTH.'px;')
-	->setHeader([_('Tag'), _('Value'), _('Action')])
+	->setHeader([_('Tag'), _('Value'), ''])
 	->addRow((new CRow())->addClass('js-tag-filter-row-placeholder'))
 	->addItem(
 		(new CTag('tfoot', true))

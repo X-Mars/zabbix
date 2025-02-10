@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -179,6 +179,15 @@ class CWidget extends CModule {
 
 	public function getOut(): array {
 		return $this->manifest['widget']['out'];
+	}
+
+	/**
+	 * Get initial configuration for new widget editor. This will override form defaults for specified fields.
+	 *
+	 * @return array
+	 */
+	public function getInitialFieldsValues(): array {
+		return [];
 	}
 
 	public function getDefaultRefreshRate(): int {

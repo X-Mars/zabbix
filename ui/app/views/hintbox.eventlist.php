@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -171,13 +171,16 @@ if (array_key_exists('problems', $data)) {
 			];
 		}
 
+		$problem_update_url = (new CUrl('zabbix.php'))
+			->setArgument('action', 'popup')
+			->setArgument('popup', 'acknowledge.edit')
+			->setArgument('eventids[]', $problem['eventid'])
+			->getUrl();
+
 		// Create acknowledge link.
 		$problem_update_link = ($data['allowed_add_comments'] || $data['allowed_change_severity']
 				|| $data['allowed_acknowledge'] || $can_be_closed || $data['allowed_suppress'])
-			? (new CLink(_('Update')))
-				->addClass(ZBX_STYLE_LINK_ALT)
-				->setAttribute('data-eventid', $problem['eventid'])
-				->onClick('acknowledgePopUp({eventids: [this.dataset.eventid]}, this);')
+			? (new CLink(_('Update'), $problem_update_url))->addClass(ZBX_STYLE_LINK_ALT)
 			: new CSpan(_('Update'));
 
 		$table->addRow(array_merge($row, [

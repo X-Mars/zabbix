@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,7 +25,6 @@ class CControllerTriggerPrototypeEdit extends CController {
 
 	protected function init(): void {
 		$this->disableCsrfValidation();
-		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
 	}
 
 	protected function checkInput(): bool {
@@ -46,7 +45,7 @@ class CControllerTriggerPrototypeEdit extends CController {
 			'manual_close' =>			'db triggers.manual_close|in '.implode(',',[ZBX_TRIGGER_MANUAL_CLOSE_NOT_ALLOWED, ZBX_TRIGGER_MANUAL_CLOSE_ALLOWED]),
 			'opdata' =>					'db triggers.opdata',
 			'priority' =>				'db triggers.priority|in 0,1,2,3,4,5',
-			'recovery_expression' =>	'db triggers.recovery_expression',
+			'recovery_expression' =>	'string',
 			'recovery_mode' =>			'db triggers.recovery_mode|in '.implode(',', [ZBX_RECOVERY_MODE_EXPRESSION, ZBX_RECOVERY_MODE_RECOVERY_EXPRESSION, ZBX_RECOVERY_MODE_NONE]),
 			'status' =>					'db triggers.status|in '.implode(',', [TRIGGER_STATUS_ENABLED, TRIGGER_STATUS_DISABLED]),
 			'tags' =>					'array',

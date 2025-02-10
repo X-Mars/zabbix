@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -424,7 +424,7 @@ class CConfiguration extends CApiService {
 
 		$unlink_templates_data = [];
 
-		if ($params['rules']['templateLinkage']['deleteMissing']) {
+		if (array_key_exists('templates', $import) && $params['rules']['templateLinkage']['deleteMissing']) {
 			$import_tmp_parent_tmp_names = [];
 
 			foreach ($import['templates'] as $template) {

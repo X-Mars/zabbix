@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,15 +24,14 @@ import (
 
 // Options is a plugin configuration
 type Options struct {
-	plugin.SystemOptions `conf:"optional"`
-	Endpoint             string `conf:"default=unix:///var/run/docker.sock"`
-	Timeout              int    `conf:"optional,range=1:30"`
+	Endpoint string `conf:"default=unix:///var/run/docker.sock"`
+	Timeout  int    `conf:"optional,range=1:30"`
 }
 
 // Configure implements the Configurator interface.
 // Initializes configuration structures.
 func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
-	if err := conf.Unmarshal(options, &p.options); err != nil {
+	if err := conf.UnmarshalStrict(options, &p.options); err != nil {
 		p.Errf("cannot unmarshal configuration options: %s", err)
 	}
 
@@ -49,7 +48,7 @@ func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
 func (p *Plugin) Validate(options interface{}) error {
 	var opts Options
 
-	err := conf.Unmarshal(options, &opts)
+	err := conf.UnmarshalStrict(options, &opts)
 	if err != nil {
 		return err
 	}

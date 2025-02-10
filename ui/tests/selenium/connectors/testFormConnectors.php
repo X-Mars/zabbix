@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -83,6 +83,7 @@ class testFormConnectors extends CWebTest {
 				'Character' => true,
 				'Log' => true,
 				'Text' => true,
+				'Binary' => false,
 				'HTTP authentication' => 'None',
 				'Max records per message' => 'Unlimited',
 				'Concurrent sessions' => '1',
@@ -377,7 +378,8 @@ class testFormConnectors extends CWebTest {
 						'Numeric (float)' => false,
 						'Character' => false,
 						'Log' => false,
-						'Text' => false
+						'Text' => false,
+						'Binary' => false
 					],
 					'error' => [
 						'Field "item_value_types" is mandatory.'
@@ -813,7 +815,8 @@ class testFormConnectors extends CWebTest {
 						'Numeric (float)' => false,
 						'Character' => false,
 						'Log' => true,
-						'Text' => false
+						'Text' => false,
+						'Binary' => false
 					]
 				]
 			],
@@ -827,7 +830,8 @@ class testFormConnectors extends CWebTest {
 						'Numeric (float)' => false,
 						'Character' => false,
 						'Log' => true,
-						'Text' => false
+						'Text' => false,
+						'Binary' => false
 					]
 				]
 			],
@@ -841,7 +845,8 @@ class testFormConnectors extends CWebTest {
 						'Numeric (float)' => true,
 						'Character' => true,
 						'Log' => true,
-						'Text' => true
+						'Text' => true,
+						'Binary' => true
 					]
 				]
 			],
@@ -1127,7 +1132,9 @@ class testFormConnectors extends CWebTest {
 
 		// Add a prefix to the name of the Connector in case of update scenario to avoid duplicate names.
 		if ($update && $data['expected'] === TEST_GOOD) {
-			$data['fields']['Name'] = 'Update: '.$data['fields']['Name'];
+			$data['fields']['Name'] = CTestArrayHelper::get($data, 'trim', false)
+				? '    Update: '.$data['fields']['Name']
+				: 'Update: '.$data['fields']['Name'];
 		}
 
 		if (array_key_exists('tags', $data)) {
@@ -1154,12 +1161,17 @@ class testFormConnectors extends CWebTest {
 
 			$this->assertEquals(1, CDBHelper::getCount('SELECT NULL FROM connector WHERE name='.zbx_dbstr($data['fields']['Name'])));
 
+			// Trim spaces in the middle of a name after DB check; spaces in links are trimmed.
+			$name = CTestArrayHelper::get($data, 'trim', false)
+				? preg_replace('/\s+/', ' ', $data['fields']['Name'])
+				: $data['fields']['Name'];
+
 			if ($update) {
 				$this->assertEquals(0, CDBHelper::getCount('SELECT NULL FROM connector WHERE name='.zbx_dbstr(self::$update_connector)));
-				self::$update_connector = $data['fields']['Name'];
+				self::$update_connector = $name;
 			}
 
-			$this->query('link', $data['fields']['Name'])->waitUntilClickable()->one()->click();
+			$this->query('link', $name)->waitUntilClickable()->one()->click();
 			$form->invalidate();
 
 			// Open "Advanced configuration" block if it was filled with data.

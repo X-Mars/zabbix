@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -47,7 +47,7 @@ func (p *Plugin) Export(key string, rawParams []string, ctx plugin.ContextProvid
 		return nil, err
 	}
 
-	uri, err := uri.NewWithCreds(params["URI"], "zabbix", params["Password"], uriDefaults)
+	redisURI, err := uri.NewWithCreds(params["URI"], params["User"], params["Password"], uriDefaults)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (p *Plugin) Export(key string, rawParams []string, ctx plugin.ContextProvid
 		return nil, zbxerr.ErrorUnsupportedMetric
 	}
 
-	conn, err := p.connMgr.GetConnection(*uri)
+	conn, err := p.connMgr.GetConnection(*redisURI)
 	if err != nil {
 		// Special logic of processing connection errors is used if redis.ping is requested
 		// because it must return pingFailed if any error occurred.

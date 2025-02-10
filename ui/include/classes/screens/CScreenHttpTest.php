@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -141,11 +141,16 @@ class CScreenHttpTest extends CScreenBase {
 			}
 
 			$table->addRow(new CRow([
-				(new CLinkAction($httptest['hostname']))->setMenuPopup(CMenuPopupHelper::getHost($httptest['hostid'])),
-				new CLink($httptest['name'], 'httpdetails.php?httptestid='.$httptest['httptestid']),
+				(new CCol(
+					(new CLinkAction($httptest['hostname']))
+						->setMenuPopup(CMenuPopupHelper::getHost($httptest['hostid']))
+				))->addClass(ZBX_STYLE_WORDBREAK),
+				(new CCol(
+					new CLink($httptest['name'], 'httpdetails.php?httptestid='.$httptest['httptestid'])
+				))->addClass(ZBX_STYLE_WORDBREAK),
 				$httptest['steps'],
 				$lastcheck,
-				$status,
+				(new CCol($status))->addClass(ZBX_STYLE_WORDBREAK),
 				array_key_exists($key, $tags) ? $tags[$key] : ''
 			]));
 		}

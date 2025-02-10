@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -97,7 +97,7 @@
 	<tr id="dependency_#{triggerid}" data-triggerid="#{triggerid}">
 		<td>
 			<input type="hidden" name="dependencies[]" id="dependencies_#{triggerid}" value="#{triggerid}">
-			<a href="javascript:void(0)" class="js-edit-dependency" data-triggerid="#{triggerid}" data-context="#{context}" data-parent_discoveryid="#{parent_discoveryid}" data-prototype="#{prototype}" rel="noopener<?= ZBX_NOREFERER ? ' noreferrer' : '' ?>">#{name}</a>
+			<a href="#{trigger_url}" class="js-edit-dependency" data-triggerid="#{triggerid}" data-context="#{context}" data-parent_discoveryid="#{parent_discoveryid}" data-prototype="#{prototype}">#{name}</a>
 		</td>
 		<td class="<?= ZBX_STYLE_NOWRAP ?>">
 			<?= (new CButton('remove', _('Remove')))

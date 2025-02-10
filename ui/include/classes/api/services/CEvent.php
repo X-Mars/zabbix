@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -42,7 +42,7 @@ class CEvent extends CApiService {
 	 */
 	public function get(array $options = []) {
 		$acknowledge_output_fields = ['acknowledgeid', 'userid', 'clock', 'message', 'action', 'old_severity',
-			'new_severity', 'suppress_until', 'taskid'
+			'new_severity', 'suppress_until', 'taskid', 'username', 'name', 'surname'
 		];
 		$alert_output_fields = array_diff(CAlert::OUTPUT_FIELDS, ['eventid']);
 
@@ -84,9 +84,7 @@ class CEvent extends CApiService {
 			'output' =>					['type' => API_OUTPUT, 'in' => implode(',', self::OUTPUT_FIELDS), 'default' => API_OUTPUT_EXTEND],
 			'countOutput' =>			['type' => API_FLAG, 'default' => false],
 			'groupBy' =>				['type' => API_STRINGS_UTF8, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'in' => 'objectid', 'uniq' => true, 'default' => null],
-			'select_acknowledges' =>	['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL | API_ALLOW_COUNT | API_DEPRECATED, 'replacement' => 'selectAcknowledges', 'in' => implode(',', $acknowledge_output_fields), 'default' => null],
 			'selectAcknowledges' =>		['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL | API_ALLOW_COUNT, 'in' => implode(',', $acknowledge_output_fields), 'default' => null],
-			'select_alerts' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL | API_DEPRECATED, 'replacement' => 'selectAlerts', 'in' => implode(',', $alert_output_fields), 'default' => null],
 			'selectAlerts' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $alert_output_fields), 'default' => null],
 			'selectHosts' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', CHost::OUTPUT_FIELDS), 'default' => null],
 			'selectRelatedObject' =>	['type' => API_MULTIPLE, 'default' => null, 'rules' => [
@@ -711,36 +709,47 @@ class CEvent extends CApiService {
 		}
 
 		if ($options['selectAcknowledges'] != API_OUTPUT_COUNT) {
-			foreach ($result as &$row) {
-				$row['acknowledges'] = [];
-			}
-			unset($row);
-
 			$output = $options['selectAcknowledges'] === API_OUTPUT_EXTEND
-				? ['acknowledgeid', 'userid', 'eventid', 'clock', 'message', 'action', 'old_severity', 'new_severity',
+				? ['acknowledgeid', 'userid', 'clock', 'message', 'action', 'old_severity', 'new_severity',
 					'suppress_until', 'taskid'
 				]
-				: array_unique(array_merge(['acknowledgeid', 'eventid'], $options['selectAcknowledges']));
+				: array_diff($options['selectAcknowledges'], ['username', 'name', 'surname']);
 
-			$sql_options = [
-				'output' => $output,
+			$db_acknowledges = DB::select('acknowledges', [
+				'output' => $this->outputExtend($output, ['acknowledgeid', 'eventid', 'userid']),
 				'filter' => ['eventid' => array_keys($result)],
 				'sortfield' => ['clock'],
-				'sortorder' => [ZBX_SORT_DOWN]
-			];
-			$db_acknowledges = DBselect(DB::makeSql('acknowledges', $sql_options));
+				'sortorder' => [ZBX_SORT_DOWN],
+				'preservekeys' => true
+			]);
 
-			while ($db_acknowledge = DBfetch($db_acknowledges)) {
-				$eventid = $db_acknowledge['eventid'];
-
-				if (!in_array('acknowledgeid', $output)) {
-					unset($db_acknowledge['acknowledgeid']);
+			$user_fields = [];
+			foreach (['username', 'name', 'surname'] as $field) {
+				if ($this->outputIsRequested($field, $options['selectAcknowledges'])) {
+					$user_fields[] = $field;
 				}
-
-				unset($db_acknowledge['eventid']);
-
-				$result[$eventid]['acknowledges'][] = $db_acknowledge;
 			}
+
+			if ($user_fields) {
+				$db_users = API::User()->get([
+					'output' => $user_fields,
+					'userids' => array_unique(array_column($db_acknowledges, 'userid')),
+					'preservekeys' => true
+				]);
+
+				foreach ($db_acknowledges as &$db_acknowledge) {
+					if (array_key_exists($db_acknowledge['userid'], $db_users)) {
+						$db_acknowledge += $db_users[$db_acknowledge['userid']];
+					}
+				}
+				unset($db_acknowledge);
+			}
+
+			$relation_map = $this->createRelationMap($db_acknowledges, 'eventid', 'acknowledgeid');
+			$db_acknowledges = $this->unsetExtraFields($db_acknowledges, ['eventid', 'acknowledgeid', 'userid'],
+				$output
+			);
+			$result = $relation_map->mapMany($result, $db_acknowledges, 'acknowledges');
 		}
 		else {
 			$db_acknowledges = DBFetchArrayAssoc(DBselect(

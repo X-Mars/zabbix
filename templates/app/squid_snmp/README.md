@@ -7,7 +7,7 @@ This template is designed for the effortless deployment of Squid monitoring by Z
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -16,7 +16,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -30,11 +30,11 @@ snmp_access allow <zbx_acl_name> <zabbix_server_ip>
 ```
 
 ### Setup Zabbix
-1\. [Import](https://www.zabbix.com/documentation/7.2/manual/xml_export_import/templates) the template [template_app_squid_snmp.yaml](template_app_squid_snmp.yaml) into Zabbix.
+1\. [Import](https://www.zabbix.com/documentation/7.4/manual/xml_export_import/templates) the template [template_app_squid_snmp.yaml](template_app_squid_snmp.yaml) into Zabbix.
 
 2\. Set values for {$SQUID.SNMP.COMMUNITY}, {$SQUID.SNMP.PORT} and {$SQUID.HTTP.PORT} as configured in squid.conf.
 
-3\. [Link](https://www.zabbix.com/documentation/7.2/manual/config/templates/linking) the imported template to a host with Squid.
+3\. [Link](https://www.zabbix.com/documentation/7.4/manual/config/templates/linking) the imported template to a host with Squid.
 
 4\. Add SNMPv2 interface to Squid host. Set **Port** as {$SQUID.SNMP.PORT} and **SNMP community** as {$SQUID.SNMP.COMMUNITY}.
 
@@ -112,13 +112,13 @@ snmp_access allow <zbx_acl_name> <zabbix_server_ip>
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Port {$SQUID.HTTP.PORT} is down||`last(/Squid by SNMP/net.tcp.service[tcp,,{$SQUID.HTTP.PORT}])=0`|Average|**Manual close**: Yes|
-|Squid has been restarted|<p>Uptime is less than 10 minutes.</p>|`last(/Squid by SNMP/squid[cacheUptime])<10m`|Info|**Manual close**: Yes|
-|Squid version has been changed|<p>Squid version has changed. Acknowledge to close the problem manually.</p>|`last(/Squid by SNMP/squid[cacheVersionId],#1)<>last(/Squid by SNMP/squid[cacheVersionId],#2) and length(last(/Squid by SNMP/squid[cacheVersionId]))>0`|Info|**Manual close**: Yes|
-|Swap usage is more than low watermark||`last(/Squid by SNMP/squid[cacheCurrentSwapSize])>last(/Squid by SNMP/squid[cacheSwapLowWM])*last(/Squid by SNMP/squid[cacheSwapMaxSize])/100`|Warning||
-|Swap usage is more than high watermark||`last(/Squid by SNMP/squid[cacheCurrentSwapSize])>last(/Squid by SNMP/squid[cacheSwapHighWM])*last(/Squid by SNMP/squid[cacheSwapMaxSize])/100`|High||
-|Squid is running out of file descriptors||`last(/Squid by SNMP/squid[cacheCurrentUnusedFDescrCnt])<{$SQUID.FILE.DESC.WARN.MIN}`|Warning||
-|High sys page faults rate||`avg(/Squid by SNMP/squid[cacheSysPageFaults],5m)>avg(/Squid by SNMP/squid[cacheProtoClientHttpRequests],5m)/100*{$SQUID.PAGE.FAULT.WARN}`|Warning||
+|Squid: Port {$SQUID.HTTP.PORT} is down||`last(/Squid by SNMP/net.tcp.service[tcp,,{$SQUID.HTTP.PORT}])=0`|Average|**Manual close**: Yes|
+|Squid: Squid has been restarted|<p>Uptime is less than 10 minutes.</p>|`last(/Squid by SNMP/squid[cacheUptime])<10m`|Info|**Manual close**: Yes|
+|Squid: Squid version has been changed|<p>Squid version has changed. Acknowledge to close the problem manually.</p>|`last(/Squid by SNMP/squid[cacheVersionId],#1)<>last(/Squid by SNMP/squid[cacheVersionId],#2) and length(last(/Squid by SNMP/squid[cacheVersionId]))>0`|Info|**Manual close**: Yes|
+|Squid: Swap usage is more than low watermark||`last(/Squid by SNMP/squid[cacheCurrentSwapSize])>last(/Squid by SNMP/squid[cacheSwapLowWM])*last(/Squid by SNMP/squid[cacheSwapMaxSize])/100`|Warning||
+|Squid: Swap usage is more than high watermark||`last(/Squid by SNMP/squid[cacheCurrentSwapSize])>last(/Squid by SNMP/squid[cacheSwapHighWM])*last(/Squid by SNMP/squid[cacheSwapMaxSize])/100`|High||
+|Squid: Squid is running out of file descriptors||`last(/Squid by SNMP/squid[cacheCurrentUnusedFDescrCnt])<{$SQUID.FILE.DESC.WARN.MIN}`|Warning||
+|Squid: High sys page faults rate||`avg(/Squid by SNMP/squid[cacheSysPageFaults],5m)>avg(/Squid by SNMP/squid[cacheProtoClientHttpRequests],5m)/100*{$SQUID.PAGE.FAULT.WARN}`|Warning||
 
 ## Feedback
 

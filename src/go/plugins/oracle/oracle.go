@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/omeid/go-yarn"
+	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/metric"
 	"golang.zabbix.com/sdk/plugin"
 	"golang.zabbix.com/sdk/uri"
@@ -55,6 +56,10 @@ var impl Plugin
 
 // Export implements the Exporter interface.
 func (p *Plugin) Export(key string, rawParams []string, _ plugin.ContextProvider) (result interface{}, err error) {
+	if key == keyCustomQuery && !p.options.CustomQueriesEnabled {
+		return nil, errs.Errorf("key %q is disabled", keyCustomQuery)
+	}
+
 	params, extraParams, hc, err := metrics[key].EvalParams(rawParams, p.options.Sessions)
 	if err != nil {
 		return nil, err
@@ -119,7 +124,7 @@ func (p *Plugin) Start() {
 }
 
 func (p *Plugin) setCustomQuery() yarn.Yarn {
-	if p.options.CustomQueriesPath == "" {
+	if !p.options.CustomQueriesEnabled {
 		return yarn.NewFromMap(map[string]string{})
 	}
 

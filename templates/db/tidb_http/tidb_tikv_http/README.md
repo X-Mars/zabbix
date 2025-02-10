@@ -11,7 +11,7 @@ Template `TiDB TiKV by HTTP` — collects metrics by HTTP agent from TiKV /metri
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -20,7 +20,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -85,10 +85,10 @@ Also, see the Macros section for a list of macros used to set trigger values.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Too many coprocessor request error||`min(/TiDB TiKV by HTTP/tikv.coprocessor_request_error.rate,5m)>{$TIKV.COPROCESSOR.ERRORS.MAX.WARN}`|Warning||
-|Too many pending commands||`min(/TiDB TiKV by HTTP/tikv.scheduler_contex,5m)>{$TIKV.PENDING_COMMANDS.MAX.WARN}`|Average||
-|Too many pending tasks||`min(/TiDB TiKV by HTTP/tikv.worker_pending_task,5m)>{$TIKV.PENDING_TASKS.MAX.WARN}`|Average||
-|has been restarted|<p>Uptime is less than 10 minutes.</p>|`last(/TiDB TiKV by HTTP/tikv.uptime)<10m`|Info|**Manual close**: Yes|
+|TiDB TiKV: Too many coprocessor request error||`min(/TiDB TiKV by HTTP/tikv.coprocessor_request_error.rate,5m)>{$TIKV.COPROCESSOR.ERRORS.MAX.WARN}`|Warning||
+|TiDB TiKV: Too many pending commands||`min(/TiDB TiKV by HTTP/tikv.scheduler_contex,5m)>{$TIKV.PENDING_COMMANDS.MAX.WARN}`|Average||
+|TiDB TiKV: Too many pending tasks||`min(/TiDB TiKV by HTTP/tikv.worker_pending_task,5m)>{$TIKV.PENDING_TASKS.MAX.WARN}`|Average||
+|TiDB TiKV: has been restarted|<p>Uptime is less than 10 minutes.</p>|`last(/TiDB TiKV by HTTP/tikv.uptime)<10m`|Info|**Manual close**: Yes|
 
 ### LLD rule QPS metrics discovery
 
@@ -146,7 +146,7 @@ Also, see the Macros section for a list of macros used to set trigger values.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Store_id {#STORE_ID}: Too many failure messages "{#TYPE}"|<p>Indicates that the remote TiKV cannot be connected.</p>|`min(/TiDB TiKV by HTTP/tikv.messages.failure.rate[{#STORE_ID},{#TYPE}],5m)>{$TIKV.STORE.ERRORS.MAX.WARN}`|Warning||
+|TiDB TiKV: Store_id {#STORE_ID}: Too many failure messages "{#TYPE}"|<p>Indicates that the remote TiKV cannot be connected.</p>|`min(/TiDB TiKV by HTTP/tikv.messages.failure.rate[{#STORE_ID},{#TYPE}],5m)>{$TIKV.STORE.ERRORS.MAX.WARN}`|Warning||
 
 ## Feedback
 

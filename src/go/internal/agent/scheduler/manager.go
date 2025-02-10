@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -32,7 +32,6 @@ import (
 	"golang.zabbix.com/agent2/pkg/glexpr"
 	"golang.zabbix.com/agent2/pkg/itemutil"
 	"golang.zabbix.com/agent2/plugins/external"
-	"golang.zabbix.com/sdk/conf"
 	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/log"
 	"golang.zabbix.com/sdk/plugin"
@@ -44,7 +43,18 @@ const (
 	shutdownTimeout = 5
 	// inactive shutdown value
 	shutdownInactive = -1
+	// default plugin capacity used when no capacity is provided in system settings or hardcoded by the plugin as well
+	// as max allowed capacity if not overwritten in plugin.
+	defaultMaxCapacity = 1000
+	// default plugin capacity used when no capacity is provided in system settings or hardcoded by the plugin.
+	defaultCapacity = 1000
+
+	maxItemTimeout = 600 // seconds
+	minItemTimeout = 1   // seconds
 )
+
+// ErrUnsupportedTimeout is thrown if timeout value cannot be parsed or exceeds limit (> maxTimeout or 0).
+var ErrUnsupportedTimeout = errs.New("unsupported timeout value")
 
 type Request struct {
 	Itemid      uint64  `json:"itemid"`
@@ -121,11 +131,6 @@ type Scheduler interface {
 	QueryUserParams() (status string)
 }
 
-type systemOptions struct {
-	ForceActiveChecksOnStart *int `conf:"optional"`
-	Capacity                 int  `conf:"optional"`
-}
-
 // cleanupClient performs deactivation of plugins the client is not using anymore.
 // It's called after client update and once per hour for the client associated to
 // single passive checks.
@@ -186,15 +191,12 @@ func (m *Manager) cleanupClient(c *client, now time.Time) {
 	}
 }
 
-func parseItemTimeout(s string) (seconds int, e error) {
-	const invalidTimeoutError = "Unsupported timeout value."
-	const maxTimeout = 600
-
+func parseItemTimeout(s string) (int, error) {
 	if s == "" {
-		e = errors.New(invalidTimeoutError)
-
-		return
+		return 0, errs.Wrap(ErrUnsupportedTimeout, "value cannot be empty")
 	}
+
+	var seconds int
 
 	if intVal, err := strconv.Atoi(s); err != nil {
 		var mult int
@@ -204,15 +206,11 @@ func parseItemTimeout(s string) (seconds int, e error) {
 		} else if strings.HasSuffix(s, "s") {
 			mult = 1
 		} else {
-			e = errors.New(invalidTimeoutError)
-
-			return
+			return 0, errs.Wrap(ErrUnsupportedTimeout, "invalid time suffix format")
 		}
 
 		if val, err := strconv.Atoi(s[:len(s)-1]); err != nil {
-			e = errors.New(invalidTimeoutError)
-
-			return
+			return 0, errs.Wrapf(ErrUnsupportedTimeout, "cannot parse %q as seconds", s)
 		} else {
 			seconds = val * mult
 		}
@@ -220,14 +218,16 @@ func parseItemTimeout(s string) (seconds int, e error) {
 		seconds = intVal
 	}
 
-	if seconds > maxTimeout {
-		e = errors.New(invalidTimeoutError)
-	}
-
-	return
+	return seconds, nil
 }
 
-func ParseItemTimeoutAny(timeoutIn any) (timeout int, err error) {
+// ParseItemTimeoutAny converts item timeout to seconds (if it is in form of suffixes time) and
+// validates it (whether it is within limits).
+func ParseItemTimeoutAny(timeoutIn any) (int, error) {
+	var timeout int
+
+	var err error
+
 	switch v := timeoutIn.(type) {
 	case nil:
 		timeout = agent.Options.Timeout
@@ -238,11 +238,18 @@ func ParseItemTimeoutAny(timeoutIn any) (timeout int, err error) {
 	case string:
 		timeout, err = parseItemTimeout(v)
 	default:
-		err = fmt.Errorf("unexpected timeout %q of type %T", timeoutIn, timeoutIn)
+		err = errs.Wrapf(ErrUnsupportedTimeout, "unexpected timeout %q of type %T", timeoutIn, timeoutIn)
 	}
+
 	if err == nil {
-		if timeout > 600 || timeout < 1 {
-			err = fmt.Errorf("Unsupported timeout value.")
+		if timeout > maxItemTimeout {
+			err = errs.Wrapf(
+				ErrUnsupportedTimeout, "timeout %d is too large, max - %d", timeout, maxItemTimeout,
+			)
+		} else if timeout < minItemTimeout {
+			err = errs.Wrapf(
+				ErrUnsupportedTimeout, "timeout %d is too small, min - %d", timeout, minItemTimeout,
+			)
 		}
 	}
 
@@ -250,7 +257,7 @@ func ParseItemTimeoutAny(timeoutIn any) (timeout int, err error) {
 }
 
 // processUpdateRequest processes client update request. It's being used for multiple requests
-// (active checks on a server) and also for direct requets (single passive and internal checks).
+// (active checks on a server) and also for direct requests (single passive and internal checks).
 func (m *Manager) processUpdateRequestRun(update *updateRequest) {
 	var c *client
 	var ok bool
@@ -672,87 +679,6 @@ run:
 	monitor.Unregister(monitor.Scheduler)
 }
 
-func (m *Manager) init() {
-	m.input = make(chan interface{}, 10)
-	m.pluginQueue = make(pluginHeap, 0, len(plugin.Metrics))
-	m.clients = make(map[uint64]*client)
-	m.plugins = make(map[string]*pluginAgent)
-	m.shutdownSeconds = shutdownInactive
-
-	metrics := make([]*plugin.Metric, 0, len(plugin.Metrics))
-
-	for _, metric := range plugin.Metrics {
-		metrics = append(metrics, metric)
-	}
-	sort.Slice(metrics, func(i, j int) bool {
-		return metrics[i].Plugin.Name() < metrics[j].Plugin.Name()
-	})
-
-	pagent := &pluginAgent{}
-	for _, metric := range metrics {
-		if metric.Plugin != pagent.impl {
-			capacity, forceActiveChecksOnStart := getPluginOptions(
-				agent.Options.Plugins[metric.Plugin.Name()],
-				metric.Plugin.Name(),
-			)
-			if capacity > metric.Plugin.Capacity() {
-				log.Warningf(
-					"lowering the plugin %s capacity to %d as the configured capacity %d exceeds limits",
-					metric.Plugin.Name(),
-					metric.Plugin.Capacity(),
-					capacity,
-				)
-
-				capacity = metric.Plugin.Capacity()
-			}
-
-			pagent = &pluginAgent{
-				impl:                     metric.Plugin,
-				tasks:                    make(performerHeap, 0),
-				maxCapacity:              capacity,
-				usedCapacity:             0,
-				forceActiveChecksOnStart: forceActiveChecksOnStart,
-				index:                    -1,
-				refcount:                 0,
-				usrprm:                   metric.UsrPrm,
-			}
-
-			interfaces := ""
-			if _, ok := metric.Plugin.(plugin.Exporter); ok {
-				interfaces += "exporter, "
-			}
-			if _, ok := metric.Plugin.(plugin.Collector); ok {
-				interfaces += "collector, "
-			}
-			if _, ok := metric.Plugin.(plugin.Runner); ok {
-				interfaces += "runner, "
-			}
-			if _, ok := metric.Plugin.(plugin.Watcher); ok {
-				interfaces += "watcher, "
-			}
-			if _, ok := metric.Plugin.(plugin.Configurator); ok {
-				interfaces += "configurator, "
-			}
-			interfaces = interfaces[:len(interfaces)-2]
-
-			if metric.Plugin.IsExternal() {
-				ext := metric.Plugin.(*external.Plugin)
-				metric.Plugin.SetCapacity(1)
-				log.Infof(
-					"using plugin '%s' (%s) providing following interfaces: %s",
-					metric.Plugin.Name(),
-					ext.Path,
-					interfaces,
-				)
-			} else {
-				log.Infof("using plugin '%s' (built-in) providing following interfaces: %s", metric.Plugin.Name(),
-					interfaces)
-			}
-		}
-		m.plugins[metric.Key] = pagent
-	}
-}
-
 func (m *Manager) Start() {
 	log.Infof(
 		"Plugin communication protocol version is %s",
@@ -887,7 +813,7 @@ func (m *Manager) configure(options *agent.AgentOptions) (err error) {
 }
 
 // NewManager crates a new manager instance.
-func NewManager(options *agent.AgentOptions) (*Manager, error) {
+func NewManager(options *agent.AgentOptions, systemOpt agent.PluginSystemOptions) (*Manager, error) {
 	m := &Manager{
 		input:           make(chan any, 10),
 		pluginQueue:     make(pluginHeap, 0, len(plugin.Metrics)),
@@ -912,30 +838,24 @@ func NewManager(options *agent.AgentOptions) (*Manager, error) {
 	pagent := &pluginAgent{}
 	for _, metric := range metrics {
 		if metric.Plugin != pagent.impl { //nolint:nestif
-			capacity, forceActiveChecksOnStart := getPluginOptions(
-				agent.Options.Plugins[metric.Plugin.Name()],
-				metric.Plugin.Name(),
-			)
-			if capacity > metric.Plugin.Capacity() {
-				log.Warningf(
-					"lowering the plugin %s capacity to %d as the configured capacity %d exceeds limits",
-					metric.Plugin.Name(),
-					metric.Plugin.Capacity(),
-					capacity,
-				)
-
-				capacity = metric.Plugin.Capacity()
-			}
-
 			pagent = &pluginAgent{
-				impl:                     metric.Plugin,
-				tasks:                    make(performerHeap, 0),
-				maxCapacity:              capacity,
-				usedCapacity:             0,
-				forceActiveChecksOnStart: forceActiveChecksOnStart,
-				index:                    -1,
-				refcount:                 0,
-				usrprm:                   metric.UsrPrm,
+				impl:  metric.Plugin,
+				tasks: make(performerHeap, 0),
+				maxCapacity: getPluginCapacity(
+					systemOpt[metric.Plugin.Name()].Capacity,
+					defaultCapacity,
+					metric.Plugin.MaxCapacity(),
+					defaultMaxCapacity,
+					metric.Plugin.Name(),
+				),
+				usedCapacity: 0,
+				forceActiveChecksOnStart: getPluginForceActiveChecks(
+					systemOpt[metric.Plugin.Name()].ForceActiveChecksOnStart,
+					options.ForceActiveChecksOnStart,
+				),
+				index:    -1,
+				refcount: 0,
+				usrprm:   metric.UsrPrm,
 			}
 
 			if metric.Plugin.IsExternal() {
@@ -948,16 +868,22 @@ func NewManager(options *agent.AgentOptions) (*Manager, error) {
 				}
 
 				log.Infof(
-					"using plugin '%s' (%s) providing following interfaces: %s",
+					"using plugin '%s' (%s) providing following interfaces: %s, maximum capacity: %d, "+
+						"active checks on start enabled: %t",
 					metric.Plugin.Name(),
 					ext.Path,
 					getPluginInterfaceNames(metric.Plugin),
+					pagent.maxCapacity,
+					pagent.forceActiveChecksOnStart,
 				)
 			} else {
 				log.Infof(
-					"using plugin '%s' (built-in) providing following interfaces: %s",
+					"using plugin '%s' (built-in) providing following interfaces: %s, maximum capacity: %d, "+
+						"active checks on start enabled: %t",
 					metric.Plugin.Name(),
 					getPluginInterfaceNames(metric.Plugin),
+					pagent.maxCapacity,
+					pagent.forceActiveChecksOnStart,
 				)
 			}
 		}
@@ -987,12 +913,10 @@ func (m *Manager) addUserParamsPlugin(key string) {
 		}
 	}
 
-	capacity := metric.Plugin.Capacity()
-
 	pagent := &pluginAgent{
 		impl:         metric.Plugin,
 		tasks:        make(performerHeap, 0),
-		maxCapacity:  capacity,
+		maxCapacity:  defaultMaxCapacity,
 		usedCapacity: 0,
 		index:        -1,
 		refcount:     0,
@@ -1010,43 +934,43 @@ func peekTask(tasks performerHeap) performer {
 	return tasks[0]
 }
 
-func getPluginOptions(optsRaw any, pluginName string) (int, int) {
-	var opt struct {
-		System systemOptions `conf:"optional"`
+func getPluginCapacity(
+	pluginCapacity, defaultCapacity, pluginMaxCapacity, defaultMaxCapacity int, pluginName string,
+) int {
+	capacity := pluginCapacity
+	if capacity == 0 {
+		capacity = defaultCapacity
 	}
 
-	capacity := plugin.DefaultCapacity
+	maxCapacity := defaultMaxCapacity
 
-	if optsRaw == nil {
-		return capacity, agent.Options.ForceActiveChecksOnStart
+	if pluginMaxCapacity > 0 {
+		maxCapacity = pluginMaxCapacity
 	}
 
-	err := conf.Unmarshal(optsRaw, &opt, false)
-	if err != nil {
-		log.Warningf("invalid plugin %s configuration: %s", pluginName, err)
-
-		return capacity, agent.Options.ForceActiveChecksOnStart
-	}
-
-	if opt.System.Capacity > 0 {
-		capacity = opt.System.Capacity
-	}
-
-	if opt.System.ForceActiveChecksOnStart == nil {
-		return capacity, agent.Options.ForceActiveChecksOnStart
-	}
-
-	if *opt.System.ForceActiveChecksOnStart > 1 || *opt.System.ForceActiveChecksOnStart < 0 {
+	if capacity > maxCapacity {
 		log.Warningf(
-			"invalid Plugins.%s.System.ForceActiveChecksOnStart configuration parameter: %d",
+			"lowering the plugin %s capacity to hard limit %d as the configured capacity %d exceeds limits",
 			pluginName,
-			*opt.System.ForceActiveChecksOnStart,
+			maxCapacity,
+			capacity,
 		)
 
-		return capacity, agent.Options.ForceActiveChecksOnStart
+		return maxCapacity
 	}
 
-	return capacity, *opt.System.ForceActiveChecksOnStart
+	return capacity
+}
+
+func getPluginForceActiveChecks(
+	pluginActiveCheck *int,
+	globalActiveCheck int,
+) bool {
+	if pluginActiveCheck == nil {
+		return globalActiveCheck == 1
+	}
+
+	return *pluginActiveCheck == 1
 }
 
 func getPluginInterfaceNames(p plugin.Accessor) string {

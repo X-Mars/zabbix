@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -15,7 +15,6 @@
 package file
 
 import (
-	"golang.zabbix.com/sdk/conf"
 	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/plugin"
 	"golang.zabbix.com/sdk/std"
@@ -26,14 +25,9 @@ var (
 	stdOs std.Os
 )
 
-type Options struct {
-	plugin.SystemOptions `conf:"optional,name=System"`
-}
-
 // Plugin -
 type Plugin struct {
 	plugin.Base
-	options Options
 }
 
 func init() {
@@ -86,15 +80,4 @@ func (p *Plugin) Export(key string, params []string, ctx plugin.ContextProvider)
 	default:
 		return nil, plugin.UnsupportedMetricError
 	}
-}
-
-func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
-	if err := conf.Unmarshal(options, &p.options); err != nil {
-		p.Warningf("cannot unmarshal configuration options: %s", err)
-	}
-}
-
-func (p *Plugin) Validate(options interface{}) error {
-	var o Options
-	return conf.Unmarshal(options, &o)
 }

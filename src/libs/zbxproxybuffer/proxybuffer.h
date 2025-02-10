@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,8 +23,8 @@
 #include "zbxtime.h"
 #include "zbxtypes.h"
 
-#define ZBX_MAX_HRECORDS	1000
-#define ZBX_MAX_HRECORDS_TOTAL	10000
+#define	ZBX_MAX_HRECORDS	1000
+#define	ZBX_MAX_HRECORDS_TOTAL	10000
 
 /* the space reserved in json buffer to hold at least one record plus service data */
 #define ZBX_DATA_JSON_RESERVED		(ZBX_HISTORY_TEXT_VALUE_LEN * 4 + ZBX_KIBIBYTE * 4)
@@ -168,5 +168,8 @@ zbx_uint64_t	pb_get_next_handleid(zbx_pb_t *pb);
 zbx_uint64_t	pb_register_handle(zbx_pb_t *pb, zbx_vector_uint64_t *handleids);
 void	pb_deregister_handle(zbx_vector_uint64_t *handleids, zbx_uint64_t handleid);
 void	pb_wait_handles(const zbx_vector_uint64_t *handleids);
+
+void	pb_add_json_field(struct zbx_json *j, zbx_history_table_t *history_table, const char *fld_name, void *value,
+		int type);
 
 #endif

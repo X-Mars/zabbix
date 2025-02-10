@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -30,6 +30,7 @@
 
 			this.initFilterForm();
 			this.initEvents();
+			this.#initPopupListeners();
 		}
 
 		initFilterForm() {
@@ -39,21 +40,15 @@
 		}
 
 		initEvents() {
-			document.querySelector('.js-create-item-prototype')?.addEventListener('click', (e) => this.#edit(
-				e.target,
-				{...e.target.dataset, action: 'item.prototype.edit'}
-			));
+			document.querySelector('.js-create-item-prototype').addEventListener('click', e => {
+				ZABBIX.PopupManager.open('item.prototype.edit', e.target.dataset);
+			});
+
 			this.form.addEventListener('click', e => {
 				const target = e.target;
 				const itemids = Object.keys(chkbxRange.getSelectedIds());
 
-				if (target.classList.contains('js-update-item')) {
-					this.#edit(target, {...target.dataset, action: 'item.edit'});
-				}
-				else if (target.classList.contains('js-update-itemprototype')) {
-					this.#edit(target, {...target.dataset, action: 'item.prototype.edit'});
-				}
-				else if (target.classList.contains('js-enable-itemprototype')) {
+				if (target.classList.contains('js-enable-itemprototype')) {
 					this.#enable(null, {...target.dataset, itemids: [target.dataset.itemid]});
 				}
 				else if (target.classList.contains('js-disable-itemprototype')) {
@@ -74,60 +69,6 @@
 					this.#delete(target, {itemids: itemids, context: this.context});
 				}
 			});
-		}
-
-		editItemPrototype(target, data) {
-			this.#edit(target, {...data, action: 'item.prototype.edit'});
-		}
-
-		editTriggerPrototype(trigger_data) {
-			clearMessages();
-
-			const overlay = PopUp('trigger.prototype.edit', trigger_data, {
-				dialogueid: 'trigger-edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
-		}
-
-		editHost(e, hostid) {
-			e.preventDefault();
-			this.openHostPopup({hostid});
-		}
-
-		editTemplate(e, templateid) {
-			e.preventDefault();
-			const template_data = {templateid};
-
-			this.openTemplatePopup(template_data);
-		}
-
-		openHostPopup(host_data) {
-			let original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', e => {
-				history.replaceState({}, '', original_url);
-				this.elementSuccess(e);
-			}, {once: true});
-
-			overlay.$dialogue[0].addEventListener('dialogue.close', e => history.replaceState({}, '', original_url));
-		}
-
-		openTemplatePopup(template_data) {
-			const overlay =  PopUp('template.edit', template_data, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
 		}
 
 		#enable(target, parameters) {
@@ -199,21 +140,6 @@
 				});
 		}
 
-		#edit(target, parameters = {}) {
-			const action = parameters.action;
-
-			delete parameters.action;
-
-			const overlay = PopUp(action, parameters, {
-				dialogueid: 'item-edit',
-				dialogue_class: 'modal-popup-large',
-				trigger_element: target,
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
-		}
-
 		#massupdate(target, parameters) {
 			const overlay = PopUp('item.prototype.massupdate', {...this.token, ...parameters, prototype: 1}, {
 				dialogue_class: 'modal-popup-preprocessing',
@@ -224,6 +150,36 @@
 				e => this.elementSuccess('title' in e.detail ? {detail: {success: e.detail}} : e),
 				{once: true}
 			);
+		}
+
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, event}) => {
+					if ('error' in data.submit) {
+						if ('title' in data.submit.error) {
+							postMessageError(data.submit.error.title);
+						}
+
+						postMessageDetails('error', data.submit.error.messages);
+					}
+					else {
+						chkbxRange.clearSelectedOnFilterChange();
+					}
+
+					if (data.submit.success.action === 'delete') {
+						const url = new URL('host_discovery.php', location.href);
+
+						url.searchParams.set('context', this.context);
+						url.searchParams.set('filter_set', 1);
+
+						event.setRedirectUrl(url.href);
+					}
+				}
+			});
 		}
 
 		elementSuccess(e) {

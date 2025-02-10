@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -38,7 +38,7 @@ class CConfigFile {
 	public function __construct($file = null) {
 		$this->setDefaults();
 
-		if (!is_null($file)) {
+		if ($file !== null) {
 			$this->setFile($file);
 		}
 	}
@@ -215,11 +215,9 @@ class CConfigFile {
 		try {
 			$file = $this->configFile;
 
-			if (is_null($file)) {
+			if ($file === null) {
 				self::exception('Cannot save, config file is not set.');
 			}
-
-			$this->check();
 
 			if (is_link($file)) {
 				$file = readlink($file);
@@ -343,22 +341,5 @@ $IMAGE_FORMAT_DEFAULT	= IMAGE_FORMAT_PNG;
 		$this->config['HISTORY'] = null;
 		$this->config['SSO'] = null;
 		$this->config['ALLOW_HTTP_AUTH'] = true;
-	}
-
-	protected function check() {
-		if (!isset($this->config['DB']['TYPE'])) {
-			self::exception('DB type is not set.');
-		}
-
-		if (!array_key_exists($this->config['DB']['TYPE'], self::$supported_db_types)) {
-			self::exception(
-				'Incorrect value "'.$this->config['DB']['TYPE'].'" for DB type. Possible values '.
-				implode(', ', array_keys(self::$supported_db_types)).'.'
-			);
-		}
-
-		if (!isset($this->config['DB']['DATABASE'])) {
-			self::exception('DB database is not set.');
-		}
 	}
 }

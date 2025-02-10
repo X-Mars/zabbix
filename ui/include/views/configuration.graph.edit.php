@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -393,7 +393,7 @@ $items_table = (new CTable())
 				->addClass('table-col-y-axis-side')
 			: null,
 		(new CTableColumn(_('Color')))->addClass('table-col-color'),
-		$readonly ? null : (new CTableColumn(_('Action')))->addClass('table-col-action')
+		$readonly ? null : (new CTableColumn(''))->addClass('table-col-action')
 	]);
 
 $parameters_add = [

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,6 +22,8 @@
 #include "zbxstr.h"
 #include "zbxjson.h"
 #include "zbxalgo.h"
+#include "vmware_shmem.h"
+#include "zbxshmem.h"
 
 typedef struct
 {
@@ -866,6 +868,54 @@ out:
 
 /******************************************************************************
  *                                                                            *
+ * Purpose: calculate required shared memory size of the perfCounter values   *
+ *                                                                            *
+ * Parameters: perfdata - [IN] performance counter values                     *
+ *                                                                            *
+ * Return value: size of shared memory in bytes                               *
+ *                                                                            *
+ ******************************************************************************/
+static zbx_uint64_t	vmware_tags_shmem_size(zbx_vector_vmware_entity_tags_ptr_t *entity_tags)
+{
+	zbx_uint64_t		req_sz = 0,
+				tags_chunk_sz = zbx_shmem_required_chunk_size(sizeof(zbx_vmware_entity_tags_t)),
+				tag_chunk_sz = zbx_shmem_required_chunk_size(sizeof(zbx_vmware_tag_t));
+
+	for (int i = 0; i < entity_tags->values_num; i++)
+	{
+		zbx_vmware_entity_tags_t	*entity = entity_tags->values[i];
+
+		if (0 == entity->tags.values_num && NULL == entity->error)
+			continue;
+
+		req_sz += tags_chunk_sz;
+		req_sz += vmware_shared_str_sz(entity->uuid);
+
+		if (NULL != entity->error)
+		{
+			req_sz += vmware_shared_str_sz(entity->error);
+			continue;
+		}
+
+		req_sz += tag_chunk_sz * (zbx_uint64_t)entity->tags.values_num + zbx_shmem_required_chunk_size(
+				(zbx_uint64_t)entity->tags.values_alloc * sizeof(zbx_vmware_tag_t*));
+
+		for (int j = 0; j < entity->tags.values_num; j++)
+		{
+			zbx_vmware_tag_t	*tag = entity->tags.values[j];
+
+			req_sz += tag_chunk_sz;
+			req_sz += vmware_shared_str_sz(tag->name);
+			req_sz += vmware_shared_str_sz(tag->description);
+			req_sz += vmware_shared_str_sz(tag->category);
+		}
+	}
+
+	return req_sz;
+}
+
+/******************************************************************************
+ *                                                                            *
  * Purpose: updates vmware tags data                                          *
  *                                                                            *
  * Parameters: service               - [IN] vmware service                   *
@@ -879,6 +929,7 @@ int	zbx_vmware_service_update_tags(zbx_vmware_service_t *service, const char *co
 	int					version, found_tags = 0, ret = FAIL;
 	char					*error = NULL;
 	unsigned char				is_new_api;
+	zbx_uint64_t				tags_sz = 0;
 	zbx_vector_vmware_entity_tags_ptr_t	entity_tags;
 	zbx_vector_vmware_tag_ptr_t		tags;
 	zbx_vector_vmware_key_value_t		categories;
@@ -893,10 +944,10 @@ int	zbx_vmware_service_update_tags(zbx_vmware_service_t *service, const char *co
 	zbx_vmware_lock();
 	version = service->major_version * 100 + service->minor_version * 10 + service->update_version;
 
-	if (650 > version)
+	if (650 > version || ZBX_VMWARE_TYPE_VCENTER != service->type)
 	{
 		zbx_vmware_unlock();
-		error = zbx_strdup(error, "Tags are supported since vmware version 6.5.");
+		error = zbx_strdup(error, "Tags are supported since VMware virtual center version 6.5.");
 		goto out;
 	}
 
@@ -924,7 +975,20 @@ int	zbx_vmware_service_update_tags(zbx_vmware_service_t *service, const char *co
 	if (NULL != headers)
 		vmware_service_rest_logout(easyhandle, &page);
 
-	zbx_vmware_shared_tags_replace(&entity_tags, &service->data_tags);
+	zbx_vmware_lock();
+
+	if (vmware_shmem_get_vmware_mem()->free_size > (tags_sz = vmware_tags_shmem_size(&entity_tags)))
+	{
+		zbx_vmware_shared_tags_replace(&entity_tags, &service->data_tags);
+	}
+	else
+	{
+		zabbix_log(LOG_LEVEL_WARNING, "Postponed VMware tags require up to " ZBX_FS_UI64
+				" bytes of free VMwareCache memory. Available " ZBX_FS_UI64 " bytes."
+				" Reading tags skipped", tags_sz, vmware_shmem_get_vmware_mem()->free_size);
+	}
+
+	zbx_vmware_unlock();
 
 	ret = SUCCEED;
 clean:
@@ -946,7 +1010,8 @@ out:
 		zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, error);
 	}
 	else
-		zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s tags:%d", __func__, zbx_result_string(ret), found_tags);
+		zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s tags:%d tags size:" ZBX_FS_UI64, __func__,
+				zbx_result_string(ret), found_tags, tags_sz);
 
 	zbx_str_free(error);
 

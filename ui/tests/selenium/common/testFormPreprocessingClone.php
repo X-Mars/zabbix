@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -93,6 +93,30 @@ class testFormPreprocessingClone extends CWebTest {
 		[
 			'type' => '25',
 			'params' => "1\n2",
+			'error_handler' => 0,
+			'error_handler_params' => ''
+		],
+		[
+			'type' => '27',
+			'params' => '',
+			'error_handler' => 0,
+			'error_handler_params' => ''
+		],
+		[
+			'type' => '28',
+			'params' => "OID\n1",
+			'error_handler' => 0,
+			'error_handler_params' => ''
+		],
+		[
+			'type' => '29',
+			'params' => "test\nOID\n1",
+			'error_handler' => 0,
+			'error_handler_params' => ''
+		],
+		[
+			'type' => '30',
+			'params' => '1',
 			'error_handler' => 0,
 			'error_handler_params' => ''
 		]

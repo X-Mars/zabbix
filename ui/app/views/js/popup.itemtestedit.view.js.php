@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -40,7 +40,9 @@ function makeStepResult(step) {
 		return jQuery('<span>', {'class': '<?= ZBX_STYLE_GREY ?>'}).text(<?= json_encode(_('<empty string>')) ?>);
 	}
 	else if (step.warning !== undefined) {
-		return jQuery(new Template(jQuery('#preprocessing-step-result-warning').html()).evaluate(step));
+		return jQuery(new Template(jQuery('#preprocessing-step-result-warning').html()).evaluate(
+			{result: step.result, result_hint: escapeHtml(step.result), warning: step.warning}
+		));
 	}
 	else if (step.result.indexOf("\n") != -1 || step.result.length > 25) {
 		return jQuery(new Template(jQuery('#preprocessing-step-result').html()).evaluate(

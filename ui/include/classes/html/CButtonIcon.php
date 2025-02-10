@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -16,7 +16,7 @@
 
 class CButtonIcon extends CSimpleButton {
 
-	public function __construct(string $icon_class, string $title = null) {
+	public function __construct(string $icon_class, ?string $title = null) {
 		parent::__construct();
 
 		$this

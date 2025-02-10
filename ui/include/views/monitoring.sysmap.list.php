@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -107,11 +107,13 @@ foreach ($data['maps'] as $map) {
 
 	$sysmapTable->addRow([
 		$checkbox,
-		(new CLink($map['name'],
+		(new CCol(
+			(new CLink($map['name'],
 			(new CUrl('zabbix.php'))
 				->setArgument('action', 'map.view')
 				->setArgument('sysmapid', $map['sysmapid'])
-		)),
+			))
+		))->addClass(ZBX_STYLE_WORDBREAK),
 		$map['width'],
 		$map['height'],
 		new CHorList([$properties_link, $edit_link])

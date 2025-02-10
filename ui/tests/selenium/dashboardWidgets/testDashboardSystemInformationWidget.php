@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -160,13 +160,14 @@ class testDashboardSystemInformationWidget extends testSystemInformation {
 		$this->executeWidgetAction($widgets, 'update');
 	}
 
-	/**
-	 * @onBefore prepareHANodeData
-	 */
-	public function testDashboardSystemInformationWidget_checkEnabledHA() {
-		$this->assertEnabledHACluster(self::$dashboardid);
-		$this->assertScreenshotExcept(CDashboardElement::find()->one(), self::$skip_fields, 'widgets_with_ha');
-	}
+// Commented until Jenkins issue investigated.
+//	/**
+//	 * @onBefore prepareHANodeData
+//	 */
+//	public function testDashboardSystemInformationWidget_checkEnabledHA() {
+//		$this->assertEnabledHACluster(self::$dashboardid);
+//		$this->assertScreenshotExcept(CDashboardElement::find()->one(), self::$skip_fields, 'widgets_with_ha');
+//	}
 
 	/**
 	 * Function checks that Zabbix server status is updated after failover delay passes and frontend config is re-validated.

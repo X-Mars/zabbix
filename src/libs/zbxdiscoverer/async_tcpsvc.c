@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -14,8 +14,7 @@
 
 #include "async_tcpsvc.h"
 
-#include "../../libs/zbxpoller/async_poller.h"
-
+#include "zbxpoller.h"
 #include "zbxtimekeeper.h"
 #include "zbxcomms.h"
 #include "zbxself.h"
@@ -73,7 +72,8 @@ static int	tcpsvc_send_context_init(const unsigned char svc_type, unsigned char 
 	return SUCCEED;
 }
 
-static int	tcpsvc_task_process(short event, void *data, int *fd, const char *addr, char *dnserr)
+static int	tcpsvc_task_process(short event, void *data, int *fd, const char *addr, char *dnserr,
+		struct event *timeout_event)
 {
 #	define	SET_RESULT_SUCCEED								\
 		SET_UI64_RESULT(&tcpsvc_context->item.result, 1);				\
@@ -98,6 +98,7 @@ static int	tcpsvc_task_process(short event, void *data, int *fd, const char *add
 	const char		*buf;
 
 	ZBX_UNUSED(dnserr);
+	ZBX_UNUSED(timeout_event);
 
 	if (NULL != poller_config && ZBX_PROCESS_STATE_IDLE == poller_config->state)
 	{

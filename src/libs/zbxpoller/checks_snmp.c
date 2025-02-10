@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,7 +19,6 @@
 #define SNMP_NO_DEBUGGING
 
 #include "zbxasyncpoller.h"
-#include "async_poller.h"
 #include "zbxpoller.h"
 
 #include "zbxtimekeeper.h"
@@ -142,6 +141,7 @@ typedef struct
 	int			reqid;
 	int			waiting;
 	int			pdu_type;
+	int			operation;
 	zbx_snmp_oid_t		*p_oid;
 	oid			name[MAX_OID_LEN];
 	size_t			name_length;
@@ -163,6 +163,7 @@ struct zbx_snmp_context
 	zbx_dc_item_context_t		item;
 	zbx_snmp_sess_t			ssp;
 	int				snmp_max_repetitions;
+	int				retries;
 	char				*results;
 	size_t				results_alloc;
 	size_t				results_offset;
@@ -759,7 +760,7 @@ static char	*zbx_get_snmp_type_error(u_char type)
 }
 
 static int	zbx_get_snmp_response_error(const zbx_snmp_sess_t ssp, const zbx_dc_interface_t *interface, int status,
-		const struct snmp_pdu *response, char *error, size_t max_error_len)
+		const struct snmp_pdu *response, char *error, size_t max_error_len, int got_vars)
 {
 	int	ret;
 
@@ -788,9 +789,18 @@ static int	zbx_get_snmp_response_error(const zbx_snmp_sess_t ssp, const zbx_dc_i
 	}
 	else if (STAT_TIMEOUT == status)
 	{
-		zbx_snprintf(error, max_error_len, "Timeout while connecting to \"%s:%hu\".",
-				interface->addr, interface->port);
-		ret = NETWORK_ERROR;
+		if (0 == got_vars)
+		{
+			zbx_snprintf(error, max_error_len, "Timeout while connecting to \"%s:%hu\".",
+					interface->addr, interface->port);
+			ret = NETWORK_ERROR;
+		}
+		else
+		{
+			zbx_snprintf(error, max_error_len, "Timeout while retrieving data from \"%s:%hu\".",
+					interface->addr, interface->port);
+			ret = NOTSUPPORTED;
+		}
 	}
 	else
 	{
@@ -1032,20 +1042,26 @@ static void	zbx_snmp_close_session(zbx_snmp_sess_t	session)
 
 static char	*zbx_sprint_asn_octet_str_dyn(const struct variable_list *var)
 {
-	if (var->type != ASN_OCTET_STR || NULL != memchr(var->val.string, '\0', var->val_len))
+#define ZBX_MAC_ADDRESS_LEN	6
+	/* don't guess output format if length is equal to MAC address to avoid false positive UTF-8 */
+	if (var->type != ASN_OCTET_STR || NULL != memchr(var->val.string, '\0', var->val_len) ||
+			ZBX_MAC_ADDRESS_LEN == var->val_len)
+	{
 		return NULL;
+	}
 
 	char	*strval_dyn = (char *)zbx_malloc(NULL, var->val_len + 1);
 
 	memcpy(strval_dyn, var->val.string, var->val_len);
 	strval_dyn[var->val_len] = '\0';
 
-	if (FAIL == zbx_is_utf8(strval_dyn))
+	if (FAIL == zbx_is_ascii_printable(strval_dyn) || FAIL == zbx_is_utf8(strval_dyn))
 		zbx_free(strval_dyn);
 	else
 		zabbix_log(LOG_LEVEL_DEBUG, "%s() full value:'%s'", __func__, strval_dyn);
 
 	return strval_dyn;
+#undef ZBX_MAC_ADDRESS_LEN
 }
 
 static char	*zbx_snmp_get_octet_string(const struct variable_list *var, unsigned char *string_type,
@@ -1455,7 +1471,7 @@ static int	zbx_snmp_walk(zbx_snmp_sess_t ssp, const zbx_dc_item_t *item, const c
 	size_t			anOID_len = MAX_OID_LEN, rootOID_len = MAX_OID_LEN, root_string_len, root_numeric_len;
 	char			oid_index[MAX_STRING_LEN], root_oid[MAX_STRING_LEN];
 	struct variable_list	*var;
-	int			status, level, running, num_vars, check_oid_increase = 1, ret = SUCCEED;
+	int			status, level, running, num_vars, got_vars = 0, check_oid_increase = 1, ret = SUCCEED;
 	AGENT_RESULT		snmp_result;
 	zbx_hashset_t		oids_seen;
 	struct snmp_session	*ss;
@@ -1565,7 +1581,7 @@ reduce_max_vars:
 				goto reduce_max_vars;
 
 			ret = zbx_get_snmp_response_error(ssp, &item->interface, status, response, error,
-					max_error_len);
+					max_error_len, got_vars);
 			running = 0;
 			goto next;
 		}
@@ -1586,6 +1602,8 @@ reduce_max_vars:
 		{
 			char		**str_res;
 			unsigned char	val_type;
+
+			got_vars = 1;
 
 			/* verify if we are in the same subtree */
 			if (SNMP_ENDOFMIBVIEW == var->type || var->name_length < rootOID_len ||
@@ -1891,7 +1909,7 @@ retry:
 		if (NULL == query_and_ignore_type || 0 == query_and_ignore_type[j])
 		{
 			errcodes[j] = zbx_get_snmp_response_error(ssp, &items[0].interface, status, response, error,
-					max_error_len);
+					max_error_len, 0);
 			SET_MSG_RESULT(&results[j], zbx_strdup(NULL, error));
 			*error = '\0';
 		}
@@ -1974,7 +1992,7 @@ halve:
 		if (1 <= level)
 			goto halve;
 
-		ret = zbx_get_snmp_response_error(ssp, &items[0].interface, status, response, error, max_error_len);
+		ret = zbx_get_snmp_response_error(ssp, &items[0].interface, status, response, error, max_error_len, 0);
 	}
 exit:
 	if (NULL != response)
@@ -2346,12 +2364,13 @@ static int	snmp_bulkwalk_parse_param(const char *snmp_oid, zbx_vector_snmp_oid_t
 	if (NULL == snmp_parse_oid(oid_translated, root_oid->root_oid, &root_oid->root_oid_len))
 	{
 		zbx_free(root_oid);
-		zbx_snprintf(error, max_error_len, "snmp_parse_oid(): cannot parse OID \"%s\".",
-				oid_translated);
+		zbx_snprintf(error, max_error_len, "snmp_parse_oid(): cannot parse OID \"%s\": %s",
+				oid_translated, snmp_api_errstring(SNMPERR_GENERR));
 		return FAIL;
 	}
 
 	snprint_objid(buffer, sizeof(buffer), root_oid->root_oid, root_oid->root_oid_len);
+
 	root_oid->str_oid = zbx_strdup(NULL, buffer);
 	zbx_vector_snmp_oid_append(oids_out, root_oid);
 
@@ -2594,13 +2613,19 @@ static int	snmp_bulkwalk_handle_response(int status, struct snmp_pdu *response,
 
 	if (STAT_SUCCESS != status || SNMP_ERR_NOERROR != response->errstat)
 	{
-		ret = zbx_get_snmp_response_error(ssp, interface, status, response, error, max_error_len);
+		ret = zbx_get_snmp_response_error(ssp, interface, status, response, error, max_error_len,
+				(int)*results_offset);
+
+		zabbix_log(LOG_LEVEL_DEBUG, "%s() response error: %s", __func__, error);
+
 		bulkwalk_context->running = 0;
 		goto out;
 	}
 
 	if (NULL == response->variables)
 	{
+		zabbix_log(LOG_LEVEL_DEBUG, "%s() response contains no variables, status: %i", __func__, status);
+
 		if (ZBX_SNMP_GET == snmp_oid_type)
 		{
 			zbx_snprintf(error, max_error_len, "No variables");
@@ -2620,12 +2645,23 @@ static int	snmp_bulkwalk_handle_response(int status, struct snmp_pdu *response,
 		{
 			if (ZBX_SNMP_GET == snmp_oid_type)
 			{
-				zbx_snprintf(error, max_error_len, "OID mismatched");
-				ret = NOTSUPPORTED;
-			}
+				if (SUCCEED == ZBX_CHECK_LOG_LEVEL(LOG_LEVEL_DEBUG))
+				{
+					char	oid_resp[MAX_OID_LEN], oid_req[MAX_OID_LEN];
 
-			bulkwalk_context->running = 0;
-			break;
+					snprint_objid(oid_resp, sizeof(oid_req), var->name, var->name_length);
+					snprint_objid(oid_req, sizeof(oid_resp), bulkwalk_context->name,
+							bulkwalk_context->name_length);
+
+					zabbix_log(LOG_LEVEL_DEBUG, "OID mismatch: GET response OID (%s) doesn't"
+							" match  request OID (%s)", oid_resp, oid_req);
+				}
+			}
+			else
+			{
+				bulkwalk_context->running = 0;
+				break;
+			}
 		}
 
 		if (ZBX_SNMP_GET == snmp_oid_type)
@@ -2678,8 +2714,9 @@ static int	snmp_bulkwalk_handle_response(int status, struct snmp_pdu *response,
 		}
 	}
 out:
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s running:%d", __func__, zbx_result_string(ret),
-			bulkwalk_context->running);
+	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s running:%d count:%d snmp_error:%s", __func__,
+			zbx_result_string(ret), bulkwalk_context->running, bulkwalk_context->vars_num,
+			snmp_api_errstring(status));
 
 	return ret;
 }
@@ -2697,14 +2734,18 @@ static int	asynch_response(int operation, struct snmp_session *sp, int reqid, st
 	bulkwalk_context = (zbx_bulkwalk_context_t *)magic;
 	snmp_context = (zbx_snmp_context_t *)bulkwalk_context->arg;
 
+	bulkwalk_context->operation = operation;
+
 	if (reqid != bulkwalk_context->reqid && NULL != pdu && SNMP_MSG_REPORT != pdu->command)
 	{
 		zabbix_log(LOG_LEVEL_DEBUG, "unexpected response request id:%d expected request id:%d command:%d"
-				" operation:%d", reqid, bulkwalk_context->reqid, pdu->command, operation);
+				" operation:%d snmp_error:%s", reqid, bulkwalk_context->reqid, pdu->command, operation,
+				snmp_api_errstring(SNMPERR_GENERR));
+
 		return 0;
 	}
 
-	zabbix_log(LOG_LEVEL_DEBUG, "operation:%d response id:%d command:%d probe:%d",operation, reqid,
+	zabbix_log(LOG_LEVEL_DEBUG, "operation:%d response id:%d command:%d probe:%d", operation, reqid,
 			pdu ? pdu->command : -1, snmp_context->probe);
 
 	bulkwalk_context->waiting = 0;
@@ -2718,18 +2759,34 @@ static int	asynch_response(int operation, struct snmp_session *sp, int reqid, st
 	switch (operation)
 	{
 		case NETSNMP_CALLBACK_OP_RECEIVED_MESSAGE:
+			if (NULL != pdu && SNMP_MSG_REPORT == pdu->command)
+				goto out;
+
 			stat = STAT_SUCCESS;
 			break;
 		case NETSNMP_CALLBACK_OP_TIMED_OUT:
 			stat = STAT_TIMEOUT;
+			zabbix_log(LOG_LEVEL_DEBUG, "operation:%d response id:%d timed out, snmp_error:%s",
+					operation, reqid, snmp_api_errstring(SNMPERR_TIMEOUT));
 			break;
 		case NETSNMP_CALLBACK_OP_SEND_FAILED:
+			stat = STAT_ERROR;
+			zabbix_log(LOG_LEVEL_DEBUG, "operation:%d response id:%d sending failed, snmp_error:%s",
+					operation, reqid, snmp_api_errstring(SNMPERR_GENERR));
+			break;
 		case NETSNMP_CALLBACK_OP_DISCONNECT:
+			stat = STAT_ERROR;
+			zabbix_log(LOG_LEVEL_DEBUG, "operation:%d response id:%d disconnected, snmp_error:%s",
+					operation, reqid, snmp_api_errstring(SNMPERR_GENERR));
+			break;
 		case NETSNMP_CALLBACK_OP_SEC_ERROR:
 			stat = STAT_ERROR;
+			zabbix_log(LOG_LEVEL_DEBUG, "operation:%d response id:%d security error, snmp_error:%s",
+					operation, reqid, snmp_api_errstring(SNMPERR_GENERR));
 			break;
-		case NETSNMP_CALLBACK_OP_CONNECT:
 		case NETSNMP_CALLBACK_OP_RESEND:
+			bulkwalk_context->reqid = reqid;
+		case NETSNMP_CALLBACK_OP_CONNECT:
 		default:
 			goto out;
 	}
@@ -2806,17 +2863,8 @@ static int	snmp_bulkwalk_add(zbx_snmp_context_t *snmp_context, int *fd, char *er
 	zbx_bulkwalk_context_t		*bulkwalk_context = snmp_context->bulkwalk_contexts.values[snmp_context->i];
 	struct netsnmp_transport_s	*transport;
 	int				ret, numfds = 0, block = 0;
-	struct timeval			timeout = {.tv_sec = snmp_context->config_timeout};
+	struct timeval			timeout = {0};
 	fd_set				fdset;
-
-	if (SUCCEED == ZBX_CHECK_LOG_LEVEL(LOG_LEVEL_DEBUG))
-	{
-		char	buffer[MAX_OID_LEN];
-
-		snprint_objid(buffer, sizeof(buffer), bulkwalk_context->name,  bulkwalk_context->name_length);
-
-		zabbix_log(LOG_LEVEL_DEBUG, "In %s() OID: '%s'",__func__, buffer);
-	}
 
 	if (1 == snmp_context->probe)
 	{
@@ -2833,6 +2881,15 @@ static int	snmp_bulkwalk_add(zbx_snmp_context_t *snmp_context, int *fd, char *er
 	}
 	else
 	{
+		if (SUCCEED == ZBX_CHECK_LOG_LEVEL(LOG_LEVEL_DEBUG))
+		{
+			char	buffer[MAX_OID_LEN];
+
+			snprint_objid(buffer, sizeof(buffer), bulkwalk_context->name,  bulkwalk_context->name_length);
+
+			zabbix_log(LOG_LEVEL_DEBUG, "In %s() OID: '%s'",__func__, buffer);
+		}
+
 		/* create PDU */
 		if (NULL == (pdu = snmp_pdu_create(bulkwalk_context->pdu_type)))
 		{
@@ -2859,18 +2916,18 @@ static int	snmp_bulkwalk_add(zbx_snmp_context_t *snmp_context, int *fd, char *er
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s() sending", __func__);
 
 	bulkwalk_context->reqid = -1;
-	bulkwalk_context->waiting = 1;
+	bulkwalk_context->operation = 0;
 
 	if (0 == (bulkwalk_context->reqid = snmp_sess_async_send(snmp_context->ssp, pdu, asynch_response,
 			bulkwalk_context)))
 	{
 		ret = zbx_get_snmp_response_error(snmp_context->ssp, &snmp_context->item.interface, STAT_ERROR, NULL,
-				error, max_error_len);
+				error, max_error_len, 0);
 		snmp_free_pdu(pdu);
 		goto out;
 	}
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s() send completed", __func__);
+	zabbix_log(LOG_LEVEL_DEBUG, "In %s() send completed reqid:%d", __func__, bulkwalk_context->reqid);
 
 	FD_ZERO(&fdset);
 
@@ -2934,16 +2991,18 @@ void	zbx_unset_snmp_bulkwalk_options(void)
 	snmp_bulkwalk_set_options(&default_opts);
 }
 
-static int	snmp_task_process(short event, void *data, int *fd, const char *addr, char *dnserr)
+static int	snmp_task_process(short event, void *data, int *fd, const char *addr, char *dnserr,
+		struct event *timeout_event)
 {
 	zbx_bulkwalk_context_t	*bulkwalk_context;
 	zbx_snmp_context_t	*snmp_context = (zbx_snmp_context_t *)data;
 	char			error[MAX_STRING_LEN];
+	const char		*snmp_error;
 	int			ret, task_ret = ZBX_ASYNC_TASK_STOP;
 	zbx_poller_config_t	*poller_config = (zbx_poller_config_t *)snmp_context->arg_action;
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s() event:%d fd:%d itemid:" ZBX_FS_UI64, __func__, event, *fd,
-			snmp_context->item.itemid);
+	zabbix_log(LOG_LEVEL_DEBUG, "In %s() %s event:%d fd:%d itemid:" ZBX_FS_UI64, __func__,
+			zbx_get_event_string(event), event, *fd, snmp_context->item.itemid);
 
 	bulkwalk_context = snmp_context->bulkwalk_contexts.values[snmp_context->i];
 
@@ -2961,42 +3020,76 @@ static int	snmp_task_process(short event, void *data, int *fd, const char *addr,
 		goto stop;
 	}
 
-	/* initialization */
-	if (0 != event)
+	if (0 != (event & EV_TIMEOUT))
 	{
-		if (0 != (event & EV_TIMEOUT))
+		if (NULL != dnserr)
 		{
-			char	buffer[MAX_OID_LEN];
-
-			snprint_objid(buffer, sizeof(buffer), bulkwalk_context->name, bulkwalk_context->name_length);
-
-			if (NULL != dnserr)
-			{
-				SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
-						"cannot resolve address [[%s]:%hu]: timed out: %s",
-						snmp_context->item.interface.addr, snmp_context->item.interface.port,
-						dnserr));
-				snmp_context->item.ret = TIMEOUT_ERROR;
-			}
-			else if (ZBX_IF_SNMP_VERSION_3 == snmp_context->snmp_version && 0 == snmp_context->probe)
-			{
-				SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
-						"Probe successful, cannot retrieve OID: '%s' from [[%s]:%hu]:"
-						" timed out", buffer, snmp_context->item.interface.addr,
-						snmp_context->item.interface.port));
-				snmp_context->item.ret = TIMEOUT_ERROR;
-			}
-			else
-			{
-				SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
-						"cannot retrieve OID: '%s' from [[%s]:%hu]:"
-						" timed out", buffer, snmp_context->item.interface.addr,
-						snmp_context->item.interface.port));
-				snmp_context->item.ret = TIMEOUT_ERROR;
-			}
-
+			SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
+					"cannot resolve address [[%s]:%hu]: timed out: %s",
+					snmp_context->item.interface.addr, snmp_context->item.interface.port,
+					dnserr));
+			snmp_context->item.ret = TIMEOUT_ERROR;
 			goto stop;
 		}
+
+		if (0 < snmp_context->retries--)
+		{
+			zabbix_log(LOG_LEVEL_DEBUG, "cannot receive response for itemid:" ZBX_FS_UI64
+					" from [[%s]:%hu]: timed out, retrying",
+					snmp_context->item.itemid, snmp_context->item.interface.addr,
+					snmp_context->item.interface.port);
+
+			snmp_sess_timeout(snmp_context->ssp);
+
+			if (NETSNMP_CALLBACK_OP_RESEND == bulkwalk_context->operation)
+			{
+				/* reset timeout and retry if read is requested after timeout */
+				struct timeval	tv = {snmp_context->config_timeout, 0};
+
+				evtimer_add(timeout_event, &tv);
+
+				task_ret = ZBX_ASYNC_TASK_READ;
+				goto stop;
+			}
+		}
+
+		char		buffer[MAX_OID_LEN];
+		const char	*err_detail;
+
+		snprint_objid(buffer, sizeof(buffer), bulkwalk_context->name, bulkwalk_context->name_length);
+
+
+		if (SNMP_MSG_GETBULK == bulkwalk_context->pdu_type && 0 < snmp_context->results_offset)
+		{
+			err_detail = "only partial data received, cannot retrieve OID";
+			snmp_context->item.ret = NOTSUPPORTED;
+		}
+		else
+		{
+			err_detail = "cannot retrieve OID";
+			snmp_context->item.ret = TIMEOUT_ERROR;
+		}
+
+		if (ZBX_IF_SNMP_VERSION_3 == snmp_context->snmp_version && 0 == snmp_context->probe)
+		{
+			SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
+					"Probe successful, %s: '%s' from [[%s]:%hu]:"
+					" timed out", err_detail, buffer, snmp_context->item.interface.addr,
+					snmp_context->item.interface.port));
+		}
+		else
+		{
+			SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
+					"%s: '%s' from [[%s]:%hu]:"
+					" timed out", err_detail, buffer, snmp_context->item.interface.addr,
+					snmp_context->item.interface.port));
+		}
+
+		goto stop;
+	}
+	else if (0 != event)
+	{
+		bulkwalk_context->waiting = 1;
 
 		if (0 != snmp_sess_read2(snmp_context->ssp, &bulkwalk_context->fdset))
 		{
@@ -3017,6 +3110,29 @@ static int	snmp_task_process(short event, void *data, int *fd, const char *addr,
 			}
 
 			zbx_free(tmp_err_str);
+			goto stop;
+		}
+
+		/* socket became readable but callback was not invoked, this can mean that response to previous */
+		/* request arrived after retry and was ignored by the library, continue waiting for response    */
+		if (1 == bulkwalk_context->waiting)
+		{
+			int		numfds = 0, block = 0;
+			struct timeval	timeout = {0};
+
+			zabbix_log(LOG_LEVEL_DEBUG, "cannot process PDU result for itemid:" ZBX_FS_UI64,
+					snmp_context->item.itemid);
+
+			if (1 > snmp_sess_select_info2(snmp_context->ssp, &numfds, &bulkwalk_context->fdset, &timeout,
+					&block))
+			{
+				snmp_context->item.ret = NOTSUPPORTED;
+				SET_MSG_RESULT(&snmp_context->item.result,
+						zbx_strdup(NULL, "snmp_sess_select_info2(): cannot get socket."));
+				goto stop;
+			}
+
+			task_ret = ZBX_ASYNC_TASK_READ;
 			goto stop;
 		}
 
@@ -3048,12 +3164,6 @@ static int	snmp_task_process(short event, void *data, int *fd, const char *addr,
 			SET_MSG_RESULT(&snmp_context->item.result, bulkwalk_context->error);
 			bulkwalk_context->error = NULL;
 			goto stop;
-		}
-
-		if (1 == bulkwalk_context->waiting)
-		{
-			zabbix_log(LOG_LEVEL_DEBUG, "cannot process PDU result for itemid:" ZBX_FS_UI64,
-					snmp_context->item.itemid);
 		}
 
 		if (0 == bulkwalk_context->running)
@@ -3095,7 +3205,7 @@ static int	snmp_task_process(short event, void *data, int *fd, const char *addr,
 				snmp_context->snmpv3_securitylevel, snmp_context->snmpv3_authprotocol,
 				snmp_context->snmpv3_authpassphrase, snmp_context->snmpv3_privprotocol,
 				snmp_context->snmpv3_privpassphrase, error, sizeof(error),
-				snmp_context->config_timeout, snmp_context->config_source_ip)))
+				0, snmp_context->config_source_ip)))
 		{
 			snmp_context->item.ret = NOTSUPPORTED;
 			SET_MSG_RESULT(&snmp_context->item.result, zbx_dsprintf(NULL,
@@ -3112,7 +3222,24 @@ static int	snmp_task_process(short event, void *data, int *fd, const char *addr,
 	else
 		task_ret = ZBX_ASYNC_TASK_READ;
 stop:
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s()", __func__);
+	snmp_error = snmp_api_errstring(SNMPERR_SUCCESS);
+
+	if ('\0' != *snmp_error)
+		zabbix_log(LOG_LEVEL_DEBUG, "unhandled snmp error:'%s'", snmp_error);
+
+	if (ZBX_ASYNC_TASK_STOP == task_ret && ZBX_ISSET_MSG(&snmp_context->item.result))
+	{
+		zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s %s event:%d fd:%d itemid:" ZBX_FS_UI64 " size:%d error:%s",
+				__func__, zbx_result_string(snmp_context->item.ret), zbx_get_event_string(event),
+				event, *fd, snmp_context->item.itemid, snmp_context->results_offset,
+				snmp_context->item.result.msg);
+	}
+	else
+	{
+		zabbix_log(LOG_LEVEL_DEBUG, "End of %s() %s event:%d fd:%d itemid:" ZBX_FS_UI64 " size:%d state:%s",
+				__func__, zbx_get_event_string(event), event, *fd, snmp_context->item.itemid,
+				snmp_context->results_offset, zbx_task_state_to_str(task_ret));
+	}
 
 	return task_ret;
 }
@@ -3158,15 +3285,16 @@ void	zbx_async_check_snmp_clean(zbx_snmp_context_t *snmp_context)
 
 int	zbx_async_check_snmp(zbx_dc_item_t *item, AGENT_RESULT *result, zbx_async_task_clear_cb_t clear_cb,
 		void *arg, void *arg_action, struct event_base *base, struct evdns_base *dnsbase,
-		const char *config_source_ip, zbx_async_resolve_reverse_dns_t resolve_reverse_dns)
+		const char *config_source_ip, zbx_async_resolve_reverse_dns_t resolve_reverse_dns, int retries)
 {
-	int			ret = SUCCEED, pdu_type;
+	int			ret = SUCCEED, pdu_type, is_oid_plain = 0;
 	AGENT_REQUEST		request;
 	zbx_snmp_context_t	*snmp_context;
 	char			error[MAX_STRING_LEN];
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s() key:'%s' host:'%s' addr:'%s'", __func__, item->key,
-			item->host.host, item->interface.addr);
+	zabbix_log(LOG_LEVEL_DEBUG, "In %s() key:'%s' host:'%s' addr:'%s' timeout:%d retries:%d max_repetitions:%d",
+			__func__, item->key, item->host.host, item->interface.addr, item->timeout, retries,
+			item->snmp_max_repetitions);
 
 	snmp_context = zbx_malloc(NULL, sizeof(zbx_snmp_context_t));
 
@@ -3200,6 +3328,7 @@ int	zbx_async_check_snmp(zbx_dc_item_t *item, AGENT_RESULT *result, zbx_async_ta
 	snmp_context->config_timeout = item->timeout;
 
 	snmp_context->snmp_max_repetitions = item->snmp_max_repetitions;
+	snmp_context->retries = retries;
 	snmp_context->arg = arg;
 	snmp_context->arg_action = arg_action;
 	snmp_context->results = NULL;
@@ -3233,10 +3362,23 @@ int	zbx_async_check_snmp(zbx_dc_item_t *item, AGENT_RESULT *result, zbx_async_ta
 		snmp_context->snmp_oid_type = ZBX_SNMP_WALK;
 		pdu_type = ZBX_IF_SNMP_VERSION_1 == item->snmp_version ? SNMP_MSG_GETNEXT : SNMP_MSG_GETBULK;
 	}
-	else
+	else if (0 == strncmp(item->snmp_oid, "get[", ZBX_CONST_STRLEN("get[")))
 	{
 		snmp_context->snmp_oid_type = ZBX_SNMP_GET;
 		pdu_type = SNMP_MSG_GET;
+	}
+	else if (ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_YES == resolve_reverse_dns)
+	{
+		/* OIDs without key are supported in case of network discovery */
+		snmp_context->snmp_oid_type = ZBX_SNMP_GET;
+		pdu_type = SNMP_MSG_GET;
+		is_oid_plain = 1;
+	}
+	else
+	{
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid SNMP OID: unsupported parameter."));
+		ret = CONFIG_ERROR;
+		goto out;
 	}
 
 	snmp_context->probe = ZBX_IF_SNMP_VERSION_3 == item->snmp_version ? 1 : 0;
@@ -3248,7 +3390,7 @@ int	zbx_async_check_snmp(zbx_dc_item_t *item, AGENT_RESULT *result, zbx_async_ta
 		goto out;
 	}
 
-	if (SUCCEED != zbx_parse_item_key(item->snmp_oid, &request))
+	if (0 == is_oid_plain && SUCCEED != zbx_parse_item_key(item->snmp_oid, &request))
 	{
 		SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid SNMP OID: cannot parse parameter."));
 		ret = CONFIG_ERROR;
@@ -3533,16 +3675,6 @@ static int	zbx_snmp_process_standard(struct snmp_session *ss, const zbx_dc_item_
 	return ret;
 }
 
-int	zbx_get_value_snmp(zbx_dc_item_t *item, AGENT_RESULT *result, unsigned char poller_type,
-		const char *config_source_ip, const char *progname)
-{
-	int	errcode = SUCCEED;
-
-	get_values_snmp(item, result, &errcode, 1, poller_type, config_source_ip, progname);
-
-	return errcode;
-}
-
 /*******************************************************************************************
  *                                                                                         *
  * Comment: Actually this could be called by discoverer, without poller being initialized, *
@@ -3651,7 +3783,8 @@ static void	process_snmp_result(void *data)
 }
 
 void	get_values_snmp(zbx_dc_item_t *items, AGENT_RESULT *results, int *errcodes, int num,
-		unsigned char poller_type, const char *config_source_ip, const char *progname)
+		unsigned char poller_type, const char *config_source_ip, const int config_timeout,
+		const char *progname)
 {
 	zbx_snmp_sess_t		ssp;
 	char			error[MAX_STRING_LEN];
@@ -3713,7 +3846,7 @@ void	get_values_snmp(zbx_dc_item_t *items, AGENT_RESULT *results, int *errcodes,
 
 		if (SUCCEED == (errcodes[j] = zbx_async_check_snmp(&items[j], &results[j], process_snmp_result,
 				&snmp_result, NULL, snmp_result.base, dnsbase, config_source_ip,
-				ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_NO)))
+				ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_NO, ZBX_SNMP_DEFAULT_NUMBER_OF_RETRIES)))
 		{
 			if (1 == snmp_result.finished || -1 != event_base_dispatch(snmp_result.base))
 			{
@@ -3744,7 +3877,7 @@ void	get_values_snmp(zbx_dc_item_t *items, AGENT_RESULT *results, int *errcodes,
 			item->snmp_community, item->snmpv3_securityname, item->snmpv3_contextname,
 			item->snmpv3_securitylevel, item->snmpv3_authprotocol, item->snmpv3_authpassphrase,
 			item->snmpv3_privprotocol, item->snmpv3_privpassphrase, error, sizeof(error),
-			item->timeout, config_source_ip)))
+			config_timeout, config_source_ip)))
 		{
 			err = NETWORK_ERROR;
 			goto exit;
@@ -3768,7 +3901,7 @@ void	get_values_snmp(zbx_dc_item_t *items, AGENT_RESULT *results, int *errcodes,
 			item->snmp_community, item->snmpv3_securityname, item->snmpv3_contextname,
 			item->snmpv3_securitylevel, item->snmpv3_authprotocol, item->snmpv3_authpassphrase,
 			item->snmpv3_privprotocol, item->snmpv3_privpassphrase, error, sizeof(error),
-			item->timeout, config_source_ip)))
+			config_timeout, config_source_ip)))
 		{
 			err = NETWORK_ERROR;
 			goto exit;
@@ -3792,7 +3925,7 @@ void	get_values_snmp(zbx_dc_item_t *items, AGENT_RESULT *results, int *errcodes,
 			item->snmp_community, item->snmpv3_securityname, item->snmpv3_contextname,
 			item->snmpv3_securitylevel, item->snmpv3_authprotocol, item->snmpv3_authpassphrase,
 			item->snmpv3_privprotocol, item->snmpv3_privpassphrase, error, sizeof(error),
-			item->timeout, config_source_ip)))
+			config_timeout, config_source_ip)))
 		{
 			err = NETWORK_ERROR;
 			goto exit;

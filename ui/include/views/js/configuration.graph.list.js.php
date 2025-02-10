@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,22 +20,26 @@
 ?>
 
 <script>
-	const view = {
-		init({checkbox_hash, checkbox_object, context, parent_discoveryid}) {
+
+	const view = new class {
+
+		init({checkbox_hash, checkbox_object, context, parent_discoveryid, form_name}) {
 			this.checkbox_hash = checkbox_hash;
 			this.checkbox_object = checkbox_object;
 			this.context = context;
 			this.is_discovery = parent_discoveryid !== null;
+			this.form = document.forms[form_name];
 
-			this._initActions();
-		},
+			this.#initActions();
+			this.#initPopupListeners();
+		}
 
-		_initActions() {
+		#initActions() {
 			const copy = document.querySelector('.js-copy');
 
 			if (copy !== null) {
 				copy.addEventListener('click', () => {
-					const overlay = this.openCopyPopup();
+					const overlay = this.#openCopyPopup();
 					const dialogue = overlay.$dialogue[0];
 
 					dialogue.addEventListener('dialogue.submit', (e) => {
@@ -54,9 +58,9 @@
 					});
 				});
 			}
-		},
+		}
 
-		openCopyPopup() {
+		#openCopyPopup() {
 			const parameters = {
 				graphids: Object.keys(chkbxRange.getSelectedIds()),
 				source: 'graphs'
@@ -73,72 +77,26 @@
 				dialogueid: 'copy',
 				dialogue_class: 'modal-popup-static'
 			});
-		},
+		}
 
-		editHost(e, hostid) {
-			e.preventDefault();
-			const host_data = {hostid};
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, event}) => {
+					uncheckTableRows('graphs_' + this.checkbox_hash, [], false);
 
-			this.openHostPopup(host_data);
-		},
+					if (data.submit.success.action === 'delete') {
+						const url = new URL(this.is_discovery ? 'host_discovery.php' : 'graphs.php', location.href);
 
-		editTemplate(e, templateid) {
-			e.preventDefault();
-			const template_data = {templateid};
+						url.searchParams.set('context', this.context);
 
-			this.openTemplatePopup(template_data);
-		},
-
-		openHostPopup(host_data) {
-			const original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit',
-				this.events.elementSuccess.bind(this, this.context, this.is_discovery), {once: true}
-			);
-			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-				history.replaceState({}, '', original_url);
-			}, {once: true});
-		},
-
-		openTemplatePopup(template_data) {
-			const overlay =  PopUp('template.edit', template_data, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit',
-				this.events.elementSuccess.bind(this, this.context, this.is_discovery), {once: true}
-			);
-		},
-
-		events: {
-			elementSuccess(context, discovery, e) {
-				const data = e.detail;
-				let curl = null;
-
-				if ('success' in data) {
-					postMessageOk(data.success.title);
-
-					if ('messages' in data.success) {
-						postMessageDetails('success', data.success.messages);
-					}
-
-					if ('action' in data.success && data.success.action === 'delete') {
-						curl = discovery ? new Curl('host_discovery.php') : new Curl('graphs.php');
-						curl.setArgument('context', context);
+						event.setRedirectUrl(url.href);
 					}
 				}
-
-				uncheckTableRows('graphs_' + this.checkbox_hash, [], false);
-
-				location.href = curl === null? location.href : curl.getUrl();
-			}
+			});
 		}
 	};
 </script>

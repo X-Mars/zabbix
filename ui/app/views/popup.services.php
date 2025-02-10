@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -96,7 +96,8 @@ $output = [
 	'controls' => $controls->toString(),
 	'body' => $form->toString(),
 	'buttons' => $buttons,
-	'script_inline' => $this->readJsFile('popup.services.js.php')
+	'script_inline' => $this->readJsFile('popup.services.js.php'),
+	'dialogue_class' => 'modal-popup-generic'
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

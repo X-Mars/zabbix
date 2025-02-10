@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -110,10 +110,14 @@ foreach ($data['proxy_groups'] as $proxy_groupid => $proxy_group) {
 		}
 
 		foreach ($proxy_group['proxies'] as $proxy) {
+			$proxy_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'proxy.edit')
+				->setArgument('proxyid', $proxy['proxyid'])
+				->getUrl();
+
 			$proxies[] = $data['user']['can_edit_proxies']
-				? (new CLink($proxy['name']))
-					->addClass('js-edit-proxy')
-					->setAttribute('data-proxyid', $proxy['proxyid'])
+				? new CLink($proxy['name'], $proxy_url)
 				: $proxy['name'];
 			$proxies[] = ', ';
 		}
@@ -127,19 +131,23 @@ foreach ($data['proxy_groups'] as $proxy_groupid => $proxy_group) {
 		$proxy_count_total = (new CSpan($proxy_group['proxy_count_total']))->addClass(ZBX_STYLE_ENTITY_COUNT);
 	}
 
+	$proxy_group_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'proxygroup.edit')
+		->setArgument('proxy_groupid', $proxy_groupid)
+		->getUrl();
+
 	$proxy_group_list->addRow([
 		new CCheckBox('proxy_groupids['.$proxy_groupid.']', $proxy_groupid),
 		(new CCol(
-			(new CLink($proxy_group['name']))
-				->addClass('js-edit-proxy-group')
-				->setAttribute('data-proxy_groupid', $proxy_groupid)
+			new CLink($proxy_group['name'], $proxy_group_url)
 		))->addClass(ZBX_STYLE_WORDBREAK),
 		$state,
 		$proxy_group['failover_delay'],
 		$proxy_group['proxy_count_online'],
 		$proxy_group['min_online'],
 		(new CCol($proxy_count_total))->addClass(ZBX_STYLE_CELL_WIDTH),
-		$proxies
+		(new CCol($proxies))->addClass(ZBX_STYLE_WORDBREAK)
 	]);
 }
 

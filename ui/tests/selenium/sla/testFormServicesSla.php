@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -197,7 +197,7 @@ class testFormServicesSla extends CWebTest {
 		$this->assertSame(['Equals', 'Contains'], $form->getField('name:service_tags[0][operator]')->getOptions()->asText());
 
 		$tags_table_elements = [
-			'headers' => ['Name', 'Operation', 'Value', 'Action'],
+			'headers' => ['Name', 'Operation', 'Value', ''],
 			'buttons' => ['Add', 'Remove'],
 			'count' => 2
 		];
@@ -209,7 +209,7 @@ class testFormServicesSla extends CWebTest {
 		$downtimes_table = $form->query('id:excluded-downtimes')->asMultifieldTable()->waitUntilVisible()->one();
 
 		$downtimes_table_elements = [
-			'headers' => ['Start time', 'Duration', 'Name', 'Action'],
+			'headers' => ['Start time', 'Duration', 'Name', 'Actions'],
 			'buttons' => ['Add', 'Edit', 'Remove'],
 			'count' => 1
 		];
@@ -288,7 +288,7 @@ class testFormServicesSla extends CWebTest {
 				'Start time' => date('Y-m-d', strtotime(date('Y-m-d')."+1 days")).' 00:00',
 				'Duration' => '1h',
 				'Name' => '!@#$%^&*()_+123Zabbix',
-				'Action' => 'Edit Remove'
+				'Actions' => 'Edit Remove'
 			]
 		];
 		$this->assertTableData($table_data, 'id:excluded-downtimes');
@@ -1080,6 +1080,11 @@ class testFormServicesSla extends CWebTest {
 			$db_data = CDBHelper::getColumn('SELECT * FROM sla', 'name');
 			$this->assertTrue(in_array($data['fields']['Name'], $db_data));
 
+			// Remove extra spaces in the middle of the name; spaces in links on page are trimmed.
+			$name = CTestArrayHelper::get($data, 'trim', false)
+				? preg_replace('/\s+/', ' ', $data['fields']['Name'])
+				: $data['fields']['Name'];
+
 			if ($update) {
 				// Check that old name is not present anymore and write new name to global variable for future cases.
 				if (array_key_exists('downtime_action', $data)) {
@@ -1088,11 +1093,11 @@ class testFormServicesSla extends CWebTest {
 				}
 				else {
 					$this->assertFalse(in_array(self::$update_sla, $db_data));
-					self::$update_sla = $data['fields']['Name'];
+					self::$update_sla = $name;
 				}
 			}
 
-			$this->query('link', $data['fields']['Name'])->waitUntilClickable()->one()->click();
+			$this->query('link', $name)->waitUntilClickable()->one()->click();
 			$form->invalidate();
 			$form->checkValue($data['fields']);
 
@@ -1120,7 +1125,7 @@ class testFormServicesSla extends CWebTest {
 						$downtimes_form = COverlayDialogElement::find()->all()->last()->waitUntilReady()->asForm();
 
 						$downtimes_form->checkValue($downtime);
-						$downtimes_form->submit();
+						$downtimes_form->submit()->waitUntilNotVisible();
 					}
 				}
 				else {

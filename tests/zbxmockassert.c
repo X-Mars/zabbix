@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -247,7 +247,7 @@ void	__zbx_mock_assert_vector_uint64_eq(const char *file, int line, const char *
 				expected_value->values[i], returned_value->values[i]);
 	}
 
-	_FAIL(file, line, prefix_msg, "Expected values number \"" ZBX_FS_UI64 "\" while got \"" ZBX_FS_UI64 "\"",
+	_FAIL(file, line, prefix_msg, "Expected values number \"%d\" while got \"%d\"",
 			expected_value->values_num, returned_value->values_num);
 }
 

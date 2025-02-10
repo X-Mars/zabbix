@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -16,19 +16,18 @@
 
 /**
  * @var CView $this
+ * @var array $data
  */
 
-$this->addJsFile('class.calendar.js');
+$this->includeJsFile('popup.view.js.php');
 
-(new CHtmlPage())->show();
+$html_page = (new CHtmlPage())->show();
 
-(new CScriptTag(
-	'PopUp("'.$data['popup']['action'].'", '.json_encode($data['popup']['options']).');'.
-
-	'$.subscribe("acknowledge.create", function(event, response, overlay) {'.
-		'clearMessages();'.
-		'addMessage(makeMessageBox("good", [], response.success.title, true, false));'.
-	'});'
-))
+(new CScriptTag('
+	view.init('.json_encode([
+		'action' => $data['popup']['action'],
+		'action_parameters' => $data['popup']['action_parameters']
+	]).');
+'))
 	->setOnDocumentReady()
 	->show();

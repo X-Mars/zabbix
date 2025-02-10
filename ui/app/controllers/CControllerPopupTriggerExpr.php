@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -621,6 +621,13 @@ class CControllerPopupTriggerExpr extends CController {
 				'allowed_types' => $this->allowedTypesAny,
 				'operators' => $this->operators
 			],
+			'firstclock' => [
+				'types' => [ZBX_FUNCTION_TYPE_HISTORY],
+				'description' => _('firstclock() - Timestamp of the oldest value in the specified time interval'),
+				'params' => $this->param1Sec + $this->period_optional,
+				'allowed_types' => $this->allowedTypesAny,
+				'operators' => $this->operators
+			],
 			'floor' => [
 				'types' => [ZBX_FUNCTION_TYPE_MATH],
 				'description' => _('floor() - Rounds down to the nearest smaller integer'),
@@ -721,6 +728,13 @@ class CControllerPopupTriggerExpr extends CController {
 				'allowed_types' => $this->allowedTypesAny,
 				'operators' => $this->operators
 			],
+			'lastclock' => [
+				'types' => [ZBX_FUNCTION_TYPE_HISTORY],
+				'description' => _('lastclock() - Timestamp of the last (most recent) T value'),
+				'params' => $this->param1SecCount,
+				'allowed_types' => $this->allowedTypesAny,
+				'operators' => $this->operators
+			],
 			'left' => [
 				'types' => [ZBX_FUNCTION_TYPE_STRING],
 				'description' => _('left() - Returns the leftmost count characters'),
@@ -775,6 +789,13 @@ class CControllerPopupTriggerExpr extends CController {
 				'params' => $this->period_optional + $this->param1Str,
 				'allowed_types' => $this->allowedTypesLog,
 				'operators' => ['=', '<>']
+			],
+			'logtimestamp' => [
+				'types' => [ZBX_FUNCTION_TYPE_HISTORY],
+				'description' => _('logtimestamp() - Timestamp of the last (most recent) T log message'),
+				'params' => $this->period_optional,
+				'allowed_types' => $this->allowedTypesLog,
+				'operators' => $this->operators
 			],
 			'ltrim' => [
 				'types' => [ZBX_FUNCTION_TYPE_STRING],
@@ -1486,7 +1507,9 @@ class CControllerPopupTriggerExpr extends CController {
 			'item_required' => !in_array($function, array_merge(getStandaloneFunctions(), getFunctionsConstants())),
 			'functions' => $this->functions,
 			'function' => $function,
-			'function_type' => reset($this->functions[$function]['types']),
+			'function_type' => array_key_exists($function, $this->functions)
+				? reset($this->functions[$function]['types'])
+				: null,
 			'operator' => $operator,
 			'item_key' => $item_key,
 			'itemValueType' => $item_value_type,

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -38,7 +38,7 @@ function isWritableHostGroups(array $groupids) {
  *
  * @return array
  */
-function getSubGroups(array $groupids, array &$ms_groups = null, string $context = 'host') {
+function getSubGroups(array $groupids, ?array &$ms_groups = null, string $context = 'host') {
 	$entity = $context === 'host' ? API::HostGroup() : API::TemplateGroup();
 	$db_groups = $groupids
 		? $entity->get([
@@ -80,7 +80,7 @@ function getSubGroups(array $groupids, array &$ms_groups = null, string $context
  *
  * @return array
  */
-function getTemplateSubGroups(array $template_groupids, array &$ms_template_groups = null, array $options = []) {
+function getTemplateSubGroups(array $template_groupids, ?array &$ms_template_groups = null, array $options = []) {
 	$db_groups = $template_groupids
 		? API::TemplateGroup()->get([
 				'output' => ['groupid', 'name'],

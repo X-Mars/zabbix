@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -95,9 +95,10 @@ class CControllerDashboardWidgetEdit extends CController {
 		natcasesort($known_types);
 		natcasesort($deprecated_types);
 
+		$values = $this->getInput('fields', $this->widget->getInitialFieldsValues());
 		$templateid = $this->hasInput('templateid') ? $this->getInput('templateid') : null;
 
-		$form = $this->widget->getForm($this->getInput('fields', []), $templateid);
+		$form = $this->widget->getForm($values, $templateid);
 		$form->validate();
 
 		$captions = $this->getValuesCaptions($form->fieldsToApi());

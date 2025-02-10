@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -32,6 +32,9 @@ use Zabbix\Widgets\Fields\{
  */
 class WidgetForm extends CWidgetForm {
 
+	public const LAYOUT_HORIZONTAL = 0;
+	public const LAYOUT_VERTICAL = 1;
+
 	public function addFields(): self {
 		return $this
 			->addField(
@@ -61,15 +64,10 @@ class WidgetForm extends CWidgetForm {
 			->addField(
 				new CWidgetFieldCheckBox('show_suppressed', _('Show suppressed problems'))
 			)
-			->addField(
-				(new CWidgetFieldRadioButtonList(
-					'style',
-					$this->isTemplateDashboard() ? _('Host location') : _('Hosts location'),
-					[
-						STYLE_LEFT => _('Left'),
-						STYLE_TOP => _('Top')
-					]
-				))->setDefault(STYLE_LEFT)
+			->addField((new CWidgetFieldRadioButtonList('layout', _('Layout'), [
+					self::LAYOUT_HORIZONTAL => _('Horizontal'),
+					self::LAYOUT_VERTICAL => _('Vertical')
+				]))->setDefault(self::LAYOUT_HORIZONTAL)
 			)
 			->addField(
 				new CWidgetFieldMultiSelectOverrideHost()

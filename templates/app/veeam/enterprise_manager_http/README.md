@@ -20,7 +20,7 @@ It works without any external scripts and uses the script item.
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -29,11 +29,11 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
-> See [Zabbix template operation](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box/http) for basic instructions.
+> See [Zabbix template operation](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box/http) for basic instructions.
 
 1. Create a user to monitor the service, or use an existing read-only account.
   Similarly to the user authentication in the Veeam Backup Enterprise Manager Web UI, 
@@ -78,9 +78,9 @@ This template has been tested on:
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|There are errors in requests to API|<p>Zabbix has received errors in response to API requests.</p>|`length(last(/Veeam Backup Enterprise Manager by HTTP/veeam.manager.get.errors))>0`|Average||
-|Warning job runs is too high||`last(/Veeam Backup Enterprise Manager by HTTP/veeam.manager.warning.jobs)>{$VEEAM.MANAGER.JOB.MAX.WARN}`|Warning|**Manual close**: Yes|
-|Failed job runs is too high||`last(/Veeam Backup Enterprise Manager by HTTP/veeam.manager.failed.jobs)>{$VEEAM.MANAGER.JOB.MAX.FAIL}`|Average|**Manual close**: Yes|
+|Veeam Backup: There are errors in requests to API|<p>Zabbix has received errors in response to API requests.</p>|`length(last(/Veeam Backup Enterprise Manager by HTTP/veeam.manager.get.errors))>0`|Average||
+|Veeam Backup: Warning job runs is too high||`last(/Veeam Backup Enterprise Manager by HTTP/veeam.manager.warning.jobs)>{$VEEAM.MANAGER.JOB.MAX.WARN}`|Warning|**Manual close**: Yes|
+|Veeam Backup: Failed job runs is too high||`last(/Veeam Backup Enterprise Manager by HTTP/veeam.manager.failed.jobs)>{$VEEAM.MANAGER.JOB.MAX.FAIL}`|Average|**Manual close**: Yes|
 
 ### LLD rule Backup Files discovery
 

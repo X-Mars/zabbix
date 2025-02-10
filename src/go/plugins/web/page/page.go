@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,20 +25,14 @@ import (
 	"golang.zabbix.com/agent2/internal/agent"
 	"golang.zabbix.com/agent2/pkg/web"
 	"golang.zabbix.com/agent2/pkg/zbxregexp"
-	"golang.zabbix.com/sdk/conf"
 	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/plugin"
 )
 
 var impl Plugin
 
-type Options struct {
-	plugin.SystemOptions `conf:"optional,name=System"`
-}
-
 type Plugin struct {
 	plugin.Base
-	options Options
 }
 
 func init() {
@@ -51,17 +45,6 @@ func init() {
 	if err != nil {
 		panic(errs.Wrap(err, "failed to register metrics"))
 	}
-}
-
-func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
-	if err := conf.Unmarshal(options, &p.options); err != nil {
-		p.Warningf("cannot unmarshal configuration options: %s", err)
-	}
-}
-
-func (p *Plugin) Validate(options interface{}) error {
-	var o Options
-	return conf.Unmarshal(options, &o)
 }
 
 func (p *Plugin) Export(key string, params []string, ctx plugin.ContextProvider) (interface{}, error) {

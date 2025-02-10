@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -197,7 +197,7 @@ $template_permissions_form_grid = (new CFormGrid())
 				(new CTable())
 					->setId('templategroup-right-table')
 					->setAttribute('style', 'width: 100%;')
-					->setHeader([_('Template groups'), _('Permissions'), _('Action')])
+					->setHeader([_('Template groups'), _('Permissions'), ''])
 					->addRow((new CRow())->addClass('js-templategroup-right-row-placeholder'))
 					->addItem(
 						(new CTag('tfoot', true))
@@ -251,7 +251,7 @@ $host_permissions_form_grid = (new CFormGrid())
 				(new CTable())
 					->setId('hostgroup-right-table')
 					->setAttribute('style', 'width: 100%;')
-					->setHeader([_('Host groups'), _('Permissions'), _('Action')])
+					->setHeader([_('Host groups'), _('Permissions'), ''])
 					->addRow((new CRow())->addClass('js-hostgroup-right-row-placeholder'))
 					->addItem(
 						(new CTag('tfoot', true))

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -542,7 +542,7 @@ class testPageHostGroups extends testPageGroups {
 		$this->page->login()->open($this->link)->waitUntilReady();
 
 		// Locate the table cell that corresponds to the desired hostgroup name.
-		$table_cell = $this->query('link', $data['name'])->one()->parents('class:nowrap')->one();
+		$table_cell = $this->query('link', $data['name'])->one()->parents('class:wordbreak')->one();
 
 		foreach ($data['links'] as $lld_name) {
 			$link = $table_cell->query('link', $lld_name)->one();

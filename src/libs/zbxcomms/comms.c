@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -822,7 +822,8 @@ int	zbx_tcp_send_context_init(const char *data, size_t len, size_t reserved, uns
 	if (ZBX_MAX_RECV_LARGE_DATA_SIZE < len)
 	{
 		zbx_set_socket_strerror("cannot send data: message size " ZBX_FS_UI64 " exceeds the maximum"
-				" size " ZBX_FS_UI64 " bytes.", (zbx_uint64_t)len, ZBX_MAX_RECV_LARGE_DATA_SIZE);
+				" size " ZBX_FS_UI64 " bytes.", (zbx_uint64_t)len,
+				(zbx_uint64_t)ZBX_MAX_RECV_LARGE_DATA_SIZE);
 		return FAIL;
 	}
 
@@ -830,7 +831,7 @@ int	zbx_tcp_send_context_init(const char *data, size_t len, size_t reserved, uns
 	{
 		zbx_set_socket_strerror("cannot send data: uncompressed message size " ZBX_FS_UI64
 				" exceeds the maximum size " ZBX_FS_UI64 " bytes.", (zbx_uint64_t)reserved,
-				ZBX_MAX_RECV_LARGE_DATA_SIZE);
+				(zbx_uint64_t)ZBX_MAX_RECV_LARGE_DATA_SIZE);
 		return FAIL;
 	}
 
@@ -1934,6 +1935,28 @@ ssize_t	zbx_tcp_read(zbx_socket_t *s, char *buf, size_t len, short *events)
 	return tcp_read(s, buf, len, events);
 }
 
+int	zbx_tcp_read_close_notify(zbx_socket_t *s, int timeout, short *events)
+{
+	int	ret;
+	char	buf[ZBX_STAT_BUF_LEN];
+
+	if (SUCCEED != zbx_tls_used(s))
+		return 0;
+
+	if (0 != timeout)
+		zbx_socket_set_deadline(s, timeout);
+
+	if (NULL != events)
+		*events = 0;
+
+	ret = zbx_tcp_read(s, buf, sizeof(buf), events);
+
+	if (0 != timeout)
+		zbx_socket_set_deadline(s, 0);
+
+	return ret;
+}
+
 /******************************************************************************
  *                                                                            *
  * Purpose: sets deadline for socket operations                               *
@@ -2092,6 +2115,7 @@ ssize_t	zbx_tcp_recv_context(zbx_socket_t *s, zbx_tcp_recv_context_t *context, u
 
 			if (context->max_len < context->expected_len)
 			{
+				zbx_set_socket_strerror("message exceeds the maximum size");
 				zabbix_log(LOG_LEVEL_WARNING, "Message size " ZBX_FS_UI64 " from %s exceeds the "
 						"maximum size " ZBX_FS_UI64 " bytes. Message ignored.",
 						context->expected_len, s->peer, context->max_len);
@@ -2102,6 +2126,7 @@ ssize_t	zbx_tcp_recv_context(zbx_socket_t *s, zbx_tcp_recv_context_t *context, u
 			/* compressed protocol stores uncompressed packet size in the reserved data */
 			if (context->max_len < context->reserved)
 			{
+				zbx_set_socket_strerror("uncompressed message size exceeds the maximum size");
 				zabbix_log(LOG_LEVEL_WARNING, "Uncompressed message size " ZBX_FS_UI64 " from %s"
 						" exceeds the maximum size " ZBX_FS_UI64 " bytes. Message ignored.",
 						context->reserved, s->peer, context->max_len);
@@ -2177,6 +2202,7 @@ ssize_t	zbx_tcp_recv_context(zbx_socket_t *s, zbx_tcp_recv_context_t *context, u
 		}
 		else
 		{
+			zbx_set_socket_strerror("message length does not match expected length");
 			if (context->buf_stat_bytes + context->buf_dyn_bytes < context->expected_len)
 			{
 				zabbix_log(LOG_LEVEL_WARNING, "Message from %s is shorter than expected " ZBX_FS_UI64
@@ -2195,23 +2221,27 @@ ssize_t	zbx_tcp_recv_context(zbx_socket_t *s, zbx_tcp_recv_context_t *context, u
 	}
 	else if (ZBX_TCP_EXPECT_LENGTH == context->expect)
 	{
+		zbx_set_socket_strerror("message is missing data length");
 		zabbix_log(LOG_LEVEL_WARNING, "Message from %s is missing data length. Message ignored.", s->peer);
 		nbytes = ZBX_PROTO_ERROR;
 	}
 	else if (ZBX_TCP_EXPECT_VERSION == context->expect)
 	{
+		zbx_set_socket_strerror("message is missing protocol version");
 		zabbix_log(LOG_LEVEL_WARNING, "Message from %s is missing protocol version. Message ignored.",
 				s->peer);
 		nbytes = ZBX_PROTO_ERROR;
 	}
 	else if (ZBX_TCP_EXPECT_VERSION_VALIDATE == context->expect)
 	{
+		zbx_set_socket_strerror("message is using unsupported protocol version");
 		zabbix_log(LOG_LEVEL_WARNING, "Message from %s is using unsupported protocol version \"%d\"."
 				" Message ignored.", s->peer, context->protocol_version);
 		nbytes = ZBX_PROTO_ERROR;
 	}
 	else if (0 != context->buf_stat_bytes)
 	{
+		zbx_set_socket_strerror("message is missing header");
 		zabbix_log(LOG_LEVEL_WARNING, "Message from %s is missing header. Message ignored.", s->peer);
 		nbytes = ZBX_PROTO_ERROR;
 	}
@@ -2885,4 +2915,15 @@ void	zbx_udp_close(zbx_socket_t *s)
 {
 	zbx_socket_free(s);
 	zbx_socket_close(s->socket);
+}
+
+int	zbx_tls_used(const zbx_socket_t *s)
+{
+#if defined(HAVE_GNUTLS) || defined(HAVE_OPENSSL)
+	if (NULL != s->tls_ctx)
+		return SUCCEED;
+#else
+	ZBX_UNUSED(s);
+#endif
+	return FAIL;
 }

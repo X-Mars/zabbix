@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -15,11 +15,13 @@
 #include "zbxasyncpoller.h"
 #include "zbxcommon.h"
 #include "zbxcomms.h"
+#include "zbxtime.h"
 
 #ifdef HAVE_LIBEVENT
 #include "zbxip.h"
-#include <event2/util.h>
 #include <event2/dns.h>
+#include <event2/event.h>
+#include <event2/util.h>
 typedef struct
 {
 	void				*data;
@@ -59,18 +61,18 @@ static void	async_task_remove(zbx_async_task_t *task)
 	zbx_free(task);
 }
 
-static const char	*task_state_to_str(zbx_async_task_state_t task_state)
+const char	*zbx_task_state_to_str(zbx_async_task_state_t task_state)
 {
 	switch (task_state)
 	{
 		case ZBX_ASYNC_TASK_WRITE:
-			return "ZBX_ASYNC_TASK_WRITE";
+			return "write";
 		case ZBX_ASYNC_TASK_READ:
-			return "ZBX_ASYNC_TASK_READ";
+			return "read";
 		case ZBX_ASYNC_TASK_STOP:
-			return "ZBX_ASYNC_TASK_STOP";
+			return "stop";
 		case ZBX_ASYNC_TASK_RESOLVE_REVERSE:
-			return "ZBX_ASYNC_TASK_RESOLVE_REVERSE";
+			return "resolve reverse";
 		default:
 			return "unknown";
 	}
@@ -84,7 +86,7 @@ static void	async_event(evutil_socket_t fd, short what, void *arg)
 
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
 
-	ret = task->process_cb(what, task->data, &fd, task->address, task->error);
+	ret = task->process_cb(what, task->data, &fd, task->address, task->error, task->timeout_event);
 
 	switch (ret)
 	{
@@ -149,7 +151,7 @@ static void	async_event(evutil_socket_t fd, short what, void *arg)
 
 	}
 
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, task_state_to_str(ret));
+	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_task_state_to_str(ret));
 }
 
 static void	async_reverse_dns_event(int err, char type, int count, int ttl, void *addresses, void *arg)
@@ -210,6 +212,39 @@ static void	async_dns_event(int err, struct evutil_addrinfo *ai, void *arg)
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s()", __func__);
 }
 
+void	zbx_async_dns_update_host_addresses(struct evdns_base *dnsbase)
+{
+	static time_t	time_r = 0, time_h = 0;
+	static double	mtime = 0;
+	zbx_stat_t	buf_r, buf_h;
+
+	if (60 < zbx_time() - mtime)
+	{
+		int	ret_h = zbx_stat("/etc/hosts", &buf_h), ret_r = zbx_stat("/etc/resolv.conf", &buf_r);
+
+		if ((0 == ret_r && time_r != buf_r.st_mtime && 0 != time_r) ||
+			(0 == ret_h && time_h != buf_h.st_mtime && 0 != time_h))
+		{
+			int	ret;
+
+			zabbix_log(LOG_LEVEL_DEBUG, "%s() update host addresses", __func__);
+
+			evdns_base_clear_nameservers_and_suspend(dnsbase);
+
+			if (0 != (ret = evdns_base_resolv_conf_parse(dnsbase, DNS_OPTIONS_ALL, ZBX_RES_CONF_FILE)))
+			{
+				zabbix_log(LOG_LEVEL_ERR, "cannot parse resolv.conf result: %s",
+					zbx_resolv_conf_errstr(ret));
+			}
+
+			evdns_base_resume(dnsbase);
+		}
+		time_r = buf_r.st_mtime;
+		time_h = buf_h.st_mtime;
+		mtime = zbx_time();
+	}
+}
+
 void	zbx_async_poller_add_task(struct event_base *ev, struct evdns_base *dnsbase, const char *addr,
 		void *data, int timeout, zbx_async_task_process_cb_t process_cb, zbx_async_task_clear_cb_t clear_cb)
 {
@@ -257,6 +292,7 @@ zbx_async_task_state_t	zbx_async_poller_get_task_state_for_event(short event)
 
 	return ZBX_ASYNC_TASK_STOP;
 }
+
 const char	*zbx_resolv_conf_errstr(const int error)
 {
 	switch (error)
@@ -276,6 +312,24 @@ const char	*zbx_resolv_conf_errstr(const int error)
 		default:
 			return "unknown";
 	}
+}
+
+const char	*zbx_get_event_string(short event)
+{
+
+	if (EV_TIMEOUT & event)
+		return "timeout";
+
+	if (EV_READ & event)
+		return "read";
+
+	if (EV_WRITE & event)
+		return "write";
+
+	if (0 == event)
+		return "init";
+
+	return "unknown";
 }
 
 #endif

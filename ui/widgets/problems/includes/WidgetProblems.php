@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -457,14 +457,17 @@ class WidgetProblems extends CTableInfo {
 				);
 			}
 
+			$problem_update_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'acknowledge.edit')
+				->setArgument('eventids[]', $problem['eventid'])
+				->getUrl();
+
 			// Create acknowledge link.
 			$problem_update_link = ($data['allowed']['add_comments'] || $data['allowed']['change_severity']
 					|| $data['allowed']['acknowledge'] || $can_be_closed || $data['allowed']['suppress_problems']
 					|| $data['allowed']['rank_change'])
-				? (new CLink(_('Update')))
-					->addClass(ZBX_STYLE_LINK_ALT)
-					->setAttribute('data-eventid', $problem['eventid'])
-					->onClick('acknowledgePopUp({eventids: [this.dataset.eventid]}, this);')
+				? (new CLink(_('Update'), $problem_update_url))->addClass(ZBX_STYLE_LINK_ALT)
 				: new CSpan(_('Update'));
 
 			$row

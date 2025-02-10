@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -404,7 +404,7 @@ class User extends ScimApiService {
 	 *
 	 * @throws APIException
 	 */
-	private function validatePatch(array &$options, array &$db_user = null): void {
+	private function validatePatch(array &$options, ?array &$db_user = null): void {
 		$api_input_rules = ['type' => API_OBJECT, 'flags' => API_REQUIRED | API_ALLOW_UNEXPECTED, 'fields' => [
 			'id' =>			['type' => API_ID, 'flags' => API_REQUIRED],
 			'schemas' =>	['type' => API_STRINGS_UTF8, 'flags' => API_REQUIRED | API_NOT_EMPTY],

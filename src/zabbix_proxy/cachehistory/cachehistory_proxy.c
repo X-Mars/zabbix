@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,6 +25,7 @@
 #include "zbxstr.h"
 #include "zbx_item_constants.h"
 #include "zbxproxybuffer.h"
+#include "zbx_host_constants.h"
 
 static char	*sql = NULL;
 static size_t	sql_alloc = 4 * ZBX_KIBIBYTE;
@@ -290,7 +291,16 @@ static void	proxy_prepare_history(zbx_dc_history_t *history, int history_num, zb
 	for (i = 0; i < history_num; i++)
 	{
 		if (SUCCEED != errcodes[i])
+		{
+			zbx_hc_clear_item_middle(history[i].itemid);
 			continue;
+		}
+
+		if (ITEM_STATUS_ACTIVE != items[i].status || HOST_STATUS_MONITORED != items[i].host.status)
+		{
+			zbx_hc_clear_item_middle(history[i].itemid);
+			continue;
+		}
 
 		zbx_item_diff_t		*diff = (zbx_item_diff_t *)zbx_malloc(NULL, sizeof(zbx_item_diff_t));
 		zbx_dc_history_t	*h = &history[i];

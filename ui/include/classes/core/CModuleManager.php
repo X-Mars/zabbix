@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -83,8 +83,8 @@ final class CModuleManager {
 	 *
 	 * @return array|null  Either manifest data or null if manifest file had errors or IDs didn't match.
 	 */
-	public function addModule(string $relative_path, string $moduleid = null, string $id = null,
-			array $config = null): ?array {
+	public function addModule(string $relative_path, ?string $moduleid = null, ?string $id = null,
+			?array $config = null): ?array {
 
 		$manifest = $this->loadManifest($relative_path);
 

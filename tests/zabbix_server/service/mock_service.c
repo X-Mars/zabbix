@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -36,6 +36,12 @@ void	__wrap_zbx_rtc_subscribe(unsigned char proc_type, int proc_num, zbx_uint32_
 		int config_timeout, void *rtc);
 void	__wrap_zbx_rtc_notify_finished_sync(int config_timeout, zbx_uint32_t code, const char *process_name,
 		void *rtc);
+void	__wrap_zbx_dc_set_itservices_num(int num);
+
+void	__wrap_zbx_dc_set_itservices_num(int num)
+{
+	ZBX_UNUSED(num);
+}
 
 /* stubs to satisfy hard link dependenceies */
 

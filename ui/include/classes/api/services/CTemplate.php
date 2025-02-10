@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -65,7 +65,6 @@ class CTemplate extends CHostGeneral {
 			'searchWildcardsEnabled'	=> null,
 			// output
 			'output'					=> API_OUTPUT_EXTEND,
-			'selectGroups'				=> null,
 			'selectTemplateGroups'		=> null,
 			'selectHosts'				=> null,
 			'selectTemplates'			=> null,
@@ -89,8 +88,6 @@ class CTemplate extends CHostGeneral {
 		];
 		$options = zbx_array_merge($defOptions, $options);
 		$this->validateGet($options);
-
-		$this->checkDeprecatedParam($options, 'selectGroups');
 
 		// editable + PERMISSION CHECK
 		if (self::$userData['type'] != USER_TYPE_SUPER_ADMIN && !$options['nopermissions']) {
@@ -283,11 +280,10 @@ class CTemplate extends CHostGeneral {
 		if ($result) {
 			$result = $this->addRelatedObjects($options, $result);
 			$result = $this->unsetExtraFields($result, ['name_upper']);
-		}
 
-		// removing keys (hash -> array)
-		if (!$options['preservekeys']) {
-			$result = zbx_cleanHashes($result);
+			if (!$options['preservekeys']) {
+				$result = array_values($result);
+			}
 		}
 
 		return $result;
@@ -421,7 +417,7 @@ class CTemplate extends CHostGeneral {
 	 *
 	 * @throws APIException
 	 */
-	private static function checkUuidDuplicates(array $templates, array $db_templates = null): void {
+	private static function checkUuidDuplicates(array $templates, ?array $db_templates = null): void {
 		$template_indexes = [];
 
 		foreach ($templates as $i => $template) {
@@ -474,7 +470,7 @@ class CTemplate extends CHostGeneral {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	protected function validateUpdate(array &$templates, array &$db_templates = null) {
+	protected function validateUpdate(array &$templates, ?array &$db_templates = null) {
 		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_NOT_EMPTY | API_NORMALIZE, 'uniq' => [['uuid'], ['templateid'], ['host'], ['name']], 'fields' => [
 			'uuid' => 				['type' => API_UUID],
 			'templateid' =>			['type' => API_ID, 'flags' => API_REQUIRED],
@@ -539,7 +535,7 @@ class CTemplate extends CHostGeneral {
 	 *
 	 * @throws Exception
 	 */
-	private static function checkVendorFields(array $templates, array $db_templates = null): void {
+	private static function checkVendorFields(array $templates, ?array $db_templates = null): void {
 		$vendor_fields = array_fill_keys(['vendor_name', 'vendor_version'], '');
 
 		foreach ($templates as $i => $template) {
@@ -788,7 +784,7 @@ class CTemplate extends CHostGeneral {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validateDelete(array &$templateids, array &$db_templates = null): void {
+	private function validateDelete(array &$templateids, ?array &$db_templates = null): void {
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];
 
 		if (!CApiInputValidator::validate($api_input_rules, $templateids, '/', $error)) {
@@ -1110,9 +1106,7 @@ class CTemplate extends CHostGeneral {
 	protected function addRelatedObjects(array $options, array $result) {
 		$result = parent::addRelatedObjects($options, $result);
 
-		// adding template groups
-		$this->addRelatedGroups($options, $result, 'selectGroups');
-		$this->addRelatedGroups($options, $result, 'selectTemplateGroups');
+		$this->addRelatedTemplateGroups($options, $result);
 
 		$templateids = array_keys($result);
 
@@ -1249,28 +1243,18 @@ class CTemplate extends CHostGeneral {
 		return $result;
 	}
 
-	/**
-	 * Adds related template groups requested by "select*" options to the resulting object set.
-	 *
-	 * @param array  $options [IN] Original input options.
-	 * @param array  $result  [IN/OUT] Result output.
-	 * @param string $option  [IN] Possible values:
-	 *                               - "selectGroups" (deprecated);
-	 *                               - "selectHostGroups" (or any other value).
-	 */
-	private function addRelatedGroups(array $options, array &$result, string $option): void {
-		if ($options[$option] === null || $options[$option] === API_OUTPUT_COUNT) {
+	private function addRelatedTemplateGroups(array $options, array &$result): void {
+		if ($options['selectTemplateGroups'] === null || $options['selectTemplateGroups'] === API_OUTPUT_COUNT) {
 			return;
 		}
 
-		$relationMap = $this->createRelationMap($result, 'hostid', 'groupid', 'hosts_groups');
+		$relation_map = $this->createRelationMap($result, 'hostid', 'groupid', 'hosts_groups');
 		$groups = API::TemplateGroup()->get([
-			'output' => $options[$option],
-			'groupids' => $relationMap->getRelatedIds(),
+			'output' => $options['selectTemplateGroups'],
+			'groupids' => $relation_map->getRelatedIds(),
 			'preservekeys' => true
 		]);
 
-		$output_tag = $option === 'selectGroups' ? 'groups' : 'templategroups';
-		$result = $relationMap->mapMany($result, $groups, $output_tag);
+		$result = $relation_map->mapMany($result, $groups, 'templategroups');
 	}
 }

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,6 +21,7 @@
 #include "zbxvmware.h"
 #include "vmware_shmem.h"
 #include "vmware_internal.h"
+#include "zbxshmem.h"
 
 #include "zbxnum.h"
 #include "zbxstr.h"
@@ -332,7 +333,7 @@ static int	vmware_service_get_perf_counter_refreshrate(zbx_vmware_service_t *ser
 
 	zbx_free(value);
 out:
-	zbx_xml_free_doc(doc);
+	zbx_xml_doc_free(doc);
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
 
 	return ret;
@@ -383,10 +384,14 @@ int	vmware_service_get_perf_counters(zbx_vmware_service_t *service, CURL *easyha
 			unit = ZBX_VMWARE_UNIT_JOULE;						\
 		else if (0 == strcmp("kiloBytes",val))						\
 			unit = ZBX_VMWARE_UNIT_KILOBYTES;					\
-		else if (0 == strcmp("kiloBytesPerSecond",val))					\
-			unit = ZBX_VMWARE_UNIT_KILOBYTESPERSECOND;				\
 		else if (0 == strcmp("megaBytes",val))						\
 			unit = ZBX_VMWARE_UNIT_MEGABYTES;					\
+		else if (0 == strcmp("gigaBytes",val))						\
+			unit = ZBX_VMWARE_UNIT_GIGABYTES;					\
+		else if (0 == strcmp("teraBytes",val))						\
+			unit = ZBX_VMWARE_UNIT_TERABYTES;					\
+		else if (0 == strcmp("kiloBytesPerSecond",val))					\
+			unit = ZBX_VMWARE_UNIT_KILOBYTESPERSECOND;				\
 		else if (0 == strcmp("megaBytesPerSecond",val))					\
 			unit = ZBX_VMWARE_UNIT_MEGABYTESPERSECOND;				\
 		else if (0 == strcmp("megaHertz",val))						\
@@ -397,14 +402,12 @@ int	vmware_service_get_perf_counters(zbx_vmware_service_t *service, CURL *easyha
 			unit = ZBX_VMWARE_UNIT_MICROSECOND;					\
 		else if (0 == strcmp("millisecond",val))					\
 			unit = ZBX_VMWARE_UNIT_MILLISECOND;					\
+		else if (0 == strcmp("second",val))						\
+			unit = ZBX_VMWARE_UNIT_SECOND;						\
 		else if (0 == strcmp("number",val))						\
 			unit = ZBX_VMWARE_UNIT_NUMBER;						\
 		else if (0 == strcmp("percent",val))						\
 			unit = ZBX_VMWARE_UNIT_PERCENT;						\
-		else if (0 == strcmp("second",val))						\
-			unit = ZBX_VMWARE_UNIT_SECOND;						\
-		else if (0 == strcmp("teraBytes",val))						\
-			unit = ZBX_VMWARE_UNIT_TERABYTES;					\
 		else if (0 == strcmp("watt",val))						\
 			unit = ZBX_VMWARE_UNIT_WATT;						\
 		else if (0 == strcmp("celsius",val))						\
@@ -514,7 +517,7 @@ clean:
 	xmlXPathFreeObject(xpathObj);
 	xmlXPathFreeContext(xpathCtx);
 out:
-	zbx_xml_free_doc(doc);
+	zbx_xml_doc_free(doc);
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
 
 	return ret;
@@ -890,8 +893,6 @@ static void	vmware_service_copy_perf_data(const zbx_vmware_service_t *service,
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s()", __func__);
 }
 
-#define ZBX_XML_DATETIME		26
-
 /******************************************************************************
  *                                                                            *
  * Purpose: retrieves performance counter values from vmware service          *
@@ -999,8 +1000,7 @@ static void	vmware_service_retrieve_perf_counters(zbx_vmware_service_t *service,
 		}
 
 		zbx_vmware_unlock();
-		zbx_xml_free_doc(doc);
-		doc = NULL;
+		zbx_xml_doc_free(doc);
 
 		zbx_strcpy_alloc(&tmp, &tmp_alloc, &tmp_offset, "</ns0:QueryPerf>");
 		zbx_strcpy_alloc(&tmp, &tmp_alloc, &tmp_offset, ZBX_POST_VSPHERE_FOOTER);
@@ -1027,7 +1027,7 @@ static void	vmware_service_retrieve_perf_counters(zbx_vmware_service_t *service,
 	}
 
 	zbx_free(tmp);
-	zbx_xml_free_doc(doc);
+	zbx_xml_doc_free(doc);
 
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s()", __func__);
 }
@@ -1144,7 +1144,7 @@ static int	vmware_perf_available_update(zbx_vmware_service_t *service, CURL *eas
 out:
 	zbx_vector_str_clear_ext(&counters, zbx_str_free);
 	zbx_vector_str_destroy(&counters);
-	zbx_xml_free_doc(doc);
+	zbx_xml_doc_free(doc);
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
 
 	return ret;
@@ -1236,7 +1236,66 @@ static void	vmware_perf_counters_availability_check(zbx_vmware_service_t *servic
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s()", __func__);
 }
 
-#undef ZBX_XML_DATETIME
+/******************************************************************************
+ *                                                                            *
+ * Purpose: calculate required shared memory size of the perfCounter entity   *
+ *                                                                            *
+ * Parameters: type      - [IN] entity type                                   *
+ *             id        - [IN] entity id                                     *
+ *             instance  - [IN] performance counter instance name             *
+ *                                                                            *
+ * Return value: size of shared memory in bytes                               *
+ *                                                                            *
+ ******************************************************************************/
+static zbx_uint64_t	vmware_perf_entity_shmem_size(const char *type, const char *id, const char *instance)
+{
+	zbx_uint64_t	req_sz = 0;
+
+	req_sz += zbx_shmem_required_chunk_size(sizeof(zbx_vmware_perf_entity_t) + ZBX_HASHSET_ENTRY_OFFSET);
+	req_sz += vmware_shared_str_sz(id);
+	req_sz += vmware_shared_str_sz(type);
+	req_sz += vmware_shared_str_sz(instance);
+	req_sz += zbx_shmem_required_chunk_size(sizeof(zbx_vmware_perf_counter_t));
+	req_sz += zbx_shmem_required_chunk_size(sizeof(zbx_vmware_perf_counter_t*));
+
+	return req_sz;
+}
+
+/******************************************************************************
+ *                                                                            *
+ * Purpose: calculate required shared memory size of the perfCounter values   *
+ *                                                                            *
+ * Parameters: perfdata - [IN] performance counter values                     *
+ *                                                                            *
+ * Return value: size of shared memory in bytes                               *
+ *                                                                            *
+ ******************************************************************************/
+static zbx_uint64_t	vmware_perf_data_shmem_size(zbx_vector_vmware_perf_data_ptr_t *perfdata)
+{
+	zbx_vmware_perf_data_t	*data;
+	zbx_uint64_t		req_sz = 0;
+
+	for (int i = 0; i < perfdata->values_num; i++)
+	{
+		data = (zbx_vmware_perf_data_t *)perfdata->values[i];
+
+		if (NULL != data->error)
+		{
+			req_sz += vmware_shared_str_sz(data->error);
+			continue;
+		}
+
+		for (int j = 0; j < data->values.values_num; j++)
+		{
+			zbx_vmware_perf_value_t	*value = data->values.values[j];
+
+			req_sz += zbx_shmem_required_chunk_size(sizeof(zbx_str_uint64_pair_t));
+			req_sz += vmware_shared_str_sz(value->instance);
+		}
+	}
+
+	return req_sz;
+}
 
 /******************************************************************************
  *                                                                            *
@@ -1264,6 +1323,7 @@ int	zbx_vmware_service_update_perf(zbx_vmware_service_t *service, const char *co
 	zbx_vector_vmware_perf_data_ptr_t	perfdata;
 	zbx_vector_perf_available_ptr_t		perf_available;
 	static ZBX_HTTPPAGE			page;	/* 173K */
+	zbx_uint64_t				perf_data_sz = 0;
 
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s() '%s'@'%s'", __func__, service->username, service->url);
 
@@ -1441,11 +1501,29 @@ out:
 
 		zbx_free(error);
 	}
-	else
+	else if (vmware_shmem_get_vmware_mem()->free_size > (perf_data_sz = vmware_perf_data_shmem_size(&perfdata)))
 	{
 		/* clean old performance data and copy the new data into shared memory */
 		vmware_entities_shared_clean_stats(&service->entities);
 		vmware_service_copy_perf_data(service, &perfdata);
+
+		if (0 == (service->state & ZBX_VMWARE_STATE_SHMEM_READY))
+			service->state |= ZBX_VMWARE_STATE_SHMEM_READY;
+	}
+	else if (0 == (service->state & ZBX_VMWARE_STATE_SHMEM_READY))
+	{
+		zabbix_log(LOG_LEVEL_WARNING, "There is not enough VMware shared memory. Performance counters require"
+				" up to " ZBX_FS_UI64 " bytes of free VMwareCache memory. Available " ZBX_FS_UI64
+				" bytes. Increase value of VMwareCacheSize", perf_data_sz,
+				vmware_shmem_get_vmware_mem()->free_size);
+		exit(EXIT_SUCCESS);
+	}
+	else
+	{
+		zabbix_log(LOG_LEVEL_WARNING, "Postponed VMware performance counters require up to " ZBX_FS_UI64
+				" bytes of free VMwareCache memory. Available " ZBX_FS_UI64 " bytes."
+				" Reading performance counters skipped", perf_data_sz,
+				vmware_shmem_get_vmware_mem()->free_size);
 	}
 
 	zbx_vmware_unlock();
@@ -1459,8 +1537,9 @@ out:
 	zbx_vector_vmware_perf_entity_ptr_destroy(&hist_entities);
 	zbx_vector_vmware_perf_entity_ptr_destroy(&entities);
 
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s \tprocessed " ZBX_FS_SIZE_T " bytes of data", __func__,
-			zbx_result_string(ret), (zbx_fs_size_t)page.alloc);
+	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s \tprocessed " ZBX_FS_SIZE_T " bytes of data."
+			" Performance counters require up to " ZBX_FS_UI64  " bytes of data.", __func__,
+			zbx_result_string(ret), (zbx_fs_size_t)page.alloc, perf_data_sz);
 
 	return ret;
 #undef INIT_PERF_XML_SIZE
@@ -1535,6 +1614,14 @@ int	zbx_vmware_service_add_perf_counter(zbx_vmware_service_t *service, const cha
 
 	if (NULL == (pentity = zbx_vmware_service_get_perf_entity(service, type, id)))
 	{
+		if (vmware_shmem_get_vmware_mem()->free_size < vmware_perf_entity_shmem_size(type, id, instance))
+		{
+			zabbix_log(LOG_LEVEL_DEBUG, "%s() Adding of performance counter has been postponed."
+					" type:%s id:%s counterid:" ZBX_FS_UI64 " instance:%s",
+					__func__, type, id, counterid, instance);
+			return SUCCEED;
+		}
+
 		entity.refresh = ZBX_VMWARE_PERF_INTERVAL_UNKNOWN;
 		entity.last_seen = 0;
 		entity.query_instance = vmware_shared_strdup(instance);

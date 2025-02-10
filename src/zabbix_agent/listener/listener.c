@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,6 +22,7 @@
 #include "zbxtime.h"
 #include "zbx_rtc_constants.h"
 #include "zbxjson.h"
+#include "zbxcfg.h"
 
 #if defined(ZABBIX_SERVICE)
 #	include "zbxwinservice.h"
@@ -248,6 +249,7 @@ ZBX_THREAD_ENTRY(listener_thread, args)
 #ifndef _WINDOWS
 	zbx_set_sigusr_handler(zbx_listener_sigusr_handler);
 #endif
+	zbx_cfg_set_process_num(process_num);
 
 	while (ZBX_IS_RUNNING())
 	{
@@ -255,8 +257,7 @@ ZBX_THREAD_ENTRY(listener_thread, args)
 		if (1 == need_update_userparam)
 		{
 			zbx_setproctitle("listener #%d [reloading user parameters]", process_num);
-			reload_user_parameters(process_type, process_num, init_child_args_in->config_file,
-					init_child_args_in->config_user_parameters);
+			reload_user_parameters(process_type, process_num, init_child_args_in->config_file);
 			need_update_userparam = 0;
 		}
 #endif

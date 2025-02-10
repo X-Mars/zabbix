@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -45,8 +45,8 @@ class CWidgetFieldColumnsListView extends CWidgetFieldView {
 			->setHeader([
 				'',
 				(new CColHeader(_('Name')))->addStyle('width: 39%'),
-				(new CColHeader(_('Data')))->addStyle('width: 59%'),
-				_('Action')
+				(new CColHeader(_('Item')))->addStyle('width: 59%'),
+				_('Actions')
 			]);
 
 		foreach ($columns as $column_index => $column) {

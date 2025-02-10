@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -45,7 +45,6 @@ $host_tab->addRow(
 		(new CMultiSelect([
 			'name' => 'templates[]',
 			'object_name' => 'templates',
-			'data' => [],
 			'popup' => [
 				'parameters' => [
 					'srctbl' => 'templates',
@@ -77,7 +76,6 @@ $host_tab->addRow(
 			'name' => 'groups[]',
 			'object_name' => 'hostGroup',
 			'add_new' => (CWebUser::getType() == USER_TYPE_SUPER_ADMIN),
-			'data' => [],
 			'popup' => [
 				'parameters' => [
 					'srctbl' => 'host_groups',
@@ -113,7 +111,6 @@ $host_tab->addRow(
 				'name' => 'proxyid',
 				'object_name' => 'proxies',
 				'multiple' => false,
-				'data' => [],
 				'popup' => [
 					'parameters' => [
 						'srctbl' => 'proxies',
@@ -132,7 +129,6 @@ $host_tab->addRow(
 				'name' => 'proxy_groupid',
 				'object_name' => 'proxy_groups',
 				'multiple' => false,
-				'data' => [],
 				'popup' => [
 					'parameters' => [
 						'srctbl' => 'proxy_groups',
@@ -219,7 +215,7 @@ $tags_tab->addRow(
 			->setModern(true)
 			->addStyle('margin-bottom: 10px;'),
 		renderTagTable([['tag' => '', 'value' => '']])
-			->setHeader([_('Name'), _('Value'), _('Action')])
+			->setHeader([_('Name'), _('Value'), ''])
 			->addClass('tags-table')
 	]))->setId('tags-field')
 );
@@ -227,7 +223,7 @@ $tags_tab->addRow(
 $hostInventoryTable = DB::getSchema('host_inventory');
 foreach ($data['inventories'] as $field => $fieldInfo) {
 
-	if ($hostInventoryTable['fields'][$field]['type'] == DB::FIELD_TYPE_TEXT) {
+	if ($hostInventoryTable['fields'][$field]['type'] & DB::FIELD_TYPE_TEXT) {
 		$fieldInput = (new CTextArea('host_inventory['.$field.']', ''))
 			->setAdaptiveWidth(ZBX_TEXTAREA_BIG_WIDTH);
 	}

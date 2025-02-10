@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -134,11 +134,10 @@ class CMap extends CMapElement {
 
 		if ($result) {
 			$result = $this->addRelatedObjects($options, $result);
-		}
 
-		// removing keys (hash -> array)
-		if (!$options['preservekeys']) {
-			$result = zbx_cleanHashes($result);
+			if (!$options['preservekeys']) {
+				$result = array_values($result);
+			}
 		}
 
 		return $result;
@@ -553,7 +552,7 @@ class CMap extends CMapElement {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	protected function validateDelete(array $sysmapids, array &$db_maps = null) {
+	protected function validateDelete(array $sysmapids, ?array &$db_maps = null) {
 		if (!$sysmapids) {
 			self::exception(ZBX_API_ERROR_PARAMETERS, _('Empty input parameter.'));
 		}

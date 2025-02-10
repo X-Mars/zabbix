@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -14,8 +14,7 @@
 
 #include "async_telnet.h"
 
-#include "../../libs/zbxpoller/async_poller.h"
-
+#include "zbxpoller.h"
 #include "zbxtimekeeper.h"
 #include "zbxcomms.h"
 #include "zbxself.h"
@@ -161,7 +160,8 @@ static zbx_telnet_protocol_step_t	async_telnet_recv(zbx_telnet_context_t *telnet
 #undef OPT_SGA
 }
 
-static int	telnet_task_process(short event, void *data, int *fd, const char *addr, char *dnserr)
+static int	telnet_task_process(short event, void *data, int *fd, const char *addr, char *dnserr,
+		struct event *timeout_event)
 {
 #	define	SET_RESULT_SUCCEED								\
 		SET_UI64_RESULT(&telnet_context->item.result, 1);				\
@@ -186,6 +186,7 @@ static int	telnet_task_process(short event, void *data, int *fd, const char *add
 	zbx_telnet_protocol_step_t	rc;
 
 	ZBX_UNUSED(dnserr);
+	ZBX_UNUSED(timeout_event);
 
 	if (NULL != poller_config && ZBX_PROCESS_STATE_IDLE == poller_config->state)
 	{

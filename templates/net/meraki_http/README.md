@@ -7,7 +7,7 @@ This template is designed for the effortless deployment of Cisco Meraki dashboar
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -16,7 +16,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -42,7 +42,7 @@ Set filters with macros if you want to override default filter parameters.
 |{$MERAKI.DEVICE.NAME.NOT_MATCHES}|<p>This macro is used in devices discovery. Can be overridden on the host or linked template level.</p>|`CHANGE_IF_NEEDED`|
 |{$MERAKI.DEVICE.STATUS.MATCHES}|<p>This macro is used in devices discovery. Can be overridden on the host or linked template level.</p>|`.*`|
 |{$MERAKI.DEVICE.STATUS.NOT_MATCHES}|<p>This macro is used in devices discovery. Can be overridden on the host or linked template level.</p>|`CHANGE_IF_NEEDED`|
-|{$MERAKI.HTTP_PROXY}|<p>HTTP proxy for API requests. You can specify it using the format [protocol://][username[:password]@]proxy.example.com[:port]. See documentation at https://www.zabbix.com/documentation/7.2/manual/config/items/itemtypes/http</p>||
+|{$MERAKI.HTTP_PROXY}|<p>HTTP proxy for API requests. You can specify it using the format [protocol://][username[:password]@]proxy.example.com[:port]. See documentation at https://www.zabbix.com/documentation/7.4/manual/config/items/itemtypes/http</p>||
 
 ### Items
 
@@ -55,7 +55,7 @@ Set filters with macros if you want to override default filter parameters.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|There are errors in 'Get data' metric||`length(last(/Cisco Meraki dashboard by HTTP/meraki.get.data.errors))>0`|Warning||
+|Meraki: There are errors in 'Get data' metric||`length(last(/Cisco Meraki dashboard by HTTP/meraki.get.data.errors))>0`|Warning||
 
 ### LLD rule Organizations discovery
 
@@ -94,7 +94,7 @@ Set filters with macros if you want to override default filter parameters.
 |{$MERAKI.ADMIN.NAME.NOT_MATCHES}|<p>Filter to exclude discovered admins in organization.</p>|`CHANGE_IF_NEEDED`|
 |{$MERAKI.ADMIN.ORG.ACCESS.MATCHES}|<p>Filter of discoverable admins in organization.</p>|`.*`|
 |{$MERAKI.ADMIN.ORG.ACCESS.NOT_MATCHES}|<p>Filter to exclude discovered admins in organization.</p>|`CHANGE_IF_NEEDED`|
-|{$MERAKI.HTTP_PROXY}|<p>HTTP proxy for API requests. You can specify it using the format [protocol://][username[:password]@]proxy.example.com[:port]. See documentation at https://www.zabbix.com/documentation/7.2/manual/config/items/itemtypes/http</p>||
+|{$MERAKI.HTTP_PROXY}|<p>HTTP proxy for API requests. You can specify it using the format [protocol://][username[:password]@]proxy.example.com[:port]. See documentation at https://www.zabbix.com/documentation/7.4/manual/config/items/itemtypes/http</p>||
 |{$MERAKI.LLD.UPLINK.NETWORK.NAME.MATCHES}|<p>This macro is used in uplinks discovery. Can be overridden on the host or linked template level.</p>|`.*`|
 |{$MERAKI.LLD.UPLINK.NETWORK.NAME.NOT_MATCHES}|<p>This macro is used in uplinks discovery. Can be overridden on the host or linked template level.</p>|`CHANGE_IF_NEEDED`|
 |{$MERAKI.LLD.UPLINK.ROLE.MATCHES}|<p>This macro is used in uplinks discovery. Can be overridden on the host or linked template level.</p>|`.*`|
@@ -146,11 +146,11 @@ Set filters with macros if you want to override default filter parameters.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|There are errors in 'Get networks' metric||`length(last(/Cisco Meraki organization by HTTP/meraki.get.networks.errors))>0`|Warning||
-|There are errors in 'Get VPNs' metric||`length(last(/Cisco Meraki organization by HTTP/meraki.get.vpn.stats.errors))>0`|Warning||
-|Configuration has been changed||`length(last(/Cisco Meraki organization by HTTP/meraki.get.configuration.changes))>3`|Warning||
-|License status is not OK||`last(/Cisco Meraki organization by HTTP/meraki.license.status)<>1`|Warning||
-|License expires in less than {$MERAKI.LICENSE.EXPIRE} seconds||`last(/Cisco Meraki organization by HTTP/meraki.license.expire)<{$MERAKI.LICENSE.EXPIRE} and last(/Cisco Meraki organization by HTTP/meraki.license.expire)>=0`|Warning||
+|Meraki: There are errors in 'Get networks' metric||`length(last(/Cisco Meraki organization by HTTP/meraki.get.networks.errors))>0`|Warning||
+|Meraki: There are errors in 'Get VPNs' metric||`length(last(/Cisco Meraki organization by HTTP/meraki.get.vpn.stats.errors))>0`|Warning||
+|Meraki: Configuration has been changed||`length(last(/Cisco Meraki organization by HTTP/meraki.get.configuration.changes))>3`|Warning||
+|Meraki: License status is not OK||`last(/Cisco Meraki organization by HTTP/meraki.license.status)<>1`|Warning||
+|Meraki: License expires in less than {$MERAKI.LICENSE.EXPIRE} seconds||`last(/Cisco Meraki organization by HTTP/meraki.license.expire)<{$MERAKI.LICENSE.EXPIRE} and last(/Cisco Meraki organization by HTTP/meraki.license.expire)>=0`|Warning||
 
 ### LLD rule Uplinks discovery
 
@@ -170,7 +170,7 @@ Set filters with macros if you want to override default filter parameters.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Uplink [{#INTERFACE}]: [{#UPLINK.ROLE}]: [{#NETWORK.NAME}]: status is failed||`last(/Cisco Meraki organization by HTTP/meraki.uplink.status[{#NETWORK.NAME}, {#INTERFACE}, {#UPLINK.ROLE}])=0`|Warning||
+|Meraki: Uplink [{#INTERFACE}]: [{#UPLINK.ROLE}]: [{#NETWORK.NAME}]: status is failed||`last(/Cisco Meraki organization by HTTP/meraki.uplink.status[{#NETWORK.NAME}, {#INTERFACE}, {#UPLINK.ROLE}])=0`|Warning||
 
 ### LLD rule Networks discovery
 
@@ -233,7 +233,7 @@ Set filters with macros if you want to override default filter parameters.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|VPN [{#NETWORK.NAME}][{#SENDER.UPLINK}]=>[{#PEER.NETWORK.NAME}][{#RECEIVER.UPLINK}]: High average VPN connection loss (over >= {$MERAKI.VPN.LOSS.PERCENTILE%)||`count(/Cisco Meraki organization by HTTP/meraki.vpn.stat.loss.avg[{#NETWORK.ID}, {#SENDER.UPLINK}, {#PEER.NETWORK.ID}, {#RECEIVER.UPLINK}],#3,,"{$MERAKI.VPN.LOSS.PERCENTILE}")>=3`|Average||
+|Meraki: VPN [{#NETWORK.NAME}][{#SENDER.UPLINK}]=>[{#PEER.NETWORK.NAME}][{#RECEIVER.UPLINK}]: High average VPN connection loss (over >= {$MERAKI.VPN.LOSS.PERCENTILE%)||`count(/Cisco Meraki organization by HTTP/meraki.vpn.stat.loss.avg[{#NETWORK.ID}, {#SENDER.UPLINK}, {#PEER.NETWORK.ID}, {#RECEIVER.UPLINK}],#3,,"{$MERAKI.VPN.LOSS.PERCENTILE}")>=3`|Average||
 
 ### LLD rule License discovery
 
@@ -295,7 +295,7 @@ Set filters with macros if you want to override default filter parameters.
 |{$MERAKI.DEVICE.LATENCY}|<p>Devices uplink latency threshold, in seconds.</p>|`0.15`|
 |{$MERAKI.GET.STATUS.INTERVAL}|<p>Update interval for get status item.</p>|`300`|
 |{$MERAKI.DATA.TIMEOUT}|<p>Response timeout for an API.</p>|`60`|
-|{$MERAKI.HTTP_PROXY}|<p>HTTP proxy for API requests. You can specify it using the format [protocol://][username[:password]@]proxy.example.com[:port]. See documentation at https://www.zabbix.com/documentation/7.2/manual/config/items/itemtypes/http</p>||
+|{$MERAKI.HTTP_PROXY}|<p>HTTP proxy for API requests. You can specify it using the format [protocol://][username[:password]@]proxy.example.com[:port]. See documentation at https://www.zabbix.com/documentation/7.4/manual/config/items/itemtypes/http</p>||
 |{$MERAKI.UPLINK.LL.TIMESPAN}|<p>Timespan in seconds for getting device uplinks loss and quality stats. Used in the metric configuration and in the JavaScript API query. Must be between 1 and 86400 seconds.</p>|`180`|
 |{$MERAKI.DEVICE.UPLINK.MATCHES}|<p>This macro is used in loss and latency checks discovery. Can be overridden on the host or linked template level.</p>|`.*`|
 |{$MERAKI.DEVICE.UPLINK.NOT_MATCHES}|<p>This macro is used in loss and latency checks discovery. Can be overridden on the host or linked template level.</p>|`^null$`|
@@ -316,8 +316,8 @@ Set filters with macros if you want to override default filter parameters.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|There are errors in 'Get device data' metric||`length(last(/Cisco Meraki device by HTTP/meraki.get.device.errors))>0`|Warning||
-|Status is not online||`last(/Cisco Meraki device by HTTP/meraki.device.status)<>1`|Warning||
+|Meraki: There are errors in 'Get device data' metric||`length(last(/Cisco Meraki device by HTTP/meraki.get.device.errors))>0`|Warning||
+|Meraki: Status is not online||`last(/Cisco Meraki device by HTTP/meraki.device.status)<>1`|Warning||
 
 ### LLD rule Uplinks loss and quality discovery
 
@@ -336,8 +336,8 @@ Set filters with macros if you want to override default filter parameters.
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Uplink [{#IP}]: [{#UPLINK}]: loss > {$MERAKI.DEVICE.LOSS}%||`min(/Cisco Meraki device by HTTP/meraki.device.loss.pct[{#IP},{#UPLINK}],#3)>{$MERAKI.DEVICE.LOSS}`|Warning||
-|Uplink [{#IP}]: [{#UPLINK}]: latency > {$MERAKI.DEVICE.LATENCY}||`min(/Cisco Meraki device by HTTP/meraki.device.latency[{#IP},{#UPLINK}],#3)>{$MERAKI.DEVICE.LATENCY}`|Warning||
+|Meraki: Uplink [{#IP}]: [{#UPLINK}]: loss > {$MERAKI.DEVICE.LOSS}%||`min(/Cisco Meraki device by HTTP/meraki.device.loss.pct[{#IP},{#UPLINK}],#3)>{$MERAKI.DEVICE.LOSS}`|Warning||
+|Meraki: Uplink [{#IP}]: [{#UPLINK}]: latency > {$MERAKI.DEVICE.LATENCY}||`min(/Cisco Meraki device by HTTP/meraki.device.latency[{#IP},{#UPLINK}],#3)>{$MERAKI.DEVICE.LATENCY}`|Warning||
 
 ## Feedback
 

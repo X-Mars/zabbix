@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -90,7 +90,7 @@ class testFormValueMappings extends CWebTest {
 
 		// Check mappings table layout.
 		$mappings_table = $mapping_form->query('id:mappings-table')->asTable()->one();
-		$this->assertEquals(['', 'Type', 'Value', '', 'Mapped to', 'Action', ''], $mappings_table->getHeadersText());
+		$this->assertEquals(['', 'Type', 'Value', '', 'Mapped to', ''], $mappings_table->getHeadersText());
 		$row = $mappings_table->getRow(0);
 		foreach (['Value', 'Mapped to'] as $mapping_column) {
 			$mapping_field = $row->getColumn($mapping_column)->query('xpath:.//input')->one();

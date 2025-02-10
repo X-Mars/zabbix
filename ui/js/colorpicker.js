@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -61,20 +61,20 @@ const ZBX_TEXTAREA_COLOR_WIDTH = 96;
 		 * @param {string} color
 		 */
 		setPreviewColor = function (color) {
-			color = $.trim(color).toUpperCase();
+			color = `#${color.toString().trim().toUpperCase()}`;
 
-			if (input.data('use_default') && color.length == 0) {
+			if (isColorHex(color)) {
+				$overlay_colorbox
+					.css({'background': color})
+					.attr('title', color)
+					.removeClass(['use-default', 'use-transparent']);
+			}
+			else if (input.data('use_default')) {
 				$overlay_colorbox
 					.css({'background': ''})
 					.attr('title', t('Use default'))
 					.addClass('use-default')
 					.removeClass('use-transparent');
-			}
-			else if (/^[0-9A-F]{6}$/i.test(color)) {
-				$overlay_colorbox
-					.css({'background': '#' + color})
-					.attr('title', '#' + color)
-					.removeClass(['use-default', 'use-transparent']);
 			}
 			else {
 				$overlay_colorbox
@@ -288,20 +288,20 @@ const ZBX_TEXTAREA_COLOR_WIDTH = 96;
 			 * @param string color    Desired hex color.
 			 */
 			set_color: function(color) {
-				color = $.trim(color).toUpperCase();
+				color = color.toString().trim().toUpperCase();
 
-				if (input.data('use_default') && color.length == 0) {
+				if (isColorHex(`#${color}`)) {
+					colorbox
+						.css({'background': `#${color}`})
+						.attr('title', `#${color}`)
+						.removeClass(['use-default', 'use-transparent']);
+				}
+				else if (input.data('use_default')) {
 					colorbox
 						.css({'background': ''})
 						.attr('title', t('Use default'))
 						.addClass('use-default')
 						.removeClass('use-transparent');
-				}
-				else if (/^[0-9A-F]{6}$/i.test(color)) {
-					colorbox
-						.css({'background': '#' + color})
-						.attr('title', '#' + color)
-						.removeClass(['use-default', 'use-transparent']);
 				}
 				else {
 					colorbox

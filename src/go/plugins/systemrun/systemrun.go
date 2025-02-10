@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -28,8 +28,7 @@ import (
 var impl Plugin
 
 type Options struct {
-	plugin.SystemOptions `conf:"optional,name=System"`
-	LogRemoteCommands    int `conf:"optional,range=0:1,default=0"`
+	LogRemoteCommands int `conf:"optional,range=0:1,default=0"`
 }
 
 // Plugin -
@@ -48,14 +47,20 @@ func init() {
 }
 
 func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
-	if err := conf.Unmarshal(options, &p.options); err != nil {
+	if err := conf.UnmarshalStrict(options, &p.options); err != nil {
 		p.Warningf("cannot unmarshal configuration options: %s", err)
 	}
 }
 
 func (p *Plugin) Validate(options interface{}) error {
 	var o Options
-	return conf.Unmarshal(options, &o)
+
+	err := conf.UnmarshalStrict(options, &o)
+	if err != nil {
+		return errs.Wrap(err, "plugin config validation failed")
+	}
+
+	return nil
 }
 
 // Export -

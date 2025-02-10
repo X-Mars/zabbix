@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -147,7 +147,7 @@ class CControllerPopupImportCompare extends CController {
 			$data['diff'] = $this->blocksToDiff($result, 1);
 			$data['diff_toc'] = $this->normalizeToc($this->toc);
 
-			// Check if at least one entitiy is removed.
+			// Check if at least one entity is removed.
 			$data['with_removed_entities'] = array_key_exists('removed', $this->toc);
 		}
 

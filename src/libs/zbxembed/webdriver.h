@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,6 +21,7 @@
 
 #include "browser_perf.h"
 #include "zbxalgo.h"
+#include "zbxembed.h"
 
 typedef struct
 {
@@ -54,6 +55,8 @@ typedef struct
 	zbx_wd_error_t		*error;
 
 	void			*browser;
+
+	zbx_es_env_t		*env;
 }
 zbx_webdriver_t;
 
@@ -102,6 +105,8 @@ int	webdriver_get_perf_data(zbx_webdriver_t *wd, struct zbx_json_parse *jp, char
 int	webdriver_get_raw_perf_data(zbx_webdriver_t *wd, const char *type, struct zbx_json_parse *jp, char **error);
 int	webdriver_execute_script(zbx_webdriver_t *wd, const char *script, struct zbx_json_parse *jp,
 		char **error);
+
+int	webdriver_switch_frame(zbx_webdriver_t *wd, const char *frame, char **error);
 
 #endif
 

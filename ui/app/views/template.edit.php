@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -50,16 +50,20 @@ $templates_field_items = [];
 
 if ($data['linked_templates']) {
 	$linked_templates= (new CTable())
-		->setHeader([_('Name'), _('Action')])
+		->setHeader([_('Name'), _('Actions')])
 		->setId('linked-templates')
 		->addClass(ZBX_STYLE_TABLE_FORMS)
 		->addStyle('width: '.ZBX_TEXTAREA_STANDARD_WIDTH.'px;');
 
 	foreach ($data['linked_templates'] as $template) {
 		if (array_key_exists($template['templateid'], $data['writable_templates'])) {
-			$template_link = (new CLink($template['name']))
-				->addClass('js-edit-linked-template')
-				->setAttribute('data-templateid', $template['templateid']);
+			$template_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'template.edit')
+				->setArgument('templateid', $template['templateid'])
+				->getUrl();
+
+			$template_link = new CLink($template['name'], $template_url);
 		}
 		else {
 			$template_link = new CSpan($template['name']);
@@ -170,7 +174,7 @@ $form->addItem(
 );
 
 // Macros tab.
-$tmpl = $data['show_inherited_macros'] ? 'hostmacros.inherited.list.html' : 'hostmacros.list.html';
+$macros_tmpl = $data['show_inherited_macros'] ? 'hostmacros.inherited.list.html' : 'hostmacros.list.html';
 
 $macros_tab = (new CFormList('macrosFormList'))
 	->addRow(null, (new CRadioButtonList('show_inherited_template_macros', (int) $data['show_inherited_macros']))
@@ -178,7 +182,7 @@ $macros_tab = (new CFormList('macrosFormList'))
 		->addValue(_('Inherited and template macros'), 1)
 		->setModern()
 	)
-	->addRow(null, new CPartial($tmpl, [
+	->addRow(null, new CPartial($macros_tmpl, [
 		'macros' => $data['macros'],
 		'readonly' => $data['readonly']
 	]), 'template_macros_container');
@@ -342,7 +346,8 @@ $output = [
 	'doc_url' => CDocHelper::getUrl(CDocHelper::DATA_COLLECTION_TEMPLATES_EDIT),
 	'body' => $form->toString(),
 	'buttons' => $buttons,
-	'script_inline' => getPagePostJs().$this->readJsFile('template.edit.js.php')
+	'script_inline' => getPagePostJs().$this->readJsFile('template.edit.js.php'),
+	'dialogue_class' => 'modal-popup-large'
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

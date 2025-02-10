@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -213,7 +213,7 @@ class CMfa extends CApiService {
 	 *
 	 * @throws APIException if MFA method name is not unique.
 	 */
-	private static function checkDuplicates(array $mfas, array $db_mfas = null): void {
+	private static function checkDuplicates(array $mfas, ?array $db_mfas = null): void {
 		$names = [];
 
 		foreach ($mfas as $mfa) {

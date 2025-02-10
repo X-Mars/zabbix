@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -60,6 +60,11 @@ class CCheckBoxList extends CList {
 	 * @var int $columns
 	 */
 	protected int $columns = 1;
+
+	/**
+	 * @var bool
+	 */
+	protected bool $show_titles = false;
 
 	/**
 	 * @param string $name
@@ -189,7 +194,20 @@ class CCheckBoxList extends CList {
 		return $this;
 	}
 
-	/*
+	/**
+	 * Set if checkboxes inside have a title.
+	 *
+	 * @param bool $show_titles
+	 *
+	 * @return CCheckBoxList
+	 */
+	public function showTitles(bool $show_titles = true): self {
+		$this->show_titles = $show_titles;
+
+		return $this;
+	}
+
+	/**
 	 * @param bool $destroy
 	 *
 	 * @return string
@@ -216,6 +234,10 @@ class CCheckBoxList extends CList {
 				->setChecked($value['checked'])
 				->setEnabled($this->enabled)
 				->setReadonly($this->readonly);
+
+			if ($this->show_titles) {
+				$checkbox->setTitle($value['label']);
+			}
 
 			if (array_key_exists('id', $value) || $this->uniqid !== '') {
 				$checkbox->setId(array_key_exists('id', $value)

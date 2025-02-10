@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -131,6 +131,8 @@ static void	*ALIGNPTR(void *ptr)
 		return ALIGN4(ptr);
 	if (8 == ZBX_PTR_SIZE)
 		return ALIGN8(ptr);
+
+	zbx_this_should_never_happen_backtrace();
 	assert(0);
 }
 

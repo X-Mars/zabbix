@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,6 +21,14 @@
 #include "zbxcacheconfig.h"
 #include "zbxregexp.h"
 
+typedef struct zbx_lld_item_full_s zbx_lld_item_full_t;
+typedef struct zbx_lld_dependency_s zbx_lld_dependency_t;
+typedef struct zbx_lld_trigger_s zbx_lld_trigger_t;
+
+ZBX_PTR_VECTOR_DECL(lld_item_full_ptr, zbx_lld_item_full_t*)
+ZBX_PTR_VECTOR_DECL(lld_dependency_ptr, zbx_lld_dependency_t*)
+ZBX_PTR_VECTOR_DECL(lld_trigger_ptr, zbx_lld_trigger_t*)
+
 typedef struct
 {
 	zbx_uint64_t	itemid;
@@ -31,8 +39,6 @@ zbx_lld_item_t;
 int	lld_item_compare_func(const void *d1, const void *d2);
 
 ZBX_PTR_VECTOR_DECL(lld_item_ptr, zbx_lld_item_t*)
-
-int	lld_item_proto_compare_func(const void *d1, const void *d2);
 
 typedef struct
 {
@@ -80,6 +86,53 @@ zbx_id_name_pair_t;
 #define ZBX_LLD_OBJECT_STATUS_ENABLED		0
 #define ZBX_LLD_OBJECT_STATUS_DISABLED		1
 
+typedef struct
+{
+	char	*lld_macro;
+	char	*path;
+}
+zbx_lld_macro_path_t;
+
+ZBX_PTR_VECTOR_DECL(lld_macro_path_ptr, zbx_lld_macro_path_t *)
+
+int	zbx_lld_macro_paths_get(zbx_uint64_t lld_ruleid, zbx_vector_lld_macro_path_ptr_t *lld_macro_paths,
+		char **error);
+void	zbx_lld_macro_path_free(zbx_lld_macro_path_t *lld_macro_path);
+int	zbx_lld_macro_paths_compare(const void *d1, const void *d2);
+
+typedef struct
+{
+	char	*macro;
+	char	*value;
+
+}
+zbx_lld_macro_t;
+
+ZBX_VECTOR_DECL(lld_macro, zbx_lld_macro_t)
+
+/* LLD macros extracted from LLD row */
+typedef struct
+{
+	zbx_vector_lld_macro_t	macros;
+}
+zbx_lld_entry_t;
+
+ZBX_PTR_VECTOR_DECL(lld_entry_ptr, zbx_lld_entry_t *)
+
+void	lld_entry_clear(zbx_lld_entry_t *entry);
+
+zbx_hash_t	lld_entry_hash(const void *data);
+int	lld_entry_compare(const void *d1, const void *d2);
+void	lld_entry_snprintf_alloc(const zbx_lld_entry_t *entry, char **str, size_t *str_alloc, size_t *str_offset);
+const char	*lld_entry_get_macro(const zbx_lld_entry_t *entry, const char *macro);
+
+int	lld_extract_entries(zbx_hashset_t *entries, zbx_vector_lld_entry_ptr_t *entries_sorted,
+		const zbx_jsonobj_t *lld_obj, const zbx_vector_lld_macro_path_ptr_t *lld_macro_paths, char **error);
+void	lld_free_entries(zbx_hashset_t *entries);
+int	lld_compare_entries(const zbx_hashset_t *entries1, const zbx_hashset_t *entries2);
+
+int	lld_macro_value_by_name(const zbx_lld_entry_t *lld_obj, const char *macro, char **value);
+
 /* lld rule lifetime */
 typedef struct
 {
@@ -107,7 +160,7 @@ ZBX_PTR_VECTOR_DECL(lld_override_ptr, zbx_lld_override_t*)
 
 typedef struct
 {
-	struct zbx_json_parse		jp_row;
+	const zbx_lld_entry_t		*data;
 	zbx_vector_lld_item_link_ptr_t	item_links;	/* the list of item prototypes */
 	zbx_vector_lld_override_ptr_t	overrides;
 }
@@ -199,16 +252,14 @@ typedef struct
 	zbx_vector_lld_item_preproc_ptr_t	preproc_ops;
 	zbx_vector_item_param_ptr_t		item_params;
 	zbx_vector_db_tag_ptr_t			item_tags;
+	zbx_hashset_t				item_index;
+	zbx_vector_str_t			keys;		/* keys used to create items from this prototype */
 }
 zbx_lld_item_prototype_t;
 
 ZBX_PTR_VECTOR_DECL(lld_item_prototype_ptr, zbx_lld_item_prototype_t*)
 
 int	lld_item_prototype_compare_func(const void *d1, const void *d2);
-
-typedef struct zbx_lld_item_full_s zbx_lld_item_full_t;
-
-ZBX_VECTOR_STRUCT_DECL(lld_item_full_ptr, zbx_lld_item_full_t*)
 
 struct zbx_lld_item_full_s
 {
@@ -266,7 +317,7 @@ struct zbx_lld_item_full_s
 	char					*name;
 	char					*name_proto;
 	char					*key_orig;
-	char					*key;
+	char					*key_;
 	char					*delay_orig;
 	char					*delay;
 	char					*history_orig;
@@ -342,8 +393,6 @@ struct zbx_lld_item_full_s
 	unsigned char				allow_traps_orig;
 };
 
-ZBX_PTR_VECTOR_FUNC_DECL(lld_item_full_ptr, zbx_lld_item_full_t*)
-
 int	lld_item_full_compare_func(const void *d1, const void *d2);
 
 int	lld_ids_names_compare_func(const void *d1, const void *d2);
@@ -363,22 +412,19 @@ int	lld_validate_item_override_no_discover(const zbx_vector_lld_override_ptr_t *
 		unsigned char override_default);
 
 int	lld_update_items(zbx_uint64_t hostid, zbx_uint64_t lld_ruleid, zbx_vector_lld_row_ptr_t *lld_rows,
-		const zbx_vector_lld_macro_path_ptr_t *lld_macro_paths, char **error,
-		const zbx_lld_lifetime_t *lifetime, const zbx_lld_lifetime_t *enabled_lifetime, int lastcheck);
+		char **error, const zbx_lld_lifetime_t *lifetime, const zbx_lld_lifetime_t *enabled_lifetime,
+		int lastcheck);
 
 void	lld_item_links_sort(zbx_vector_lld_row_ptr_t *lld_rows);
 
 int	lld_update_triggers(zbx_uint64_t hostid, zbx_uint64_t lld_ruleid, const zbx_vector_lld_row_ptr_t *lld_rows,
-		const zbx_vector_lld_macro_path_ptr_t *lld_macro_paths, char **error, zbx_lld_lifetime_t *lifetime,
-		zbx_lld_lifetime_t *enabled_lifetime, int lastcheck);
+		char **error, zbx_lld_lifetime_t *lifetime, zbx_lld_lifetime_t *enabled_lifetime, int lastcheck);
 
 int	lld_update_graphs(zbx_uint64_t hostid, zbx_uint64_t lld_ruleid, const zbx_vector_lld_row_ptr_t *lld_rows,
-		const zbx_vector_lld_macro_path_ptr_t *lld_macro_paths, char **error,
-		const zbx_lld_lifetime_t *lifetime, int lastcheck);
+		char **error, const zbx_lld_lifetime_t *lifetime, int lastcheck);
 
 void	lld_update_hosts(zbx_uint64_t lld_ruleid, const zbx_vector_lld_row_ptr_t *lld_rows,
-		const zbx_vector_lld_macro_path_ptr_t *lld_macro_paths, char **error, zbx_lld_lifetime_t *lifetime,
-		zbx_lld_lifetime_t *enabled_lifetime, int lastcheck);
+		char **error, zbx_lld_lifetime_t *lifetime, zbx_lld_lifetime_t *enabled_lifetime, int lastcheck);
 
 int	lld_end_of_life(int lastcheck, int lifetime);
 
@@ -387,9 +433,9 @@ typedef void	(*object_audit_entry_create_f)(int audit_context_mode, int audit_ac
 		const char *name, int flags);
 typedef void	(*object_audit_entry_update_status_f)(int audit_context_mode, zbx_uint64_t objectid, int flags,
 		int status_old, int status_new);
-typedef int	(get_object_status_val)(int status);
+typedef unsigned char	(get_object_status_val)(int status);
 
-int	lld_process_discovery_rule(zbx_uint64_t lld_ruleid, const char *value, char **error);
+int	lld_process_discovery_rule(zbx_dc_item_t *item, zbx_vector_lld_entry_ptr_t *lld_entries, char **error);
 
 /* discovered resource tracking (*_discovery tables) */
 typedef struct
@@ -438,5 +484,33 @@ void	lld_disable_lost_object(zbx_lld_discovery_t *discovery, unsigned char objec
 void	lld_flush_discoveries(zbx_hashset_t *discoveries, const char *id_field, const char *object_table,
 		const char *discovery_table, int now, get_object_status_val cb_status, delete_ids_f cb_delete_objects,
 		object_audit_entry_create_f cb_audit_create, object_audit_entry_update_status_f cb_audit_update_status);
+
+/* item index by prototype (parent) id and lld row */
+typedef struct
+{
+	zbx_uint64_t		parent_itemid;
+	zbx_lld_row_t		*lld_row;
+	zbx_lld_item_full_t	*item;
+}
+zbx_lld_item_index_t;
+
+/* reference to an item either by its id (existing items) or structure (new items) */
+typedef struct
+{
+	zbx_uint64_t		itemid;
+	zbx_lld_item_full_t	*item;
+}
+zbx_lld_item_ref_t;
+
+int	lld_resolve_macros(char **text, const void *resolver_data);
+
+int	zbx_substitute_lld_macros(char **data, const zbx_lld_entry_t *lld_obj, int flags, char *error,
+		size_t max_error_len);
+int	zbx_substitute_function_lld_param(const char *e, size_t len, unsigned char key_in_param,
+		char **exp, size_t *exp_alloc, size_t *exp_offset, const zbx_lld_entry_t *lld_obj,
+		int esc_flags, char *error, size_t max_error_len);
+int	zbx_substitute_expression_lld_macros(char **data, zbx_uint64_t rules, const zbx_lld_entry_t *lld_obj,
+		char **error);
+int	zbx_substitute_macros_in_json_pairs(char **data, const zbx_lld_entry_t *lld_obj, char *error, int maxerrlen);
 
 #endif

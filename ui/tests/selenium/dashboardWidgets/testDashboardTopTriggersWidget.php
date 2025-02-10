@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -348,7 +348,7 @@ class testDashboardTopTriggersWidget extends CWebTest {
 				'placeholder' => 'value'
 			],
 			'Trigger limit' => [
-				'maxlength' => 3
+				'maxlength' => 4
 			]
 		];
 		foreach ($inputs as $field => $attributes) {
@@ -394,7 +394,7 @@ class testDashboardTopTriggersWidget extends CWebTest {
 					'fields' => [
 						'Trigger limit' => ''
 					],
-					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			[
@@ -403,7 +403,7 @@ class testDashboardTopTriggersWidget extends CWebTest {
 					'fields' => [
 						'Trigger limit' => ' '
 					],
-					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			[
@@ -412,16 +412,16 @@ class testDashboardTopTriggersWidget extends CWebTest {
 					'fields' => [
 						'Trigger limit' => '0'
 					],
-					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			[
 				[
 					'expected' => TEST_BAD,
 					'fields' => [
-						'Trigger limit' => '101'
+						'Trigger limit' => '1001'
 					],
-					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			[
@@ -430,7 +430,7 @@ class testDashboardTopTriggersWidget extends CWebTest {
 					'fields' => [
 						'Trigger limit' => 'x'
 					],
-					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-100.'
+					'error' => 'Invalid parameter "Trigger limit": value must be one of 1-1000.'
 				]
 			],
 			[
@@ -1438,7 +1438,7 @@ class testDashboardTopTriggersWidget extends CWebTest {
 					'Inventory' => 'hostinventories.php?hostid=10084'
 				],
 				'CONFIGURATION' => [
-					'Host' => 'zabbix.php?action=host.edit&hostid=10084',
+					'Host' => 'zabbix.php?action=popup&popup=host.edit&hostid=10084',
 					'Items' => 'zabbix.php?action=item.list&filter_set=1&filter_hostids%5B%5D=10084&context=host',
 					'Triggers' => 'zabbix.php?action=trigger.list&filter_set=1&filter_hostids%5B%5D=10084&context=host',
 					'Graphs' => 'graphs.php?filter_set=1&filter_hostids%5B%5D=10084&context=host',

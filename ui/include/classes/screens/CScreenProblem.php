@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -859,7 +859,9 @@ class CScreenProblem extends CScreenBase {
 
 					$symptom_events = $this->data['filter']['show'] == TRIGGERS_OPTION_ALL
 						? API::Event()->get($options)
-						: API::Problem()->get($options + ['recent' => true]);
+						: API::Problem()->get($options + [
+							'recent' => $this->data['filter']['show'] == TRIGGERS_OPTION_RECENT_PROBLEM
+						]);
 
 					if ($symptom_events) {
 						$enabled_triggers = API::Trigger()->get([
@@ -1148,11 +1150,14 @@ class CScreenProblem extends CScreenBase {
 			self::addProblemsToTable($table, $data['problems'], $data, false);
 
 			$footer = new CActionButtonList('action', 'eventids', [
-				'popup.acknowledge.edit' => [
-					'name' => _('Mass update'),
-					'disabled' => !($allowed['add_comments'] || $allowed['change_severity'] || $allowed['acknowledge']
+				'acknowledge.edit' => [
+					'content' => (new CSimpleButton(_('Mass update')))
+						->addClass(ZBX_STYLE_BTN_ALT)
+						->addClass('js-massupdate-problem')
+						->addClass('js-no-chkbxrange')
+						->setEnabled($allowed['add_comments'] || $allowed['change_severity'] || $allowed['acknowledge']
 							|| $allowed['close'] || $allowed['suppress_problems'] || $allowed['rank_change']
-					)
+						)
 				]
 			], 'problem');
 
@@ -1635,14 +1640,17 @@ class CScreenProblem extends CScreenBase {
 				);
 			}
 
+			$problem_update_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'acknowledge.edit')
+				->setArgument('eventids[]', $problem['eventid'])
+				->getUrl();
+
 			// Create acknowledge link.
 			$problem_update_link = ($data['allowed']['add_comments'] || $data['allowed']['change_severity']
 					|| $data['allowed']['acknowledge'] || $can_be_closed || $data['allowed']['suppress_problems']
 					|| $data['allowed']['rank_change'])
-				? (new CLink(_('Update')))
-					->addClass(ZBX_STYLE_LINK_ALT)
-					->setAttribute('data-eventid', $problem['eventid'])
-					->onClick('acknowledgePopUp({eventids: [this.dataset.eventid]}, this);')
+				? (new CLink(_('Update'), $problem_update_url))->addClass(ZBX_STYLE_LINK_ALT)
 				: new CSpan(_('Update'));
 
 			$row->addItem([
@@ -1767,6 +1775,7 @@ class CScreenProblem extends CScreenBase {
 		foreach ($items as $itemid => $item) {
 			if (array_key_exists($itemid, $history_values)) {
 				$last_value = reset($history_values[$itemid]);
+				$last_value['original_value'] = $last_value['value'];
 
 				if ($item['value_type'] != ITEM_VALUE_TYPE_BINARY) {
 					$last_value['value'] = formatHistoryValue(str_replace(["\r\n", "\n"], [" "], $last_value['value']),
@@ -1779,39 +1788,40 @@ class CScreenProblem extends CScreenBase {
 					'itemid' => null,
 					'clock' => null,
 					'value' => UNRESOLVED_MACRO_STRING,
+					'original_value' => UNRESOLVED_MACRO_STRING,
 					'ns' => null
 				];
 			}
 
 			if ($html) {
 				$hint_table->addRow([
-					new CCol($item['name']),
-					new CCol(
+					(new CCol($item['name']))->addStyle('max-width: '.ZBX_OPDATA_HINTBOX_COLUMN_MAX_WIDTH.'px'),
+					(new CCol(
 						($last_value['clock'] !== null)
 							? zbx_date2str(DATE_TIME_FORMAT_SECONDS, $last_value['clock'])
 							: UNRESOLVED_MACRO_STRING
-					),
-					new CCol($item['value_type'] == ITEM_VALUE_TYPE_BINARY
+					))->addClass(ZBX_STYLE_NOWRAP),
+					(new CCol($item['value_type'] == ITEM_VALUE_TYPE_BINARY
 						? italic(_('binary value'))->addClass(ZBX_STYLE_GREY)
-						: $last_value['value']
-					),
-					new CCol(
+						: $last_value['original_value']
+					))->addStyle('max-width: '.ZBX_OPDATA_HINTBOX_COLUMN_MAX_WIDTH.'px'),
+					(new CCol(
 						($item['value_type'] == ITEM_VALUE_TYPE_FLOAT || $item['value_type'] == ITEM_VALUE_TYPE_UINT64)
 							? (CWebUser::checkAccess(CRoleHelper::UI_MONITORING_LATEST_DATA)
-								? new CLink(_('Graph'), (new CUrl('history.php'))
-									->setArgument('action', HISTORY_GRAPH)
-									->setArgument('itemids[]', $itemid)
-									->getUrl()
-								)
-								: _('Graph'))
+							? new CLink(_('Graph'), (new CUrl('history.php'))
+								->setArgument('action', HISTORY_GRAPH)
+								->setArgument('itemids[]', $itemid)
+								->getUrl()
+							)
+							: _('Graph'))
 							: (CWebUser::checkAccess(CRoleHelper::UI_MONITORING_LATEST_DATA)
-								? new CLink(_('History'), (new CUrl('history.php'))
-									->setArgument('action', HISTORY_VALUES)
-									->setArgument('itemids[]', $itemid)
-									->getUrl()
-								)
-								: _('History'))
-					)
+							? new CLink(_('History'), (new CUrl('history.php'))
+								->setArgument('action', HISTORY_VALUES)
+								->setArgument('itemids[]', $itemid)
+								->getUrl()
+							)
+							: _('History'))
+					))->addClass(ZBX_STYLE_NOWRAP)
 				]);
 
 				$latest_values[] = (new CLinkAction(
@@ -1826,15 +1836,19 @@ class CScreenProblem extends CScreenBase {
 			else {
 				$latest_values[] = $item['value_type'] == ITEM_VALUE_TYPE_BINARY
 					? UNRESOLVED_MACRO_STRING
-					: $last_value['value'];
+					: $last_value['original_value'];
 			}
 		}
 
 		if ($html) {
+			$hint_container = (new CDiv())
+				->addClass(ZBX_STYLE_HINTBOX_WRAP)
+				->addItem($hint_table);
+
 			array_pop($latest_values);
 			array_unshift($latest_values, (new CDiv())
 				->addClass('main-hint')
-				->setHint($hint_table)
+				->setHint($hint_container)
 			);
 
 			return $latest_values;

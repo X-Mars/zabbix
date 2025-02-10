@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,10 +20,6 @@
  */
 
 $this->addJsFile('gtlc.js');
-$this->addJsFile('class.calendar.js');
-$this->addJsFile('class.tagfilteritem.js');
-$this->addJsFile('items.js');
-$this->addJsFile('multilineinput.js');
 
 $this->includeJsFile('reports.toptriggers.list.js.php');
 
@@ -97,6 +93,7 @@ $filter = (new CFilter())
 						->setChecked($data['filter']['severities'])
 						->setColumns(3)
 						->setVertical()
+						->showTitles()
 				)
 			]),
 		(new CFormGrid())
@@ -130,15 +127,17 @@ foreach ($data['triggers'] as $triggerid => $trigger) {
 	array_pop($hosts);
 
 	$table->addRow([
-		$hosts,
-		(new CLinkAction($trigger['description']))->setMenuPopup(
-			CMenuPopupHelper::getTrigger([
-				'triggerid' => $trigger['triggerid'],
-				'backurl' => (new CUrl('zabbix.php'))
-					->setArgument('action', 'toptriggers.list')
-					->getUrl()
-			])
-		),
+		(new CCol($hosts))->addClass(ZBX_STYLE_WORDBREAK),
+		(new CCol(
+			(new CLinkAction($trigger['description']))->setMenuPopup(
+				CMenuPopupHelper::getTrigger([
+					'triggerid' => $trigger['triggerid'],
+					'backurl' => (new CUrl('zabbix.php'))
+						->setArgument('action', 'toptriggers.list')
+						->getUrl()
+				])
+			)
+		))->addClass(ZBX_STYLE_WORDBREAK),
 		CSeverityHelper::makeSeverityCell((int) $trigger['priority']),
 		$trigger['problem_count']
 	]);

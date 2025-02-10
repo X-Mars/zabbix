@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -37,14 +37,16 @@ class testPageServicesSlaReport extends testSlaReport {
 		}
 
 		// Check displaying and hiding the filter.
-		$filter_form = $this->query('name:zbx_filter')->asForm()->one();
-		$filter_tab = $this->query('xpath://a[contains(text(), "Filter")]')->one();
-		$filter = $filter_form->query('id:tab_0')->one();
-		$this->assertTrue($filter->isDisplayed());
-		$filter_tab->click();
-		$this->assertFalse($filter->isDisplayed());
-		$filter_tab->click();
-		$this->assertTrue($filter->isDisplayed());
+		$filter = CFilterElement::find()->one();
+		$filter_form = $filter->getForm();
+		$this->assertEquals('Filter', $filter->getSelectedTabName());
+		// Check that filter is expanded by default.
+		$this->assertTrue($filter->isExpanded());
+		// Check that filter is collapsing/expanding on click.
+		foreach ([false, true] as $status) {
+			$filter->expand($status);
+			$this->assertTrue($filter->isExpanded($status));
+		}
 
 		// Check the list of available SLAs (disabled SLAs should not be present).
 		$sla_data = [
@@ -1392,6 +1394,9 @@ class testPageServicesSlaReport extends testSlaReport {
 	public function openSlaReport($filter_data) {
 		$this->page->login()->open('zabbix.php?action=slareport.list');
 		$filter_form = $this->query('name:zbx_filter')->asForm()->one();
+
+		// Expand filter if it is collapsed.
+		CFilterElement::find()->one()->setContext(CFilterElement::CONTEXT_RIGHT)->expand();
 
 		// Usage of Select mode is required as in Type mode a service that contains the name of required service is chosen.
 		CMultiselectElement::setDefaultFillMode(CMultiselectElement::MODE_SELECT);

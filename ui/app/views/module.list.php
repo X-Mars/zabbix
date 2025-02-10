@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -84,9 +84,13 @@ $table = (new CTableInfo())
 	->setPageNavigation($data['paging']);
 
 foreach ($data['modules'] as $moduleid => $module) {
-	$name = (new CLink($module['name']))
-		->addClass('js-edit-module')
-		->setAttribute('data-moduleid', $moduleid);
+	$module_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'module.edit')
+		->setArgument('moduleid', $moduleid)
+		->getUrl();
+
+	$name = new CLink($module['name'], $module_url);
 
 	if ($module['status'] == MODULE_STATUS_ENABLED) {
 		$status = (new CLink(_('Enabled')))
@@ -133,10 +137,9 @@ $form->addItem([
 	], 'modules')
 ]);
 
-// append form to widget
-$html_page->addItem($form);
-
-$html_page->show();
+$html_page
+	->addItem($form)
+	->show();
 
 (new CScriptTag('view.init();'))
 	->setOnDocumentReady()

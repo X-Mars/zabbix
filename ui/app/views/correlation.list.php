@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -113,12 +113,16 @@ foreach ($data['correlations'] as $correlation) {
 			->addClass('js-enable')
 			->setAttribute('data-correlationid', (int) $correlation['correlationid']);
 
+	$correlation_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'correlation.edit')
+		->setArgument('correlationid', $correlation['correlationid'])
+		->getUrl();
+
 	$table->addRow([
 		new CCheckBox('correlationids['.$correlation['correlationid'].']', $correlation['correlationid']),
-		(new CLink($correlation['name']))
-			->addClass('js-edit')
-			->setAttribute('data-correlationid', $correlation['correlationid']),
-		$conditions,
+		(new CCol((new CLink($correlation['name'], $correlation_url))))->addClass(ZBX_STYLE_WORDBREAK),
+		(new CCol($conditions))->addClass(ZBX_STYLE_WORDBREAK),
 		$operations,
 		$status
 	]);

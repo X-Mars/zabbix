@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -12,7 +12,15 @@
 ** If not, see <https://www.gnu.org/licenses/>.
 **/
 
+#include <fcntl.h>
+#include <stdlib.h>
+
+#if defined(_WINDOWS) || defined(__MINGW32__)
+#	include <stddef.h>
+#endif
+
 #include "zbxcommon.h"
+#include "zbxtypes.h"
 
 #if defined(_WINDOWS) || defined(__MINGW32__)
 #	include "zbxstr.h"
@@ -81,27 +89,34 @@ const char	*get_program_name(const char *path)
  ******************************************************************************/
 void	*zbx_calloc2(const char *filename, int line, void *old, size_t nmemb, size_t size)
 {
-	int	max_attempts;
 	void	*ptr = NULL;
 
 	/* old pointer must be NULL */
 	if (NULL != old)
 	{
-		zabbix_log(LOG_LEVEL_CRIT, "[file:%s,line:%d] zbx_calloc: allocating already allocated memory. "
+		zabbix_log(LOG_LEVEL_CRIT,
+				"[file:%s,line:%d] zbx_calloc: allocating already allocated memory. "
 				"Please report this to Zabbix developers.",
 				filename, line);
 	}
 
-	for (
-		max_attempts = 10, nmemb = MAX(nmemb, 1), size = MAX(size, 1);
-		0 < max_attempts && NULL == ptr;
-		ptr = calloc(nmemb, size), max_attempts--
-	);
+	if (0 == nmemb || 0 == size)
+	{
+		zabbix_log(LOG_LEVEL_CRIT,
+				"[file:%s,line:%d] zbx_calloc: "
+				"allocating " ZBX_FS_SIZE_T " memory objects of size " ZBX_FS_SIZE_T ". "
+				"Please report this to Zabbix developers.",
+				filename, line, (zbx_fs_size_t)nmemb, (zbx_fs_size_t)size);
+	}
+	nmemb = MAX(nmemb, 1);
+	size = MAX(size, 1);
 
+	ptr = calloc(nmemb, size);
 	if (NULL != ptr)
 		return ptr;
 
-	zabbix_log(LOG_LEVEL_CRIT, "[file:%s,line:%d] zbx_calloc: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
+	zabbix_log(LOG_LEVEL_CRIT,
+			"[file:%s,line:%d] zbx_calloc: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
 			filename, line, (zbx_fs_size_t)size);
 
 	exit(EXIT_FAILURE);
@@ -116,27 +131,34 @@ void	*zbx_calloc2(const char *filename, int line, void *old, size_t nmemb, size_
  ******************************************************************************/
 void	*zbx_malloc2(const char *filename, int line, void *old, size_t size)
 {
-	int	max_attempts;
 	void	*ptr = NULL;
 
 	/* old pointer must be NULL */
 	if (NULL != old)
 	{
-		zabbix_log(LOG_LEVEL_CRIT, "[file:%s,line:%d] zbx_malloc: allocating already allocated memory. "
+		zabbix_log(LOG_LEVEL_CRIT,
+				"[file:%s,line:%d] zbx_malloc: allocating already allocated memory. "
 				"Please report this to Zabbix developers.",
 				filename, line);
 	}
 
-	for (
-		max_attempts = 10, size = MAX(size, 1);
-		0 < max_attempts && NULL == ptr;
-		ptr = malloc(size), max_attempts--
-	);
+	if (0 == size)
+	{
+		zabbix_log(LOG_LEVEL_CRIT,
+				"[file:%s,line:%d] zbx_calloc: "
+				"allocating memory object of size " ZBX_FS_SIZE_T " bytes. "
+				"Please report this to Zabbix developers.",
+				filename, line, (zbx_fs_size_t)size);
+	}
+	size = MAX(size, 1);
 
+	ptr = malloc(size);
 	if (NULL != ptr)
 		return ptr;
 
-	zabbix_log(LOG_LEVEL_CRIT, "[file:%s,line:%d] zbx_malloc: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
+	zabbix_log(LOG_LEVEL_CRIT,
+			"[file:%s,line:%d] zbx_malloc: out of memory. "
+			"Requested " ZBX_FS_SIZE_T " bytes.",
 			filename, line, (zbx_fs_size_t)size);
 
 	exit(EXIT_FAILURE);
@@ -152,19 +174,24 @@ void	*zbx_malloc2(const char *filename, int line, void *old, size_t size)
  ******************************************************************************/
 void	*zbx_realloc2(const char *filename, int line, void *old, size_t size)
 {
-	int	max_attempts;
 	void	*ptr = NULL;
 
-	for (
-		max_attempts = 10, size = MAX(size, 1);
-		0 < max_attempts && NULL == ptr;
-		ptr = realloc(old, size), max_attempts--
-	);
+	if (0 == size)
+	{
+		zabbix_log(LOG_LEVEL_CRIT,
+				"[file:%s,line:%d] zbx_calloc: "
+				"allocating memory object of size " ZBX_FS_SIZE_T " bytes. "
+				"Please report this to Zabbix developers.",
+				filename, line, (zbx_fs_size_t)size);
+	}
+	size = MAX(size, 1);
 
+	ptr = realloc(old, size);
 	if (NULL != ptr)
 		return ptr;
 
-	zabbix_log(LOG_LEVEL_CRIT, "[file:%s,line:%d] zbx_realloc: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
+	zabbix_log(LOG_LEVEL_CRIT,
+			"[file:%s,line:%d] zbx_realloc: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
 			filename, line, (zbx_fs_size_t)size);
 
 	exit(EXIT_FAILURE);
@@ -172,18 +199,16 @@ void	*zbx_realloc2(const char *filename, int line, void *old, size_t size)
 
 char	*zbx_strdup2(const char *filename, int line, char *old, const char *str)
 {
-	int	retry;
 	char	*ptr = NULL;
 
 	zbx_free(old);
 
-	for (retry = 10; 0 < retry && NULL == ptr; ptr = strdup(str), retry--)
-		;
-
+	ptr = strdup(str);
 	if (NULL != ptr)
 		return ptr;
 
-	zabbix_log(LOG_LEVEL_CRIT, "[file:%s,line:%d] zbx_strdup: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
+	zabbix_log(LOG_LEVEL_CRIT,
+			"[file:%s,line:%d] zbx_strdup: out of memory. Requested " ZBX_FS_SIZE_T " bytes.",
 			filename, line, (zbx_fs_size_t)(strlen(str) + 1));
 
 	exit(EXIT_FAILURE);
@@ -211,7 +236,7 @@ void	*zbx_guaranteed_memset(void *v, int c, size_t n)
 }
 
 static const char	copyright_message[] =
-	"Copyright (C) 2024 Zabbix SIA\n"
+	"Copyright (C) 2025 Zabbix SIA\n"
 	"License AGPLv3: GNU Affero General Public License version 3 <https://www.gnu.org/licenses/>.\n"
 	"This is free software: you are free to change and redistribute it according to\n"
 	"the license. There is NO WARRANTY, to the extent permitted by law.";
@@ -335,6 +360,7 @@ int	uint64_array_add(zbx_uint64_t **values, int *alloc, int *num, zbx_uint64_t v
 		if (0 == alloc_step)
 		{
 			zbx_error("Unable to reallocate buffer");
+			zbx_this_should_never_happen_backtrace();
 			assert(0);
 		}
 

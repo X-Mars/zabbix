@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -39,9 +39,8 @@ int	get_value_http(const zbx_dc_item_t *item, const char *config_source_ip, cons
 		CURLcode	err = zbx_http_request_sync_perform(context.easyhandle, &context, 0,
 				ZBX_HTTP_IGNORE_RESPONSE_CODE);
 
-		if (SUCCEED == zbx_http_handle_response(context.easyhandle, &context, err, &response_code, &out,
-				&error) && SUCCEED == zbx_handle_response_code(item->status_codes, response_code, out,
-				&error))
+		if (SUCCEED == zbx_http_handle_response(context.easyhandle, &context, err, &response_code, &out, &error)
+				&& SUCCEED == zbx_handle_response_code(item->status_codes, response_code, out, &error))
 		{
 
 			SET_TEXT_RESULT(result, out);
@@ -69,6 +68,5 @@ int	get_value_http(const zbx_dc_item_t *item, const char *config_source_ip, cons
 
 	return ret;
 }
-
 
 #endif

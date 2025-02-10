@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -71,9 +71,7 @@ class CHostGroup extends CApiService {
 			'graphids' =>							['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
 			'triggerids' =>							['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
 			'maintenanceids' =>						['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
-			'monitored_hosts' =>					['type' => API_BOOLEAN, 'flags' => API_DEPRECATED, 'replacement' => 'with_monitored_hosts'],
 			'with_monitored_hosts' =>				['type' => API_BOOLEAN, 'default' => false],
-			'real_hosts' =>							['type' => API_BOOLEAN, 'flags' => API_DEPRECATED, 'replacement' => 'with_hosts'],
 			'with_hosts' =>							['type' => API_BOOLEAN, 'default' => false],
 			'with_items' =>							['type' => API_BOOLEAN, 'default' => false],
 			'with_item_prototypes' =>				['type' => API_BOOLEAN, 'default' => false],
@@ -584,7 +582,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	protected function validateUpdate(array &$groups, array &$db_groups = null): void {
+	protected function validateUpdate(array &$groups, ?array &$db_groups = null): void {
 		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_NOT_EMPTY | API_NORMALIZE, 'uniq' => [['uuid'], ['groupid'], ['name']], 'fields' => [
 			'uuid' => 		['type' => API_UUID],
 			'groupid' =>	['type' => API_ID, 'flags' => API_REQUIRED],
@@ -619,7 +617,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validateDelete(array $groupids, array &$db_groups = null): void {
+	private function validateDelete(array $groupids, ?array &$db_groups = null): void {
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];
 
 		if (!CApiInputValidator::validate($api_input_rules, $groupids, '/', $error)) {
@@ -710,7 +708,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if host group names are not unique.
 	 */
-	private static function checkDuplicates(array $groups, array $db_groups = null): void {
+	private static function checkDuplicates(array $groups, ?array $db_groups = null): void {
 		$names = [];
 
 		foreach ($groups as $group) {
@@ -760,7 +758,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	private static function checkUuidDuplicates(array $groups, array $db_groups = null): void {
+	private static function checkUuidDuplicates(array $groups, ?array $db_groups = null): void {
 		$group_indexes = [];
 
 		foreach ($groups as $i => $group) {
@@ -824,18 +822,20 @@ class CHostGroup extends CApiService {
 	 */
 	private static function checkMaintenances(array $groupids): void {
 		$maintenance = DBfetch(DBselect(
-			'SELECT m.maintenanceid,m.name'.
-			' FROM maintenances m'.
-			' WHERE NOT EXISTS ('.
-				'SELECT NULL'.
-				' FROM maintenances_groups mg'.
-				' WHERE m.maintenanceid=mg.maintenanceid'.
-					' AND '.dbConditionId('mg.groupid', $groupids, true).
-			')'.
+			'SELECT mg.maintenanceid,m.name'.
+			' FROM maintenances_groups mg'.
+			' JOIN maintenances m ON mg.maintenanceid=m.maintenanceid'.
+			' WHERE '.dbConditionId('mg.groupid', $groupids).
+				' AND NOT EXISTS ('.
+					'SELECT NULL'.
+					' FROM maintenances_groups mg1'.
+					' WHERE mg.maintenanceid=mg1.maintenanceid'.
+						' AND '.dbConditionId('mg1.groupid', $groupids, true).
+				')'.
 				' AND NOT EXISTS ('.
 					'SELECT NULL'.
 					' FROM maintenances_hosts mh'.
-					' WHERE m.maintenanceid=mh.maintenanceid'.
+					' WHERE mg.maintenanceid=mh.maintenanceid'.
 				')'
 		, 1));
 
@@ -1324,7 +1324,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validatePropagate(array &$data, array &$db_groups = null): void {
+	private function validatePropagate(array &$data, ?array &$db_groups = null): void {
 		$api_input_rules = ['type' => API_OBJECT, 'fields' => [
 			'groups' =>			['type' => API_OBJECTS, 'flags' => API_REQUIRED | API_NOT_EMPTY | API_NORMALIZE, 'uniq' => [['groupid']], 'fields' => [
 				'groupid' =>		['type' => API_ID, 'flags' => API_REQUIRED]

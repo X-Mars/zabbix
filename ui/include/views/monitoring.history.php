@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -238,7 +238,7 @@ else {
 		);
 	}
 
-	if ($data['action'] == HISTORY_BATCH_GRAPH) {
+	if (($data['action'] == HISTORY_BATCH_GRAPH || $data['action'] == HISTORY_GRAPH) && count($data['itemids']) > 1) {
 		$filter_form
 			->hideFilterButtons()
 			->addVar('action', $data['action'])

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -383,7 +383,7 @@ static zbx_uint64_t	add_discovered_host(const zbx_db_event *event, int *status, 
 
 				if (NULL != (row3 = zbx_db_fetch(result3)))
 				{
-					if (SUCCEED == zbx_db_is_null_basic(row3[0]) || '\0' == *row3[0])
+					if (SUCCEED == zbx_db_is_null(row3[0]) || '\0' == *row3[0])
 					{
 						zabbix_log(LOG_LEVEL_WARNING, "cannot retrieve service value for"
 								" host name on \"%s\"", row[2]);
@@ -438,7 +438,7 @@ static zbx_uint64_t	add_discovered_host(const zbx_db_event *event, int *status, 
 
 				if (NULL != (row3 = zbx_db_fetch(result3)))
 				{
-					if (SUCCEED == zbx_db_is_null_basic(row3[0]) || '\0' == *row3[0])
+					if (SUCCEED == zbx_db_is_null(row3[0]) || '\0' == *row3[0])
 					{
 						zabbix_log(LOG_LEVEL_WARNING, "cannot retrieve service value for"
 								" host visible name on \"%s\"", row[2]);
@@ -640,7 +640,7 @@ static zbx_uint64_t	add_discovered_host(const zbx_db_event *event, int *status, 
 							ZBX_AUDIT_ACTION_ADD, hostid, hostname);
 					zbx_audit_host_update_json_add_tls_and_psk(
 							zbx_map_db_event_to_audit_context(event), hostid, tls_accepted,
-							tls_accepted, psk_identity, psk);
+							tls_accepted);
 				}
 				else
 				{

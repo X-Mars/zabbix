@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -341,6 +341,7 @@ class testPageServicesSla extends CWebTest {
 		foreach (['Disable' => 'disabled', 'Enable' => 'enabled'] as $button => $status) {
 			$row->select();
 			$this->query('button', $button)->one()->waitUntilClickable()->click();
+			$this->page->acceptAlert();
 			$this->checkSlaStatus($row, $status, self::$update_sla);
 		}
 	}
@@ -364,7 +365,6 @@ class testPageServicesSla extends CWebTest {
 			$db_status = '0';
 		}
 
-		$this->page->acceptAlert();
 		$this->page->waitUntilReady();
 		$this->assertMessage(TEST_GOOD, $message_title);
 		CMessageElement::find()->one()->close();
@@ -708,6 +708,9 @@ class testPageServicesSla extends CWebTest {
 	public function testPageServicesSla_Filter($data) {
 		$this->page->login()->open('zabbix.php?action=sla.list');
 		$form = $this->query('name:zbx_filter')->asForm()->one();
+
+		// Expand filter if it is collapsed.
+		CFilterElement::find()->one()->setContext(CFilterElement::CONTEXT_RIGHT)->expand();
 
 		// Fill filter fields if such present in data provider.
 		$form->fill(CTestArrayHelper::get($data, 'filter'));

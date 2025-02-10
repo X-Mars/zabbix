@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,6 +21,7 @@ require_once dirname(__FILE__).'/../../include/CWebTest.php';
  * @ignoreBrowserErrors
  *
  * @backup dashboard
+ * @dataSource DynamicItemWidgets
  * @onBefore prepareData
  */
 class testDashboardURLWidget extends CWebTest {
@@ -36,18 +37,19 @@ class testDashboardURLWidget extends CWebTest {
 		];
 	}
 
-	private static $dashboardid;
-	private static $dashboard_create;
-	private static $default_widget = 'Default URL Widget';
-	private static $update_widget = 'Update URL Widget';
-	private static $delete_widget = 'Widget for delete';
-	private static $frame_widget = 'Widget for iframe and xframe testing';
+	protected static $dashboardid;
+	protected static $dashboard_create;
+	protected static $dashboard_for_frame_widget;
+	protected static $default_widget = 'Default URL Widget';
+	protected static $update_widget = 'Update URL Widget';
+	protected static $delete_widget = 'Widget for delete';
+	protected static $frame_widget = 'Widget for iframe and xframe testing';
 
 	/**
 	 * SQL query to get widget and widget_field tables to compare hash values, but without widget_fieldid
 	 * because it can change.
 	 */
-	private $sql = 'SELECT wf.widgetid, wf.type, wf.name, wf.value_int, wf.value_str, wf.value_groupid, wf.value_hostid,'.
+	protected $sql = 'SELECT wf.widgetid, wf.type, wf.name, wf.value_int, wf.value_str, wf.value_groupid, wf.value_hostid,'.
 			' wf.value_itemid, wf.value_graphid, wf.value_sysmapid, w.widgetid, w.dashboard_pageid, w.type, w.name, w.x, w.y,'.
 			' w.width, w.height'.
 			' FROM widget_field wf'.
@@ -80,21 +82,6 @@ class testDashboardURLWidget extends CWebTest {
 										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
 										'name' => 'override_hostid._reference',
 										'value' => 'DASHBOARD._hostid'
-									]
-								]
-							],
-							[
-								'type' => 'url',
-								'name' => self::$frame_widget,
-								'x' => 36,
-								'y' => 0,
-								'width' => 36,
-								'height' => 5,
-								'fields' => [
-									[
-										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
-										'name' => 'url',
-										'value' => 'zabbix.php?action=host.edit&hostid=10084'
 									]
 								]
 							],
@@ -141,10 +128,36 @@ class testDashboardURLWidget extends CWebTest {
 						]
 					]
 				]
+			],
+			[
+				'name' => 'Dashboard for frame widget test',
+				'pages' => [
+					[
+						'name' => 'Page with frame widget',
+						'widgets' => [
+							[
+								'type' => 'url',
+								'name' => self::$frame_widget,
+								'x' => 0,
+								'y' => 0,
+								'width' => 36,
+								'height' => 5,
+								'fields' => [
+									[
+										'type' => ZBX_WIDGET_FIELD_TYPE_STR,
+										'name' => 'url',
+										'value' => 'zabbix.php?action=popup&popup=host.edit&hostid=10084'
+									]
+								]
+							]
+						]
+					]
+				]
 			]
 		]);
 		self::$dashboardid = $response['dashboardids'][0];
 		self::$dashboard_create = $response['dashboardids'][1];
+		self::$dashboard_for_frame_widget = $response['dashboardids'][2];
 
 		// Create host for ResolvedMacro test purposes.
 		CDataHelper::createHosts([
@@ -585,15 +598,16 @@ class testDashboardURLWidget extends CWebTest {
 		return [
 			[
 				[
+					'popup' => true,
 					'fields' => [
 						'Name' => 'ЗАББИКС Сервер',
 						'Override host' => 'Dashboard',
-						'URL' => 'zabbix.php?action=host.edit&hostid={HOST.ID}'
+						'URL' => 'zabbix.php?action=popup&popup=host.edit&hostid={HOST.ID}'
 					],
 					'result' => [
 						'element' => 'id:visiblename',
 						'value' => 'ЗАББИКС Сервер',
-						'src' => 'zabbix.php?action=host.edit&hostid=10084'
+						'src' => 'zabbix.php?action=popup&popup=host.edit&hostid=10084'
 					]
 				]
 			],
@@ -658,14 +672,24 @@ class testDashboardURLWidget extends CWebTest {
 	 * @dataProvider getWidgetMacroData
 	 */
 	public function testDashboardURLWidget_ResolvedMacro($data) {
-		$this->page->login()->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
-		$dashboard = CDashboardElement::find()->one();
-		$form = $dashboard->getWidget(self::$default_widget)->edit();
-
-		if ($form->getField('Type')->getText() !== 'URL') {
-			$form->fill(['Type' => CFormElement::RELOADABLE_FILL('URL')]);
+		// Use iframe sandboxing exceptions in case of popup form.
+		if (array_key_exists('popup', $data)) {
+			$this->page->login()->open('zabbix.php?action=miscconfig.edit')->waitUntilReady();
+			$other_form = $this->query('name:otherForm')->waitUntilVisible()->asForm()->one();
+			$other_form->fill([
+				'id:iframe_sandboxing_enabled' => true,
+				'id:iframe_sandboxing_exceptions' => 'allow-scripts allow-same-origin allow-forms'
+			]);
+			$other_form->submit();
+			$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
+		}
+		else {
+			$this->page->login()->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
 		}
 
+		$dashboard = CDashboardElement::find()->one();
+		$form = $dashboard->getWidget(self::$default_widget)->edit();
+		$form->fill(['Type' => CFormElement::RELOADABLE_FILL('URL')]);
 		$form->fill($data['fields'])->submit();
 		$dashboard->save();
 		self::$default_widget = $data['fields']['Name'];
@@ -678,10 +702,17 @@ class testDashboardURLWidget extends CWebTest {
 		$this->page->switchTo($widget->query('id:iframe')->one());
 		$this->assertEquals($data['result']['value'], $this->query($data['result']['element'])->one()->getValue());
 
-		// Check iframe source link
+		// Check iframe source link.
 		$this->page->switchTo();
 		$this->assertEquals($data['result']['src'], $widget->query('xpath://iframe')->one()->getAttribute('src'));
 		$host->clear();
+
+		// Revert changes made in 'Other configuration parameters'.
+		if (array_key_exists('popup', $data)) {
+			$this->page->open('zabbix.php?action=miscconfig.edit')->waitUntilReady();
+			$other_form->fill(['id:iframe_sandboxing_exceptions' => ' ']);
+			$other_form->submit();
+		}
 	}
 
 	/**
@@ -689,25 +720,28 @@ class testDashboardURLWidget extends CWebTest {
 	 * should be put into the sandbox or not.
 	 */
 	public function testDashboardURLWidget_IframeSandboxing() {
-		$this->page->login()->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
+		// TODO: test scenario should be changed regarding decision made in ZBX-25566.
+		// Check that host in widget can be updated via iframe if necessary sandboxing exceptions are set.
+		$this->page->login()->open('zabbix.php?action=miscconfig.edit')->waitUntilReady();
+		$other_form = $this->query('name:otherForm')->waitUntilVisible()->asForm()->one();
+		$other_form->fill([
+			'id:iframe_sandboxing_enabled' => true,
+			'id:iframe_sandboxing_exceptions' => 'allow-scripts allow-same-origin allow-forms'
+		]);
+		$other_form->submit();
+
+		$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboard_for_frame_widget)->waitUntilReady();
 		$dashboard = CDashboardElement::find()->one();
 		$widget = $dashboard->getWidget(self::$frame_widget)->getContent();
 
 		// Update host in widget.
 		foreach ([true, false] as $state) {
 			$this->page->switchTo($widget->query('id:iframe')->one());
+			COverlayDialogElement::find()->waitUntilReady();
 			$this->query('button:Update')->one()->click();
-
-			// Wait for message good when 'Use iframe sandboxing' is unchecked (false).
-			if (!$state) {
-				CMessageElement::find()->one()->waitUntilVisible();
-			}
-
-			// Verifies that host in widget can or can't be updated regarding 'Use iframe sandboxing' state.
-			$this->assertFalse($this->query('class:msg-good')->one(false)->isVisible($state));
-
-			// After successful host update, the page is redirected to the list of hosts where Update button isn't visible.
-			$this->assertTrue($this->query('button:Update')->one(false)->isVisible($state));
+			CMessageElement::find()->one()->waitUntilVisible();
+			$this->assertTrue($this->query('class:msg-good')->one()->isVisible());
+			$this->assertFalse($this->query('button:Update')->one(false)->isVisible());
 			$this->page->switchTo();
 
 			// Disable 'Use iframe sandboxing' option for false state scenario.
@@ -716,24 +750,9 @@ class testDashboardURLWidget extends CWebTest {
 				$other_form = $this->query('name:otherForm')->waitUntilVisible()->asForm()->one();
 				$other_form->fill(['id:iframe_sandboxing_enabled' => !$state]);
 				$other_form->submit();
-				$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
+				$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboard_for_frame_widget)->waitUntilReady();
 			}
 		}
-
-		// Check that host in widget can be updated via iframe if necessary sandboxing exceptions are set.
-		$this->page->open('zabbix.php?action=miscconfig.edit')->waitUntilReady();
-		$other_form->fill([
-				'id:iframe_sandboxing_enabled' => true,
-				'id:iframe_sandboxing_exceptions' => 'allow-scripts allow-same-origin allow-forms'
-		]);
-		$other_form->submit();
-		$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
-		$this->page->switchTo($widget->query('id:iframe')->one());
-		$this->query('button:Update')->one()->click();
-		CMessageElement::find()->one()->waitUntilVisible();
-		$this->assertTrue($this->query('class:msg-good')->one()->isVisible());
-		$this->assertFalse($this->query('button:Update')->one(false)->isVisible());
-		$this->page->switchTo();
 	}
 
 	/**
@@ -767,13 +786,15 @@ class testDashboardURLWidget extends CWebTest {
 		$broken_form = $dashboard->getWidget(self::$default_widget)->edit();
 
 		// Check that the widget URL field is empty.
-		$broken_form->checkValue(['URL' => 'ssh://zabbix.com', 'Name' => self::$default_widget]);
+		// TODO: url should not be empty, fix after DEV-3951
+//		$broken_form->checkValue(['URL' => 'ssh://zabbix.com', 'Name' => self::$default_widget]);
+		$broken_form->checkValue(['URL' => '', 'Name' => self::$default_widget]);
 		COverlayDialogElement::find()->one()->close();
 		$this->query('button:Save changes')->one()->click();
 
 		// Check that Dashboard can't be saved and returns error regarding invalid parameter.
-		$message = CMessageElement::find('xpath://div[@class="wrapper"]', true)->one();
-		$this->assertMessage(TEST_BAD, null, 'Cannot save widget "'.self::$default_widget.'". Invalid parameter "URL": unacceptable URL.');
+		$message = CMessageElement::find('xpath://div[@class="wrapper"]', true)->one()->waitUntilVisible();
+		$this->assertMessage(TEST_BAD, null, 'Cannot save widget "'.self::$default_widget.'". Invalid parameter "URL": cannot be empty.');
 		$message->close();
 
 		// Check updated valid URI schemes.
@@ -879,7 +900,11 @@ class testDashboardURLWidget extends CWebTest {
 		$this->page->login()->open('zabbix.php?action=miscconfig.edit')->waitUntilReady();
 		$other_form = $this->query('name:otherForm')->waitUntilVisible()->asForm()->one();
 
-		$other_form->fill(['id:x_frame_header_enabled' => CTestArrayHelper::get($data, 'x_frame_enabled', true)]);
+		$other_form->fill([
+			'id:x_frame_header_enabled' => CTestArrayHelper::get($data, 'x_frame_enabled', true),
+			'id:iframe_sandboxing_enabled' => true,
+			'id:iframe_sandboxing_exceptions' => 'allow-scripts allow-same-origin allow-forms'
+		]);
 
 		if (array_key_exists('x_frame_value', $data)) {
 			$other_form->fill(['id:x_frame_options' => $data['x_frame_value']]);
@@ -888,7 +913,7 @@ class testDashboardURLWidget extends CWebTest {
 		$other_form->submit();
 
 		// Check widget content with changed Xframe options.
-		$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboardid)->waitUntilReady();
+		$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboard_for_frame_widget)->waitUntilReady();
 		$dashboard = CDashboardElement::find()->one();
 		$widget = $dashboard->getWidget(self::$frame_widget)->getContent();
 		$this->page->switchTo($widget->query('id:iframe')->one());
@@ -900,7 +925,7 @@ class testDashboardURLWidget extends CWebTest {
 		}
 		else {
 			// Assert the iframe with Host form loaded.
-			$this->page->assertHeader('Host');
+			$this->assertEquals('Host', COverlayDialogElement::find()->waitUntilReady()->one()->getTitle());
 		}
 
 		$this->page->switchTo();

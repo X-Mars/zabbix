@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,48 +25,25 @@
 		init() {
 			const $filter_groups = $('#filter_groups_');
 
-			$filter_groups.on('change', () => this._updateMultiselect($filter_groups));
-			this._updateMultiselect($filter_groups);
+			$filter_groups.on('change', () => this.#updateMultiselect($filter_groups));
+			this.#updateMultiselect($filter_groups);
 
-			this._initActions();
+			this.#initActions();
+			this.#initPopupListeners();
 		}
 
-		_initActions() {
+		#initActions() {
 			document.addEventListener('click', (e) => {
 				if (e.target.classList.contains('js-create-maintenance')) {
-					this._edit();
-				}
-				else if (e.target.classList.contains('js-edit-maintenance')) {
-					this._edit({maintenanceid: e.target.dataset.maintenanceid});
+					ZABBIX.PopupManager.open('maintenance.edit');
 				}
 				else if (e.target.classList.contains('js-massdelete-maintenance')) {
-					this._delete(e.target, Object.keys(chkbxRange.getSelectedIds()));
+					this.#delete(e.target, Object.keys(chkbxRange.getSelectedIds()));
 				}
-			})
-		}
-
-		_edit(parameters = {}) {
-			const overlay = PopUp('maintenance.edit', parameters, {
-				dialogueid: 'maintenance-edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			const dialogue = overlay.$dialogue[0];
-
-			dialogue.addEventListener('dialogue.submit', (e) => {
-				postMessageOk(e.detail.title);
-
-				if ('messages' in e.detail) {
-					postMessageDetails('success', e.detail.messages);
-				}
-
-				uncheckTableRows('maintenance');
-				location.href = location.href;
 			});
 		}
 
-		_delete(target, maintenanceids) {
+		#delete(target, maintenanceids) {
 			const confirmation = maintenanceids.length > 1
 				? <?= json_encode(_('Delete selected maintenance periods?')) ?>
 				: <?= json_encode(_('Delete selected maintenance period?')) ?>;
@@ -78,10 +55,10 @@
 			const curl = new Curl('zabbix.php');
 			curl.setArgument('action', 'maintenance.delete');
 
-			this._post(target, maintenanceids, curl.getUrl());
+			this.#post(target, maintenanceids, curl.getUrl());
 		}
 
-		_post(target, maintenanceids, url) {
+		#post(target, maintenanceids, url) {
 			target.classList.add('is-loading');
 
 			const post_data = {
@@ -129,8 +106,18 @@
 				});
 		}
 
-		_updateMultiselect($ms) {
+		#updateMultiselect($ms) {
 			$ms.multiSelect('setDisabledEntries', [...$ms.multiSelect('getData').map((entry) => entry.id)]);
+		}
+
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: () => uncheckTableRows('maintenance')
+			});
 		}
 	};
 </script>

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -26,6 +26,17 @@
 
 #include "zbxcfg.h"
 
+void	zbx_addrs_failover(zbx_vector_addr_ptr_t *addrs)
+{
+	if (1 < addrs->values_num)
+	{
+		zbx_addr_t	*addr = addrs->values[0];
+
+		zbx_vector_addr_ptr_remove(addrs, 0);
+		zbx_vector_addr_ptr_append(addrs, addr);
+	}
+}
+
 static int	zbx_tcp_connect_failover(zbx_socket_t *s, const char *source_ip, zbx_vector_addr_ptr_t *addrs,
 		int timeout, int connect_timeout, unsigned int tls_connect, const char *tls_arg1, const char *tls_arg2,
 		int loglevel)
@@ -49,8 +60,7 @@ static int	zbx_tcp_connect_failover(zbx_socket_t *s, const char *source_ip, zbx_
 				((zbx_addr_t *)addrs->values[0])->ip, ((zbx_addr_t *)addrs->values[0])->port,
 				zbx_socket_strerror());
 
-		zbx_vector_addr_ptr_remove(addrs, 0);
-		zbx_vector_addr_ptr_append(addrs, addr);
+		zbx_addrs_failover(addrs);
 	}
 
 	return ret;
@@ -158,6 +168,12 @@ int	zbx_get_data_from_server(zbx_socket_t *sock, char **buffer, size_t buffer_si
 		goto exit;
 	}
 
+	if (ZBX_PROTO_ERROR == zbx_tcp_read_close_notify(sock, 0, NULL))
+	{
+		zabbix_log(LOG_LEVEL_WARNING, "cannot gracefully close connection: %s",
+				zbx_socket_strerror());
+	}
+
 	zabbix_log(LOG_LEVEL_DEBUG, "Received [%s] from server", sock->buffer);
 
 	ret = SUCCEED;
@@ -224,7 +240,7 @@ int	zbx_send_response_json(zbx_socket_t *sock, int result, const char *info, con
 
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
 
-	zbx_json_init_with(&json, ext);
+	zbx_json_init_with(&json, ext, NULL == ext ? 0 : strlen(ext));
 
 	resp = SUCCEED == result ? ZBX_PROTO_VALUE_SUCCESS : ZBX_PROTO_VALUE_FAILED;
 
@@ -313,6 +329,12 @@ int	zbx_recv_response(zbx_socket_t *sock, int timeout, char **error)
 		/* side is just too busy processing our data if there is no response */
 		*error = zbx_strdup(*error, zbx_socket_strerror());
 		goto out;
+	}
+
+	if (ZBX_PROTO_ERROR == zbx_tcp_read_close_notify(sock, timeout, NULL))
+	{
+		zabbix_log(LOG_LEVEL_WARNING, "cannot gracefully close connection to proxy: %s",
+				zbx_socket_strerror());
 	}
 
 	zabbix_log(LOG_LEVEL_DEBUG, "%s() '%s'", __func__, sock->buffer);
@@ -583,6 +605,14 @@ retry:
 
 		goto cleanup;
 	}
+	else
+	{
+		if (ZBX_PROTO_ERROR == zbx_tcp_read_close_notify(&sock, 0, NULL))
+		{
+			zabbix_log(LOG_LEVEL_WARNING, "cannot gracefully close connection: %s",
+					zbx_socket_strerror());
+		}
+	}
 
 	zabbix_log(LOG_LEVEL_DEBUG, "%s() received: %s", __func__, sock.buffer);
 
@@ -614,6 +644,9 @@ retry:
 success:
 	ret = SUCCEED;
 cleanup:
+	if (SUCCEED != ret)
+		zbx_addrs_failover(addrs);
+
 	zbx_tcp_close(&sock);
 out:
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));

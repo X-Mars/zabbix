@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -12,9 +12,9 @@
 ** If not, see <https://www.gnu.org/licenses/>.
 **/
 
-#include "poller.h"
 #include "zbxpoller.h"
 
+#include "zbxdb.h"
 #include "checks_external.h"
 #include "checks_internal.h"
 #include "checks_script.h"
@@ -49,6 +49,7 @@
 #include "zbxrtc.h"
 #include "zbxjson.h"
 #include "zbxhttp.h"
+#include "zbxexpr.h"
 #include "zbxlog.h"
 #include "zbxavailability.h"
 #include "zbx_availability_constants.h"
@@ -59,20 +60,8 @@
 #include "zbx_item_constants.h"
 #include "zbxpreproc.h"
 #include "zbxsysinfo.h"
-
-static zbx_get_progname_f	zbx_get_progname_cb = NULL;
-
-zbx_get_progname_f	poller_get_progname(void)
-{
-	return zbx_get_progname_cb;
-}
-
-static zbx_get_program_type_f	zbx_get_program_type_cb = NULL;
-
-zbx_get_program_type_f	poller_get_program_type(void)
-{
-	return zbx_get_program_type_cb;
-}
+#include "zbx_expression_constants.h"
+#include "zbxinterface.h"
 
 void	zbx_free_agent_result_ptr(AGENT_RESULT *result)
 {
@@ -101,7 +90,8 @@ static int	get_value(zbx_dc_item_t *item, AGENT_RESULT *result, zbx_vector_agent
 			break;
 		case ITEM_TYPE_INTERNAL:
 			res = get_value_internal(item, result, config_comms, config_startup_time, config_java_gateway,
-					config_java_gateway_port, get_config_forks, get_value_internal_ext_cb);
+					config_java_gateway_port, get_config_forks, get_value_internal_ext_cb,
+					program_type);
 			break;
 		case ITEM_TYPE_DB_MONITOR:
 #ifdef HAVE_UNIXODBC
@@ -211,7 +201,7 @@ static int	parse_query_fields(const zbx_dc_item_t *item, char **query_fields, un
 			zbx_substitute_simple_macros(NULL, NULL, NULL,NULL, NULL, &item->host, item, NULL, NULL, NULL,
 					NULL, NULL, &data, ZBX_MACRO_TYPE_HTTP_RAW, NULL, 0);
 		}
-		zbx_http_url_encode(data, &data);
+		zbx_url_encode(data, &data);
 		zbx_strcpy_alloc(&str, &alloc_len, &offset, data);
 		zbx_chrcpy_alloc(&str, &alloc_len, &offset, '=');
 
@@ -222,7 +212,7 @@ static int	parse_query_fields(const zbx_dc_item_t *item, char **query_fields, un
 					NULL, NULL, NULL, NULL, &data, ZBX_MACRO_TYPE_HTTP_RAW, NULL, 0);
 		}
 
-		zbx_http_url_encode(data, &data);
+		zbx_url_encode(data, &data);
 		zbx_strcpy_alloc(&str, &alloc_len, &offset, data);
 
 		free(data);
@@ -235,10 +225,115 @@ static int	parse_query_fields(const zbx_dc_item_t *item, char **query_fields, un
 	return SUCCEED;
 }
 
+/******************************************************************************
+ *                                                                            *
+ * Purpose: resolves macros in JMX endpoint context                           *
+ *                                                                            *
+ * Parameters: p            - [IN] macro resolver data structure              *
+ *             args         - [IN] list of variadic parameters                *
+ *                                 Expected content:                          *
+ *                                  - zbx_dc_um_handle_t *um_handle: user     *
+ *                                      macro cache handle                    *
+ *                                  - const zbx_dc_item_t *dc_item: item      *
+ *                                      information                           *
+ *             replace_with - [OUT] pointer to value to replace macro with    *
+ *             data         - [IN/OUT] pointer to original input raw string   *
+ *                                  (for macro in macro resolving), not used  *
+ *             error        - [OUT] pointer to pre-allocated error message    *
+ *                                  buffer (can be NULL), not used            *
+ *             maxerrlen    - [IN] size of error message buffer (can be 0 if  *
+ *                                 'error' is NULL), not used                 *
+ *                                                                            *
+ * Return value: SUCCEED if macro data were resolved successfully.            *
+ *               Otherwise FAIL.                                              *
+ *                                                                            *
+ ******************************************************************************/
+static int	macro_jmx_endpoint_resolv(zbx_macro_resolv_data_t *p, va_list args, char **replace_with, char **data,
+		char *error, size_t maxerrlen)
+{
+	int			ret = SUCCEED;
+
+	/* Passed arguments */
+	zbx_dc_um_handle_t	*um_handle = va_arg(args, zbx_dc_um_handle_t *);
+	zbx_dc_item_t		*dc_item = va_arg(args, zbx_dc_item_t *);
+
+	ZBX_UNUSED(data);
+	ZBX_UNUSED(error);
+	ZBX_UNUSED(maxerrlen);
+
+	if (0 == p->indexed)
+	{
+		if (ZBX_TOKEN_USER_MACRO == p->token.type || (ZBX_TOKEN_USER_FUNC_MACRO == p->token.type &&
+				0 == strncmp(p->macro, MVAR_USER_MACRO, ZBX_CONST_STRLEN(MVAR_USER_MACRO))))
+		{
+			zbx_dc_get_user_macro(um_handle, p->macro, &dc_item->host.hostid, 1, replace_with);
+			p->pos = p->token.loc.r;
+		}
+		else if (0 == strcmp(p->macro, MVAR_HOST_HOST) || 0 == strcmp(p->macro, MVAR_HOSTNAME))
+		{
+			*replace_with = zbx_strdup(*replace_with, dc_item->host.host);
+		}
+		else if (0 == strcmp(p->macro, MVAR_HOST_NAME))
+		{
+			*replace_with = zbx_strdup(*replace_with, dc_item->host.name);
+		}
+		else if (0 == strcmp(p->macro, MVAR_HOST_IP) || 0 == strcmp(p->macro, MVAR_IPADDRESS))
+		{
+			if (INTERFACE_TYPE_UNKNOWN != dc_item->interface.type)
+			{
+				*replace_with = zbx_strdup(*replace_with, dc_item->interface.ip_orig);
+			}
+			else
+			{
+				ret = zbx_dc_get_interface_value(dc_item->host.hostid, dc_item->itemid, replace_with,
+						ZBX_DC_REQUEST_HOST_IP);
+			}
+		}
+		else if	(0 == strcmp(p->macro, MVAR_HOST_DNS))
+		{
+			if (INTERFACE_TYPE_UNKNOWN != dc_item->interface.type)
+			{
+				*replace_with = zbx_strdup(*replace_with, dc_item->interface.dns_orig);
+			}
+			else
+			{
+				ret = zbx_dc_get_interface_value(dc_item->host.hostid, dc_item->itemid, replace_with,
+						ZBX_DC_REQUEST_HOST_DNS);
+			}
+		}
+		else if (0 == strcmp(p->macro, MVAR_HOST_CONN))
+		{
+			if (INTERFACE_TYPE_UNKNOWN != dc_item->interface.type)
+			{
+				*replace_with = zbx_strdup(*replace_with, dc_item->interface.addr);
+			}
+			else
+			{
+				ret = zbx_dc_get_interface_value(dc_item->host.hostid, dc_item->itemid, replace_with,
+						ZBX_DC_REQUEST_HOST_CONN);
+			}
+		}
+		else if (0 == strcmp(p->macro, MVAR_HOST_PORT))
+		{
+			if (INTERFACE_TYPE_UNKNOWN != dc_item->interface.type)
+			{
+				*replace_with = zbx_dsprintf(*replace_with, "%u", dc_item->interface.port);
+			}
+			else
+			{
+				ret = zbx_dc_get_interface_value(dc_item->host.hostid, dc_item->itemid, replace_with,
+						ZBX_DC_REQUEST_HOST_PORT);
+			}
+		}
+	}
+
+	return ret;
+}
+
 void	zbx_prepare_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESULT *results,
 		unsigned char expand_macros)
 {
-	char			*port = NULL, error[ZBX_ITEM_ERROR_LEN_MAX], *timeout = NULL;
+	char			error[ZBX_ITEM_ERROR_LEN_MAX], *timeout = NULL;
 	zbx_dc_um_handle_t	*um_handle;
 
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s() num:%d", __func__, num);
@@ -254,7 +349,7 @@ void	zbx_prepare_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESUL
 		if (ZBX_MACRO_EXPAND_YES == expand_macros)
 		{
 			ZBX_STRDUP(items[i].key, items[i].key_orig);
-			if (SUCCEED != zbx_substitute_key_macros_unmasked(&items[i].key, NULL, &items[i], NULL, NULL,
+			if (SUCCEED != zbx_substitute_key_macros_unmasked(&items[i].key, NULL, &items[i],
 					ZBX_MACRO_TYPE_ITEM_KEY, error, sizeof(error)))
 			{
 				SET_MSG_RESULT(&results[i], zbx_strdup(NULL, error));
@@ -268,15 +363,7 @@ void	zbx_prepare_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESUL
 			case ITEM_TYPE_ZABBIX:
 			case ITEM_TYPE_SNMP:
 			case ITEM_TYPE_JMX:
-				ZBX_STRDUP(port, items[i].interface.port_orig);
-				if (ZBX_MACRO_EXPAND_YES == expand_macros)
-				{
-					zbx_substitute_simple_macros(NULL, NULL, NULL, NULL, &items[i].host.hostid,
-							NULL, NULL, NULL, NULL, NULL, NULL, NULL, &port,
-							ZBX_MACRO_TYPE_COMMON, NULL, 0);
-				}
-
-				if (FAIL == zbx_is_ushort(port, &items[i].interface.port))
+				if (FAIL == zbx_is_ushort(items[i].interface.port_orig, &items[i].interface.port))
 				{
 					SET_MSG_RESULT(&results[i], zbx_dsprintf(NULL, "Invalid port number [%s]",
 								items[i].interface.port_orig));
@@ -368,9 +455,19 @@ void	zbx_prepare_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESUL
 
 				zbx_substitute_simple_macros(NULL, NULL, NULL, NULL, &items[i].host.hostid, NULL, NULL,
 						NULL, NULL, NULL, NULL, NULL, &timeout, ZBX_MACRO_TYPE_COMMON, NULL, 0);
-				zbx_substitute_simple_macros_unmasked(NULL, NULL, NULL, NULL, NULL, NULL, &items[i],
-						NULL, NULL, NULL, NULL, NULL, &items[i].script_params,
-						ZBX_MACRO_TYPE_SCRIPT_PARAMS_FIELD, NULL, 0);
+				for (int j = 0; j < items[i].script_params.values_num; j++)
+				{
+					zbx_substitute_simple_macros_unmasked(NULL, NULL, NULL, NULL, NULL, NULL,
+							&items[i], NULL, NULL, NULL, NULL, NULL,
+							(char **)&items[i].script_params.values[j].first,
+							ZBX_MACRO_TYPE_SCRIPT_PARAMS_FIELD, NULL, 0);
+
+					zbx_substitute_simple_macros_unmasked(NULL, NULL, NULL, NULL, NULL, NULL,
+							&items[i], NULL, NULL, NULL, NULL, NULL,
+							(char **)&items[i].script_params.values[j].second,
+							ZBX_MACRO_TYPE_SCRIPT_PARAMS_FIELD, NULL, 0);
+				}
+
 				zbx_substitute_simple_macros_unmasked(NULL, NULL, NULL, NULL, &items[i].host.hostid,
 						NULL, NULL, NULL, NULL, NULL, NULL, NULL, &items[i].params,
 						ZBX_MACRO_TYPE_COMMON, NULL, 0);
@@ -430,9 +527,8 @@ void	zbx_prepare_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESUL
 				zbx_substitute_simple_macros_unmasked(NULL, NULL, NULL, NULL, &items[i].host.hostid,
 						NULL, NULL, NULL, NULL, NULL, NULL, NULL, &items[i].password,
 						ZBX_MACRO_TYPE_COMMON, NULL, 0);
-				zbx_substitute_simple_macros(NULL, NULL, NULL, NULL, NULL, NULL, &items[i], NULL, NULL,
-						NULL, NULL, NULL, &items[i].jmx_endpoint, ZBX_MACRO_TYPE_JMX_ENDPOINT,
-						NULL, 0);
+				zbx_substitute_macros(&items[i].jmx_endpoint, NULL, 0, &macro_jmx_endpoint_resolv,
+						um_handle, &items[i]);
 				break;
 			case ITEM_TYPE_HTTPAGENT:
 				if (ZBX_MACRO_EXPAND_YES == expand_macros)
@@ -542,8 +638,6 @@ void	zbx_prepare_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESUL
 		zbx_free(timeout);
 	}
 
-	zbx_free(port);
-
 	if (ZBX_MACRO_EXPAND_YES == expand_macros)
 		zbx_dc_close_user_macros(um_handle);
 
@@ -575,8 +669,10 @@ void	zbx_check_items(zbx_dc_item_t *items, int *errcodes, int num, AGENT_RESULT 
 			errcodes[i] = CONFIG_ERROR;
 		}
 #else
-		/* SNMP checks use their own timeouts */
-		get_values_snmp(items, results, errcodes, num, poller_type, config_comms->config_source_ip, progname);
+		/* legacy SNMP checks use config timeout
+		 * walk[ and get[ use item timeout */
+		get_values_snmp(items, results, errcodes, num, poller_type, config_comms->config_source_ip,
+				config_comms->config_timeout, progname);
 #endif
 	}
 	else if (ITEM_TYPE_JMX == items[0].type)
@@ -861,8 +957,6 @@ ZBX_THREAD_ENTRY(zbx_poller_thread, args)
 
 	scriptitem_es_engine_init();
 
-	zbx_get_program_type_cb = poller_args_in->zbx_get_program_type_cb_arg;
-	zbx_get_progname_cb = poller_args_in->zbx_get_progname_cb_arg;
 #if defined(HAVE_GNUTLS) || defined(HAVE_OPENSSL)
 	zbx_tls_init_child(poller_args_in->config_comms->config_tls,
 			poller_args_in->zbx_get_program_type_cb_arg, zbx_dc_get_psk_by_identity);
@@ -901,7 +995,7 @@ ZBX_THREAD_ENTRY(zbx_poller_thread, args)
 					poller_args_in->config_startup_time, poller_args_in->config_unavailable_delay,
 					poller_args_in->config_unreachable_period,
 					poller_args_in->config_unreachable_delay, info->program_type,
-					poller_args_in->zbx_get_progname_cb_arg(), poller_args_in->get_config_forks,
+					poller_args_in->progname, poller_args_in->get_config_forks,
 					poller_args_in->config_java_gateway, poller_args_in->config_java_gateway_port,
 					poller_args_in->config_externalscripts,
 					poller_args_in->zbx_get_value_internal_ext_cb,

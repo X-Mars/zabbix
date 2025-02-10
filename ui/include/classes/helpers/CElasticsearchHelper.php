@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -242,12 +242,8 @@ class CElasticsearchHelper {
 	public static function addFilter($schema, $query, $options) {
 		foreach ($options['filter'] as $field => $value) {
 			// Skip missing fields, textual fields (different mapping is needed for exact matching) and empty values.
-			if ($value === null || !array_key_exists($field, $schema['fields'])) {
-				continue;
-			}
-
-			$field_type = $schema['fields'][$field]['type'];
-			if ($field_type === DB::FIELD_TYPE_CHAR || $field_type === DB::FIELD_TYPE_TEXT) {
+			if ($value === null || !array_key_exists($field, $schema['fields'])
+					|| $schema['fields'][$field]['type'] & (DB::FIELD_TYPE_CHAR | DB::FIELD_TYPE_TEXT)) {
 				continue;
 			}
 
@@ -292,12 +288,8 @@ class CElasticsearchHelper {
 
 		foreach ($options['search'] as $field => $value) {
 			// Skip missing fields, non textual fields and empty values.
-			if ($value === null || !array_key_exists($field, $schema['fields'])) {
-				continue;
-			}
-
-			$field_type = $schema['fields'][$field]['type'];
-			if ($field_type !== DB::FIELD_TYPE_CHAR && $field_type !== DB::FIELD_TYPE_TEXT) {
+			if ($value === null || !array_key_exists($field, $schema['fields'])
+					|| ($schema['fields'][$field]['type'] & (DB::FIELD_TYPE_CHAR | DB::FIELD_TYPE_TEXT)) == 0) {
 				continue;
 			}
 

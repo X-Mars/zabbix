@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,7 +20,6 @@
  */
 
 $this->includeJsFile('mediatype.list.js.php');
-$this->addJsFile('multilineinput.js');
 
 $html_page = (new CHtmlPage())
 	->setTitle(_('Media types'))
@@ -66,6 +65,29 @@ $html_page = (new CHtmlPage())
 							->addValue(_('Any'), -1)
 							->addValue(_('Enabled'), MEDIA_TYPE_STATUS_ACTIVE)
 							->addValue(_('Disabled'), MEDIA_TYPE_STATUS_DISABLED)
+							->setModern()
+					)
+				]),
+			(new CFormGrid())
+				->addClass(CFormGrid::ZBX_STYLE_FORM_GRID_LABEL_WIDTH_TRUE)
+				->addItem([
+					new CLabel([_('Display actions'), makeHelpIcon([
+						_('Filter actions by the scope of media type usage:'),
+						(new CList([
+							_('All').' - '._('display all actions'),
+							[_('All available'), ' - ', make_decoration(
+								_('display only actions where All available media types are used in action operation'),
+								_('All available')
+							)],
+							_('Specific').' - '.
+								_('display only actions where specific media type is used in action operation')
+						]))->addClass(ZBX_STYLE_LIST_DASHED)
+					])]),
+					new CFormField(
+						(new CRadioButtonList('filter_actions', (int) $data['filter']['actions']))
+							->addValue(_('All'), ZBX_MEDIA_TYPE_ACTIONS_ALL)
+							->addValue(_('All available'), ZBX_MEDIA_TYPE_ACTIONS_AVAILABLE)
+							->addValue(_('Specific'), ZBX_MEDIA_TYPE_ACTIONS_SPECIFIC)
 							->setModern()
 					)
 				])
@@ -134,11 +156,15 @@ foreach ($data['mediatypes'] as $media_type) {
 		$action_count_total = (new CSpan($media_type['action_count_total']))->addClass(ZBX_STYLE_ENTITY_COUNT);
 
 		foreach ($media_type['actions'] as $action) {
+			$action_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'action.edit')
+				->setArgument('actionid', $action['actionid'])
+				->setArgument('eventsource', $action['eventsource'])
+				->getUrl();
+
 			$actions[] = $action['is_editable']
-				? (new CLink($action['name']))
-					->addClass('js-action-edit')
-					->setAttribute('data-actionid', $action['actionid'])
-					->setAttribute('data-eventsource', $action['eventsource'])
+				? (new CLink($action['name'], $action_url))
 					->addClass(ZBX_STYLE_LINK_ALT)
 					->addClass(ZBX_STYLE_GREY)
 				: (new CSpan($action['name']))->addClass(ZBX_STYLE_GREY);
@@ -171,19 +197,23 @@ foreach ($data['mediatypes'] as $media_type) {
 		->setAttribute('data-mediatypeid', $media_type['mediatypeid'])
 		->addClass('js-test-edit');
 
-	$name = (new CLink($media_type['name']))
-		->addClass('js-edit')
-		->setAttribute('data-mediatypeid', $media_type['mediatypeid']);
+	$media_type_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'mediatype.edit')
+		->setArgument('mediatypeid', $media_type['mediatypeid'])
+		->getUrl();
+
+	$name = new CLink($media_type['name'], $media_type_url);
 
 	// append row
 	$media_type_table->addRow([
 		new CCheckBox('mediatypeids['.$media_type['mediatypeid'].']', $media_type['mediatypeid']),
-		(new CCol($name))->addClass(ZBX_STYLE_NOWRAP),
+		(new CCol($name))->addClass(ZBX_STYLE_WORDBREAK),
 		CMediatypeHelper::getMediaTypes($media_type['typeid']),
 		$status,
 		(new CCol($action_count_total))->addClass(ZBX_STYLE_CELL_WIDTH),
-		$actions,
-		$details,
+		(new CCol($actions))->addClass(ZBX_STYLE_WORDBREAK),
+		(new CCol($details))->addClass(ZBX_STYLE_WORDBREAK),
 		$test_link
 	]);
 }

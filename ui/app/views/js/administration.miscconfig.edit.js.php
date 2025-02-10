@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,7 +20,7 @@
 
 		init({default_inventory_mode, iframe_sandboxing_enabled, iframe_sandboxing_exceptions, login_attempts,
 				login_block, snmptrap_logging, uri_valid_schemes, url, validate_uri_schemes, vault_provider,
-				x_frame_options}) {
+				proxy_secrets_provider, x_frame_options}) {
 			const $form = jQuery('#miscconfig-form');
 
 			$('#validate_uri_schemes').change(function() {
@@ -74,6 +74,8 @@
 
 								// Storage of secrets.
 								$(`#vault_provider input[value=${vault_provider}]`).prop('checked', true);
+								$(`#proxy_secrets_provider input[value=${proxy_secrets_provider}]`)
+									.prop('checked', true);
 
 								// Security.
 								$('#validate_uri_schemes')

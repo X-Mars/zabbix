@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <cmocka.h>
 #include "zbxtypes.h"
+
+#define TIME_IS_32INT
 
 /* hint to a compiler that cmocka _fail returns immediately, so it does not raise 'uninitialized variable' warnings */
 #if defined(__GNUC__) || defined(__clang__)

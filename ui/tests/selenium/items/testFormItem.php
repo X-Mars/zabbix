@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -456,7 +456,7 @@ class testFormItem extends CLegacyWebTest {
 		}
 
 		if ($type == 'SSH agent' && !isset($itemid)) {
-			$this->zbxTestAssertElementValue('key', 'ssh.run[<unique short description>,<ip>,<port>,<encoding>,<ssh options>]');
+			$this->zbxTestAssertElementValue('key', 'ssh.run[<unique short description>,<ip>,<port>,<encoding>,<ssh options>,<subsystem>]');
 		}
 
 		if ($type == 'TELNET agent' && !isset($itemid)) {
@@ -625,7 +625,7 @@ class testFormItem extends CLegacyWebTest {
 		if (in_array($type, ['Script', 'Browser'])) {
 			// Check parameters table layout.
 			$parameters_table = $form->getField('Parameters')->asTable();
-			$this->assertSame(['Name', 'Value', 'Action'], $parameters_table->getHeadersText());
+			$this->assertSame(['Name', 'Value', ''], $parameters_table->getHeadersText());
 
 			$this->assertEquals(['Remove', 'Add'], $parameters_table->query('tag:button')->all()
 					->filter(CElementFilter::CLICKABLE)->asText()

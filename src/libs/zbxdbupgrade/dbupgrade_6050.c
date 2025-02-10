@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,7 +19,6 @@
 #include "zbxexpr.h"
 #include "zbxeval.h"
 #include "zbxalgo.h"
-#include "zbxdbhigh.h"
 #include "zbxtypes.h"
 #include "zbxregexp.h"
 #include "zbx_host_constants.h"
@@ -27,6 +26,7 @@
 #include "zbxhash.h"
 #include "zbxcrypto.h"
 #include "zbxdb.h"
+#include "zbxdbhigh.h"
 #include "zbxnum.h"
 
 /*

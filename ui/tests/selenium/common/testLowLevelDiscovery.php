@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -134,7 +134,7 @@ class testLowLevelDiscovery extends CWebTest {
 			'id:enabled_lifetime_type' => ['labels' => ['Never', 'Immediately', 'After'], 'value' => 'Immediately'],
 			'Enable trapping' => ['value' => false],
 			'id:trapper_hosts' => ['maxlength' => 255],
-			'Description' => ['value' => ''],
+			'Description' => ['value' => '', 'maxlength' => 65535],
 			'Enabled' => ['value' => true],
 
 			// Preprocessing tab.
@@ -146,7 +146,7 @@ class testLowLevelDiscovery extends CWebTest {
 			'id:lld_macro_paths_0_path' => ['placeholder' => '$.path.to.node', 'maxlength' => 255],
 
 			// Filters tab.
-			'Filters' => ['value' => [['macro' => '', 'operator' => 'matches']]],
+			'Filters' => ['value' => [['macro' => '']]],
 			'id:conditions_0_macro' => ['placeholder' => '{#MACRO}', 'maxlength' => 64],
 			'name:conditions[0][operator]' => ['options' => ['matches', 'does not match', 'exists', 'does not exist'],
 				'value' => 'matches'
@@ -215,7 +215,7 @@ class testLowLevelDiscovery extends CWebTest {
 							->filter(new CElementFilter(CElementFilter::CLICKABLE))->count()
 					);
 					$filter_table = $filters_container->query('id:conditions')->asTable()->one();
-					$this->assertEquals(['Label', 'Macro', '', 'Regular expression', 'Action'],
+					$this->assertEquals(['Label', 'Macro', '', 'Regular expression', ''],
 							$filter_table->getHeadersText()
 					);
 					$this->assertFalse($filters_container->query('id:evaltype')->exists());
@@ -1315,7 +1315,7 @@ class testLowLevelDiscovery extends CWebTest {
 					'fields' => [
 						'Name' => 'SSH agent LLD',
 						'Type' => 'SSH agent',
-						'Key' => 'ssh.run[<unique short description>,<ip>,<port>,<encoding>,<ssh options>]',
+						'Key' => 'ssh.run[<unique short description>,<ip>,<port>,<encoding>,<ssh options>,<subsystem>]',
 						'User name' => 'test_user',
 						'Executed script' => 'test_script'
 					],
@@ -2899,6 +2899,7 @@ class testLowLevelDiscovery extends CWebTest {
 			$operation_dialog_form->waitUntilNotVisible();
 			$override_dialog_form->submit();
 			$operation_dialog_form->waitUntilNotVisible();
+			COverlayDialogElement::ensureNotPresent();
 		}
 
 		$this->query('button:Cancel')->waitUntilClickable()->one()->click();

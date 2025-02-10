@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -91,7 +91,7 @@ $override_evaltype = (new CDiv([
 $filter_table = (new CTable())
 	->setId('overrides_filters')
 	->addStyle('width: 100%;')
-	->setHeader([_('Label'), _('Macro'), '', _('Regular expression'), (new CColHeader(_('Action')))->setWidth('100%')]);
+	->setHeader([_('Label'), _('Macro'), '', _('Regular expression'), (new CColHeader(''))->setWidth('100%')]);
 
 $operators = CSelect::createOptionsFromArray([
 	CONDITION_OPERATOR_REGEXP => _('matches'),
@@ -173,7 +173,7 @@ $operations_list = (new CTable())
 	->addStyle('width: 100%;')
 	->setHeader([
 		_('Condition'),
-		(new CColHeader(''))->setWidth('50')
+		(new CColHeader('Actions'))->setWidth('50')
 	])
 	->addRow(
 		(new CCol(

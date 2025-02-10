@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -474,11 +474,11 @@ class testFormUserPermissions extends CWebTest {
 	 * Check enabled/disabled module.
 	 */
 	public function testFormUserPermissions_Module() {
-		$widget_modules = ['Action log', 'Clock', 'Data overview', 'Discovery status', 'Favorite graphs', 'Favorite maps',
+		$widget_modules = ['Action log', 'Clock', 'Discovery status', 'Favorite graphs', 'Favorite maps',
 			'Gauge', 'Geomap', 'Graph', 'Graph (classic)', 'Graph prototype', 'Honeycomb', 'Host availability',
-			'Host navigator', 'Item history', 'Item navigator', 'Item value', 'Map', 'Map navigation tree', 'Pie chart',
-			'Problem hosts', 'Problems', 'Problems by severity', 'SLA report', 'System information', 'Top hosts',
-			'Top triggers', 'Trigger overview', 'URL', 'Web monitoring'
+			'Host card', 'Host navigator', 'Item history', 'Item navigator', 'Item value', 'Map', 'Map navigation tree',
+			'Pie chart', 'Problem hosts', 'Problems', 'Problems by severity', 'SLA report', 'System information',
+			'Top hosts', 'Top items', 'Top triggers', 'Trigger overview', 'URL', 'Web monitoring'
 		];
 
 		$this->page->login()->open('zabbix.php?action=user.edit&userid='.self::$admin_user)->waitUntilReady();

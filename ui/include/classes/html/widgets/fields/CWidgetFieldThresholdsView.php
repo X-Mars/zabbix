@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -28,8 +28,8 @@ class CWidgetFieldThresholdsView extends CWidgetFieldView {
 			->addClass(ZBX_STYLE_TABLE_FORMS)
 			->setHeader([
 				'',
-				(new CColHeader(_('Threshold')))->setWidth('100%'),
-				_('Action')
+				_('Threshold'),
+				(new CColHeader(''))->setWidth('100%')
 			])
 			->setFooter(new CRow(
 				new CCol(

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -228,6 +228,7 @@ final class CItemData {
 			'icmpping[<target>,<packets>,<interval>,<size>,<timeout>,<options>]',
 			'icmppingloss[<target>,<packets>,<interval>,<size>,<timeout>,<options>]',
 			'icmppingsec[<target>,<packets>,<interval>,<size>,<timeout>,<mode>,<options>]',
+			'icmppingretry[<target>,<retries>,<backoff>,<size>,<timeout>,<options>]',
 			'net.tcp.service.perf[service,<ip>,<port>]',
 			'net.tcp.service[service,<ip>,<port>]',
 			'net.udp.service.perf[service,<ip>,<port>]',
@@ -317,6 +318,7 @@ final class CItemData {
 			'vmware.vm.discovery[url]',
 			'vmware.vm.guest.memory.size.swapped[url,uuid]',
 			'vmware.vm.guest.osuptime[url,uuid]',
+			'vmware.vm.hv.maintenance[url,uuid]',
 			'vmware.vm.hv.name[url,uuid]',
 			'vmware.vm.memory.size.ballooned[url,uuid]',
 			'vmware.vm.memory.size.compressed[url,uuid]',
@@ -601,39 +603,6 @@ final class CItemData {
 	 * @return array
 	 */
 	public static function fieldSwitchingConfiguration(array $data): array {
-		if ($data['is_discovery_rule']) {
-			$for_authtype = [
-				ITEM_AUTHTYPE_PUBLICKEY => [
-					'js-item-private-key-label',
-					'js-item-private-key-field',
-					'privatekey',
-					'js-item-public-key-label',
-					'js-item-public-key-field',
-					'publickey'
-				]
-			];
-		}
-		else {
-			$for_authtype = [
-				ITEM_AUTHTYPE_PASSWORD => [
-					'js-item-password-label',
-					'js-item-password-field',
-					'password'
-				],
-				ITEM_AUTHTYPE_PUBLICKEY => [
-					'js-item-private-key-label',
-					'js-item-private-key-field',
-					'privatekey',
-					'js-item-public-key-label',
-					'js-item-public-key-field',
-					'publickey',
-					'js-item-passphrase-label',
-					'js-item-passphrase-field',
-					'passphrase'
-				]
-			];
-		}
-
 		return [
 			// Ids to toggle when the field 'type' is changed.
 			'for_type' => [
@@ -873,9 +842,6 @@ final class CItemData {
 					'js-item-username-label',
 					'js-item-username-field',
 					'username',
-					'js-item-password-label',
-					'js-item-password-field',
-					'password',
 					'js-item-executed-script-label',
 					'js-item-executed-script-field',
 					'js-item-delay-label',
@@ -946,7 +912,24 @@ final class CItemData {
 				]
 			],
 			// Ids to toggle when the field 'authtype' is changed.
-			'for_authtype' => $for_authtype,
+			'for_authtype' => [
+				ITEM_AUTHTYPE_PASSWORD => [
+					'js-item-password-label',
+					'js-item-password-field',
+					'password'
+				],
+				ITEM_AUTHTYPE_PUBLICKEY => [
+					'js-item-private-key-label',
+					'js-item-private-key-field',
+					'privatekey',
+					'js-item-public-key-label',
+					'js-item-public-key-field',
+					'publickey',
+					$data['is_discovery_rule'] ? 'js-item-password-label' : 'js-item-passphrase-label',
+					$data['is_discovery_rule'] ? 'js-item-password-field' : 'js-item-passphrase-field',
+					$data['is_discovery_rule'] ? 'password' : 'passphrase'
+				]
+			],
 			'for_http_auth_type' => [
 				ZBX_HTTP_AUTH_BASIC => [
 					'js-item-http-username-label',
@@ -1126,6 +1109,13 @@ final class CItemData {
 				'value_type' => ITEM_VALUE_TYPE_FLOAT,
 				'documentation_link' => [
 					ITEM_TYPE_SIMPLE => 'config/items/itemtypes/simple_checks#icmppingsec'
+				]
+			],
+			'icmppingretry[<target>,<retries>,<backoff>,<size>,<timeout>,<options>]' => [
+				'description' => _('Checks if host is accessible by ICMP ping with retries. 0 - ICMP ping fails. 1 - ICMP ping successful.'),
+				'value_type' => ITEM_VALUE_TYPE_UINT64,
+				'documentation_link' => [
+					ITEM_TYPE_SIMPLE => 'config/items/itemtypes/simple_checks#icmppingretry'
 				]
 			],
 			'ipmi.get' => [
@@ -2233,7 +2223,7 @@ final class CItemData {
 				]
 			],
 			'vmware.hv.maintenance[url,uuid]' => [
-				'description' => _('VVMware hypervisor maintenance status, "url" - VMware service URL, "uuid" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance'),
+				'description' => _('VMware hypervisor maintenance status, "url" - VMware service URL, "uuid" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance'),
 				'value_type' => ITEM_VALUE_TYPE_UINT64,
 				'documentation_link' => [
 					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.hv.maintenance'
@@ -2477,6 +2467,13 @@ final class CItemData {
 					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.vm.guest.osuptime'
 				]
 			],
+			'vmware.vm.hv.maintenance[url,uuid]' => [
+				'description' => _('VMware virtual machine hypervisor maintenance status, "url" - VMware service URL, "uuid" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance'),
+				'value_type' => ITEM_VALUE_TYPE_UINT64,
+				'documentation_link' => [
+					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.vm.hv.maintenance'
+				]
+			],
 			'vmware.vm.hv.name[url,uuid]' => [
 				'description' => _('VMware virtual machine hypervisor name, "url" - VMware service URL, "uuid" - VMware virtual machine global unique identifier'),
 				'value_type' => ITEM_VALUE_TYPE_STR,
@@ -2506,7 +2503,7 @@ final class CItemData {
 				]
 			],
 			'vmware.vm.memory.size.private[url,uuid]' => [
-				'description' => _('VMware virtual machine private memory size, "url" - VMware service URL, "uuid" - VMware virtual machine global unique identifierr'),
+				'description' => _('VMware virtual machine private memory size, "url" - VMware service URL, "uuid" - VMware virtual machine global unique identifier'),
 				'value_type' => ITEM_VALUE_TYPE_UINT64,
 				'documentation_link' => [
 					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.vm.memory.size.private'

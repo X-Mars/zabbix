@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -28,15 +28,23 @@ if ($data['templates']) {
 }
 
 if ($discovered_trigger) {
+	$discovered_trigger_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'trigger.prototype.edit')
+		->setArgument('parent_discoveryid', $data['discoveryRule']['itemid'])
+		->setArgument('triggerid', $data['triggerDiscovery']['parent_triggerid'])
+		->setArgument('context', $data['context'])
+		->setArgument('prototype', '1')
+		->getUrl();
+
 	$trigger_form_grid->addItem([new CLabel(_('Discovered by')), new CFormField(
-		(new CLink($data['discoveryRule']['name']))
+		(new CLink($data['discoveryRule']['name'], $discovered_trigger_url))
 			->setAttribute('data-parent_discoveryid', $data['discoveryRule']['itemid'])
 			->setAttribute('data-triggerid', $data['triggerDiscovery']['parent_triggerid'])
 			->setAttribute('data-context', $data['context'])
 			->setAttribute('data-prototype', '1')
 			->addClass('js-related-trigger-edit')
-	)
-	]);
+	)]);
 }
 
 $trigger_form_grid
@@ -75,7 +83,6 @@ $expression_row = [
 		->addClass(ZBX_STYLE_MONOSPACE_FONT)
 		->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 		->setReadonly($readonly)
-		->setMaxlength(DB::getFieldLength('triggers', 'expression'))
 		->disableSpellcheck()
 		->setAriaRequired(),
 	(new CDiv())->addClass(ZBX_STYLE_FORM_INPUT_MARGIN),
@@ -165,7 +172,6 @@ $recovery_expression_row = [
 		->addClass(ZBX_STYLE_MONOSPACE_FONT)
 		->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 		->setReadonly($readonly)
-		->setMaxlength(DB::getFieldLength('triggers', 'recovery_expression'))
 		->disableSpellcheck()
 		->setAriaRequired(),
 	(new CDiv())->addClass(ZBX_STYLE_FORM_INPUT_MARGIN),
@@ -301,7 +307,6 @@ if (array_key_exists('parent_discoveryid', $data)) {
 			new CFormField(
 				(new CCheckBox('discover', ZBX_PROTOTYPE_DISCOVER))
 					->setChecked($data['discover'] == ZBX_PROTOTYPE_DISCOVER)
-					->setUncheckedValue(ZBX_PROTOTYPE_NO_DISCOVER)
 			)
 		]);
 } else {

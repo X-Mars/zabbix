@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -462,6 +462,15 @@ class CPage {
 	}
 
 	/**
+	 * Wait until alert is present.
+	 */
+	public function waitUntilAlertIsPresent($timeout = null) {
+		CElementQuery::wait($timeout)->until(WebDriverExpectedCondition::alertIsPresent(),
+				'Failed to wait for alert to be present.'
+		);
+	}
+
+	/**
 	 * Check if alert is present.
 	 *
 	 * @return boolean
@@ -488,7 +497,7 @@ class CPage {
 	 * Wait until alert is present and accept it.
 	 */
 	public function acceptAlert() {
-		CElementQuery::wait()->until(WebDriverExpectedCondition::alertIsPresent());
+		$this->waitUntilAlertIsPresent();
 		$this->driver->switchTo()->alert()->accept();
 	}
 
@@ -496,7 +505,7 @@ class CPage {
 	 * Wait until alert is present and dismiss it.
 	 */
 	public function dismissAlert() {
-		CElementQuery::wait()->until(WebDriverExpectedCondition::alertIsPresent());
+		$this->waitUntilAlertIsPresent();
 		$this->driver->switchTo()->alert()->dismiss();
 	}
 
@@ -669,5 +678,12 @@ class CPage {
 	public function scrollDown() {
 		$this->getDriver()->executeScript('document.getElementsByClassName(\'wrapper\')[0].scrollTo(0,'.
 				' document.body.scrollHeight)');
+	}
+
+	/**
+	 * Navigates back to the previous page.
+	 */
+	public function navigateBack() {
+		$this->driver->navigate()->back();
 	}
 }

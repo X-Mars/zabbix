@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -90,7 +90,7 @@ typedef struct
 zbx_service_problem_tag_t;
 
 ZBX_PTR_VECTOR_DECL(service_problem_tag_ptr, zbx_service_problem_tag_t *)
-ZBX_VECTOR_STRUCT_DECL(service_ptr, zbx_service_t *)
+ZBX_PTR_VECTOR_DECL(service_ptr, zbx_service_t *)
 
 struct zbx_service_s
 {
@@ -109,8 +109,6 @@ struct zbx_service_s
 	int					propagation_rule;
 	int					propagation_value;
 };
-
-ZBX_PTR_VECTOR_FUNC_DECL(service_ptr, zbx_service_t *)
 
 /* status update queue items */
 typedef struct

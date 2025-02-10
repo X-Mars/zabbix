@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -70,7 +70,7 @@ $tags_form_list = (new CFormList('tags-form-list'))
 				->setModern(true)
 				->addStyle('margin-bottom: 10px;'),
 			renderTagTable([['tag' => '', 'value' => '']])
-				->setHeader([_('Name'), _('Value'), _('Action')])
+				->setHeader([_('Name'), _('Value'), ''])
 				->addClass('tags-table')
 		]))->setId('tags-field')
 	);

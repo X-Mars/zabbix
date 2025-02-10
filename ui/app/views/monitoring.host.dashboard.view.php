@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,7 +22,6 @@
 $this->addJsFile('class.dashboard.js');
 $this->addJsFile('class.dashboard.page.js');
 $this->addJsFile('class.dashboard.widget.placeholder.js');
-$this->addJsFile('class.form.fieldset.collapsible.js');
 $this->addJsFile('class.widgets-data.js');
 $this->addJsFile('class.widget-base.js');
 $this->addJsFile('class.widget.js');
@@ -45,19 +44,16 @@ if (array_key_exists('no_data', $data)) {
 	return;
 }
 
-$this->addJsFile('class.calendar.js');
 $this->addJsFile('class.csvggraph.js');
 $this->addJsFile('class.svg.canvas.js');
 $this->addJsFile('class.svg.map.js');
 $this->addJsFile('d3.js');
 $this->addJsFile('flickerfreescreen.js');
 $this->addJsFile('gtlc.js');
-$this->addJsFile('items.js');
 $this->addJsFile('layout.mode.js');
 $this->addJsFile('leaflet.js');
 $this->addJsFile('leaflet.markercluster.js');
 $this->addJsFile('class.geomaps.js');
-$this->addJsFile('multilineinput.js');
 
 $this->includeJsFile('monitoring.host.dashboard.view.js.php');
 

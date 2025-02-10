@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -439,14 +439,18 @@ class testPageHosts extends CLegacyWebTest {
 
 	public function testPageHosts_FilterNone() {
 		$this->zbxTestLogin(self::HOST_LIST_PAGE);
+		$table = $this->query('class:list-table')->asTable()->waitUntilPresent()->one();
 		$filter = $this->query('name:zbx_filter')->asForm()->one();
 		$filter->query('button:Reset')->one()->click();
+		$table->waitUntilReloaded();
 		$filter->getField('Name')->fill('1928379128ksdhksdjfh');
 		$filter->submit();
+		$table->waitUntilReloaded();
 		$this->assertTableStats();
 		$filter->invalidate();
 		$filter->getField('Name')->fill('%');
 		$filter->submit();
+		$table->waitUntilReloaded();
 		$this->page->waitUntilReady();
 		$this->assertTableStats();
 	}
@@ -880,8 +884,6 @@ class testPageHosts extends CLegacyWebTest {
 
 		foreach (['Disabled' => HOST_STATUS_NOT_MONITORED, 'Enabled' => HOST_STATUS_MONITORED] as $status => $id) {
 			$host_row->getColumn('Status')->click();
-			$this->assertTrue($this->page->isAlertPresent());
-			$this->page->acceptAlert();
 			$this->page->waitUntilReady();
 			$this->assertMessage(TEST_GOOD, 'Host '.strtolower($status));
 			$this->assertEquals($status, $host_row->getColumn('Status')->getText());

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -52,7 +52,7 @@
 			this.initTabFilter(filter_options);
 			this.initExpandableSubfilter();
 			this.initListActions();
-			this.initItemFormEvents(this.getCurrentForm().get(0));
+			this.initPopupListeners();
 
 			if (this.refresh_interval != 0 && this.filter_set) {
 				this.running = true;
@@ -120,32 +120,40 @@
 			});
 		},
 
-		initItemFormEvents(form) {
-			form.addEventListener('click', e => {
-				const target = e.target;
+		initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_OPEN
+				},
+				callback: () => this.unscheduleRefresh()
+			});
 
-				if (!target.matches('.js-update-item')) {
-					return;
-				}
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_CANCEL
+				},
+				callback: () => this.scheduleRefresh()
+			});
 
-				this._removePopupMessage();
-				this.unscheduleRefresh();
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, event}) => {
+					event.preventDefault();
 
-				const overlay = PopUp('item.edit', target.dataset, {
-					dialogueid: 'item-edit',
-					dialogue_class: 'modal-popup-large',
-					trigger_element: target
-				});
-
-				overlay.$dialogue[0].addEventListener('dialogue.submit', e => {
-					postMessageOk(e.detail.title);
-
-					if ('messages' in e.detail) {
-						postMessageDetails('success', e.detail.messages);
+					if ('success' in data.submit) {
+						this._addPopupMessage(
+							makeMessageBox('good', data.submit.success.messages, data.submit.success.title)
+						);
 					}
 
+					uncheckTableRows('latest');
 					this.refresh();
-				});
+				}
 			});
 		},
 
@@ -441,93 +449,12 @@
 				});
 		},
 
-		editItem(target, data) {
-			this._removePopupMessage();
-			this.unscheduleRefresh();
-
-			const overlay = PopUp('item.edit', data, {
-				dialogueid: 'item-edit',
-				dialogue_class: 'modal-popup-large',
-				trigger_element: target,
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-		},
-
-		editHost(hostid) {
-			const host_data = {hostid};
-
-			this.openHostPopup(host_data);
-		},
-
-		openHostPopup(host_data) {
-			this._removePopupMessage();
-
-			const original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			this.unscheduleRefresh();
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-				history.replaceState({}, '', original_url);
-				this.scheduleRefresh();
-			}, {once: true});
-		},
-
-		editTemplate(parameters) {
-			const overlay = PopUp('template.edit', parameters, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-		},
-
 		setSubfilter(field) {
 			this.filter.setSubfilter(field[0], field[1]);
 		},
 
 		unsetSubfilter(field) {
 			this.filter.unsetSubfilter(field[0], field[1]);
-		},
-
-		editTrigger(trigger_data) {
-			this._removePopupMessage();
-
-			const overlay = PopUp('trigger.edit', trigger_data, {
-				dialogueid: 'trigger-edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-		},
-
-		events: {
-			elementSuccess(e) {
-				const data = e.detail;
-
-				if ('success' in data) {
-					const title = data.success.title;
-					let messages = [];
-
-					if ('messages' in data.success) {
-						messages = data.success.messages;
-					}
-
-					view._addPopupMessage(makeMessageBox('good', messages, title));
-				}
-
-				uncheckTableRows('latest');
-				view.refresh();
-			}
 		}
 	};
 </script>

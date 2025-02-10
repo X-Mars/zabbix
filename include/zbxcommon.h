@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -95,6 +95,7 @@ const char	*zbx_result_string(int result);
 
 #define ZBX_MAX_UINT64		(~__UINT64_C(0))
 #define ZBX_MAX_UINT64_LEN	21
+#define ZBX_MAX_UINT32_LEN	11
 #define ZBX_MAX_DOUBLE_LEN	24
 
 #define ZBX_SIZE_T_MAX	(~(size_t)0)
@@ -297,13 +298,11 @@ const char	*get_program_type_string(unsigned char program_type);
 #define ZBX_PROCESS_TYPE_DBCONFIGWORKER		44
 #define ZBX_PROCESS_TYPE_PG_MANAGER		45
 #define ZBX_PROCESS_TYPE_BROWSERPOLLER		46
-#define ZBX_PROCESS_TYPE_COUNT			47	/* number of process types */
+#define ZBX_PROCESS_TYPE_HA_MANAGER		47
+#define ZBX_PROCESS_TYPE_COUNT			48	/* number of process types */
 
 /* special processes that are not present worker list */
-#define ZBX_PROCESS_TYPE_EXT_FIRST		126
-#define ZBX_PROCESS_TYPE_HA_MANAGER		126
-#define ZBX_PROCESS_TYPE_MAIN			127
-#define ZBX_PROCESS_TYPE_EXT_LAST		127
+#define ZBX_PROCESS_TYPE_MAIN			126
 
 #define ZBX_PROCESS_TYPE_UNKNOWN		255
 
@@ -409,14 +408,20 @@ do														\
 }														\
 while (0)
 
-#define THIS_SHOULD_NEVER_HAPPEN_MSG(fmt, ...)									\
+#ifdef HAVE___VA_ARGS__
+#	define THIS_SHOULD_NEVER_HAPPEN_MSG(...)								\
 														\
-do														\
-{														\
-	THIS_SHOULD_NEVER_HAPPEN;										\
-	zbx_error(fmt, ##__VA_ARGS__);										\
-}														\
-while(0)
+	do													\
+	{													\
+		THIS_SHOULD_NEVER_HAPPEN;									\
+		zbx_error(__VA_ARGS__);									\
+	}													\
+	while(0)
+#else
+#	define THIS_SHOULD_NEVER_HAPPEN_MSG									\
+			THIS_SHOULD_NEVER_HAPPEN;								\
+			zbx_error
+#endif
 
 #define ARRSIZE(a)	(sizeof(a) / sizeof(*a))
 
@@ -527,10 +532,10 @@ zbx_proxy_suppress_t;
 #define ZBX_JAN_1970_IN_SEC	2208988800.0	/* 1970 - 1900 in seconds */
 
 #define ZBX_MAX_RECV_DATA_SIZE		(1 * ZBX_GIBIBYTE)
-#if defined(_WINDOWS)
-#define ZBX_MAX_RECV_LARGE_DATA_SIZE	(1 * ZBX_GIBIBYTE)
-#else
+#if (4 < SIZEOF_SIZE_T)
 #define ZBX_MAX_RECV_LARGE_DATA_SIZE	(__UINT64_C(16) * ZBX_GIBIBYTE)
+#else
+#define ZBX_MAX_RECV_LARGE_DATA_SIZE	(1 * ZBX_GIBIBYTE)
 #endif
 
 /* max length of base64 data */
@@ -539,11 +544,30 @@ zbx_proxy_suppress_t;
 /* string functions that could not be moved into libzbxstr.a because they */
 /* are used by libzbxcommon.a */
 
-/* used by log which will be part of common*/
+/* used by log which will be part of common */
 #if defined(__GNUC__) || defined(__clang__)
 #	define __zbx_attr_format_printf(idx1, idx2) __attribute__((__format__(__printf__, (idx1), (idx2))))
+#	if defined(HAVE_TESTS)
+#		define	__zbx_attr_weak		__attribute__((weak))
+#		define	__zbx_static
+#	endif
 #else
 #	define __zbx_attr_format_printf(idx1, idx2)
+#endif
+
+/* function override support for mock tests */
+
+#if (defined(__GNUC__) || defined(__clang__)) && defined(HAVE_TESTS)
+#	define	__zbx_attr_weak		__attribute__((weak))
+#	define	__zbx_static
+#endif
+
+#if !defined(__zbx_attr_weak)
+#	define __zbx_attr_weak
+#endif
+
+#if !defined(__zbx_static)
+#	define	__zbx_static	static
 #endif
 
 /* used by cuid and also by log */
@@ -566,7 +590,7 @@ int	zbx_vsnprintf_check_len(const char *fmt, va_list args);
 char	*zbx_dsprintf(char *dest, const char *f, ...) __zbx_attr_format_printf(2, 3);
 
 /* used by zbxcommon, setproctitle */
-size_t	zbx_strlcpy(char *dst, const char *src, size_t siz);
+size_t	zbx_strlcpy(char *dst, const char *src, size_t size);
 
 /* used by dsprintf, which is used by log */
 char	*zbx_dvsprintf(char *dest, const char *f, va_list args);
@@ -585,6 +609,9 @@ wchar_t	*zbx_oemcp_to_unicode(const char *oemcp_string);
 char	**zbx_setproctitle_init(int argc, char **argv);
 void	zbx_setproctitle(const char *fmt, ...) __zbx_attr_format_printf(1, 2);
 void	zbx_setproctitle_deinit(void);
+#if !defined(_WINDOWS) && !defined(__MINGW32__)
+void	zbx_unsetenv(const char *envname);
+#endif
 
 void	zbx_error(const char *fmt, ...) __zbx_attr_format_printf(1, 2);
 

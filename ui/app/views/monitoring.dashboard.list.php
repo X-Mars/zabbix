@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -82,7 +82,8 @@ $table = (new CTableInfo())
 		make_sorting_header(_('Name'), 'name', $data['sort'], $data['sortorder'],
 			(new CUrl('zabbix.php'))
 				->setArgument('action', 'dashboard.list')
-				->getUrl())
+				->getUrl()
+		)->setColSpan(2)
 	])
 	->setPageNavigation($data['paging']);
 
@@ -102,15 +103,15 @@ foreach ($data['dashboards'] as $dashboard) {
 	$table->addRow([
 		(new CCheckBox('dashboardids['.$dashboard['dashboardid'].']', $dashboard['dashboardid']))
 			->setEnabled($dashboard['editable']),
-		(new CDiv([
-			new CLink($dashboard['name'],
+		new CDiv([
+			(new CLink($dashboard['name'],
 				(new CUrl('zabbix.php'))
 					->setArgument('action', 'dashboard.view')
 					->setArgument('dashboardid', $dashboard['dashboardid'])
 					->getUrl()
-			),
-			$tags ? new CDiv($tags) : null
-		]))->addClass(ZBX_STYLE_DASHBOARD_LIST_ITEM)
+			))->addClass(ZBX_STYLE_WORDBREAK)
+		]),
+		(new CCol($tags))->addClass(ZBX_STYLE_LIST_TABLE_ACTIONS)
 	]);
 }
 

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -47,8 +47,9 @@
 			this.initFilter(filter_options);
 			$.subscribe('event.rank_change', () => view.refreshNow());
 
-			this.initAcknowledge();
 			this.initExpandables();
+			this.initEvents();
+			this.initPopupListeners();
 
 			if (this.refresh_interval != 0) {
 				this.running = true;
@@ -144,27 +145,6 @@
 			});
 		},
 
-		initAcknowledge() {
-			$.subscribe('acknowledge.create', function(event, response) {
-				// Clear all selected checkboxes in Monitoring->Problems.
-				if (chkbxRange.prefix === 'problem') {
-					chkbxRange.checkObjectAll(chkbxRange.pageGoName, false);
-					chkbxRange.clearSelectedOnFilterChange();
-				}
-
-				view.refreshNow();
-
-				clearMessages();
-				addMessage(makeMessageBox('good', [], response.success.title));
-			});
-
-			$(document).on('submit', '#problem_form', function(e) {
-				e.preventDefault();
-
-				acknowledgePopUp({eventids: Object.keys(chkbxRange.getSelectedIds())}, this);
-			});
-		},
-
 		initExpandables() {
 			const table = this.getCurrentResultsTable();
 			const expandable_buttons = table.querySelectorAll("button[data-action='show_symptoms']");
@@ -200,6 +180,58 @@
 
 				[...row.children].forEach((td) => td.style.borderBottomStyle = is_collapsed ? 'hidden' : 'solid');
 			}
+		},
+
+		initEvents() {
+			document.addEventListener('click', e => {
+				if (e.target.classList.contains('js-massupdate-problem')) {
+					this.massupdate({eventids: Object.keys(chkbxRange.getSelectedIds())});
+				}
+			});
+		},
+
+		massupdate({eventids}) {
+			ZABBIX.PopupManager.open('acknowledge.edit', {eventids}, {supports_standalone: true});
+		},
+
+		initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_OPEN
+				},
+				callback: () => this.unscheduleRefresh()
+			});
+
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_CANCEL
+				},
+				callback: () => this.scheduleRefresh()
+			});
+
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, event}) => {
+					event.preventDefault();
+
+					clearMessages();
+
+					if ('success' in data.submit) {
+						addMessage(makeMessageBox('good', data.submit.success.messages, data.submit.success.title));
+					}
+
+					chkbxRange.checkObjectAll('eventids', false);
+					chkbxRange.update('eventids');
+
+					this.refreshResults();
+					this.refreshCounters();
+				}
+			});
 		},
 
 		showSymptoms(btn, idx, array) {
@@ -412,82 +444,6 @@
 						this.refresh_interval > 0 ? this.refresh_interval : 5000
 					);
 				});
-		},
-
-		editHost(hostid) {
-			this.openHostPopup({hostid});
-		},
-
-		editItem(target, data) {
-			clearMessages();
-
-			const overlay = PopUp('item.edit', data, {
-				dialogueid: 'item-edit',
-				dialogue_class: 'modal-popup-large',
-				trigger_element: target,
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-		},
-
-		openHostPopup(host_data) {
-			clearMessages();
-
-			const original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-				history.replaceState({}, '', original_url);
-			}, {once: true});
-		},
-
-		editTemplate(parameters) {
-			const overlay = PopUp('template.edit', parameters, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-		},
-
-		editTrigger(trigger_data) {
-			clearMessages();
-
-			const overlay = PopUp('trigger.edit', trigger_data, {
-				dialogueid: 'trigger-edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
-		},
-
-		events: {
-			elementSuccess(e) {
-				const data = e.detail;
-
-				if ('success' in data) {
-					const title = data.success.title;
-					let messages = [];
-
-					if ('messages' in data.success) {
-						messages = data.success.messages;
-					}
-
-					addMessage(makeMessageBox('good', messages, title));
-				}
-
-				uncheckTableRows('problem');
-				view.refreshResults();
-				view.refreshCounters();
-			}
 		}
 	};
 </script>

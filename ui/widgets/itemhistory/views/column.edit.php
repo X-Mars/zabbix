@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -72,7 +72,7 @@ $parameters += $data['templateid'] === ''
 $item_select = (new CMultiSelect([
 	'name' => 'itemid',
 	'object_name' => 'items',
-	'data' => $data['ms_item'] ? [$data['ms_item']] : '',
+	'data' => $data['ms_item'] ? [$data['ms_item']] : [],
 	'multiple' => false,
 	'popup' => [
 		'parameters' => $parameters
@@ -96,8 +96,8 @@ $form_grid->addItem([
 // Highlights table
 $highlight_header_row = [
 	'',
-	(new CColHeader(_('Regular expression')))->setWidth('100%'),
-	_('Action')
+	_('Regular expression'),
+	(new CColHeader(''))->setWidth('100%')
 ];
 
 $highlights = (new CDiv(
@@ -178,8 +178,8 @@ $form_grid->addItem([
 // Thresholds table.
 $threshold_header_row = [
 	'',
-	(new CColHeader(_('Threshold')))->setWidth('100%'),
-	_('Action')
+	_('Threshold'),
+	(new CColHeader(''))->setWidth('100%')
 ];
 
 $thresholds = (new CDiv(
@@ -237,8 +237,8 @@ $form_grid->addItem([
 // Local time.
 $form_grid->addItem([
 	(new CLabel([
-		_('Display local time'),
-		makeHelpIcon(_('This setting will display local time instead of the timestamp. "Show timestamp" must also be checked in the advanced configuration.'))
+		_('Display log time'),
+		makeHelpIcon(_('This setting will display log time instead of item\'s timestamp. "Show timestamp" must also be checked in the advanced configuration.'))
 	], 'local_time'))->addClass('js-local-time-row'),
 	(new CFormField(
 		(new CCheckBox('local_time'))->setChecked($data['local_time'])

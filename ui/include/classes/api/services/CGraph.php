@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -76,7 +76,6 @@ class CGraph extends CGraphGeneral {
 			'searchWildcardsEnabled'	=> null,
 			// output
 			'output'					=> API_OUTPUT_EXTEND,
-			'selectGroups'				=> null,
 			'selectHostGroups'			=> null,
 			'selectTemplateGroups'		=> null,
 			'selectTemplates'			=> null,
@@ -93,8 +92,6 @@ class CGraph extends CGraphGeneral {
 			'limit'						=> null
 		];
 		$options = zbx_array_merge($defOptions, $options);
-
-		$this->checkDeprecatedParam($options, 'selectGroups');
 
 		// permission check
 		if (self::$userData['type'] != USER_TYPE_SUPER_ADMIN && !$options['nopermissions']) {
@@ -296,11 +293,10 @@ class CGraph extends CGraphGeneral {
 
 		if ($result) {
 			$result = $this->addRelatedObjects($options, $result);
-		}
 
-		// removing keys (hash -> array)
-		if (!$options['preservekeys']) {
-			$result = zbx_cleanHashes($result);
+			if (!$options['preservekeys']) {
+				$result = array_values($result);
+			}
 		}
 
 		return $result;
@@ -331,7 +327,7 @@ class CGraph extends CGraphGeneral {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validateDelete(array &$graphids, array &$db_graphs = null) {
+	private function validateDelete(array &$graphids, ?array &$db_graphs = null) {
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];
 		if (!CApiInputValidator::validate($api_input_rules, $graphids, '/', $error)) {
 			self::exception(ZBX_API_ERROR_PARAMETERS, $error);

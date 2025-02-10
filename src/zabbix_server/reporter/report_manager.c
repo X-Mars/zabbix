@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -130,6 +130,7 @@ typedef struct
 	zbx_uint64_t		batchid;
 	char			*url;
 	char			*report_name;
+	unsigned char		is_test_report;
 	zbx_vector_uint64_t	userids;
 	zbx_vector_ptr_pair_t	params;
 	zbx_rm_session_t	*session;
@@ -723,11 +724,12 @@ static int	rm_report_calc_nextcheck(const zbx_rm_report_t *report, int now, char
 	else
 	{
 		if (-1 == (nextcheck = zbx_get_report_nextcheck(now, report->cycle, report->weekdays,
-				report->start_time, report->timezone)))
+				report->start_time)))
 		{
 			*error = zbx_dsprintf(NULL, "Cannot calculate report start time: %s",
 					zbx_strerror(errno));
 		}
+
 	}
 
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s() nextcheck:%s %s, error:%s", __func__, zbx_date2str(nextcheck, NULL),
@@ -1436,7 +1438,25 @@ static int	rm_writer_process_job(zbx_rm_writer_t *writer, zbx_rm_job_t *job, cha
 
 	if (0 == dsts.values_num)
 	{
-		*error = zbx_dsprintf(NULL, "No media configured for the report recipients");
+		char	*username = NULL;
+
+		if (1 != job->is_test_report)
+		{
+			*error = zbx_dsprintf(NULL, "No media configured for the report recipients");
+			goto out;
+		}
+
+		sql = zbx_dsprintf(sql, "select username from users where userid=" ZBX_FS_UI64, job->userids.values[0]);
+
+		result = zbx_db_select("%s", sql);
+
+		/* username of the user who tests a scheduled report should always be present */
+		if (NULL != (row = zbx_db_fetch(result)))
+			username = row[0];
+
+		*error = zbx_dsprintf(NULL, "No media configured for the report recipient '%s'",
+				ZBX_NULL2STR(username));
+		zbx_db_free_result(result);
 		goto out;
 	}
 
@@ -1671,7 +1691,7 @@ out:
 
 /******************************************************************************
  *                                                                            *
- * Purpose: resolves macros in report (ZBX_MACRO_TYPE_REPORT) context         *
+ * Purpose: resolves macros in report context                                 *
  *                                                                            *
  * Parameters: p            - [IN] macro resolver data structure              *
  *             args         - [IN] list of variadic parameters                *
@@ -1700,6 +1720,10 @@ static int	macro_report_resolv(zbx_macro_resolv_data_t *p, va_list args, char **
 	if (0 == strcmp(p->macro, MVAR_TIME))
 	{
 		*replace_with = zbx_strdup(*replace_with, zbx_time2str(time(NULL), tz));
+	}
+	else if (0 == strcmp(p->macro, MVAR_TIMESTAMP))
+	{
+		*replace_with = zbx_dsprintf(*replace_with, "%ld", (long)time(NULL));
 	}
 
 	return SUCCEED;
@@ -2072,6 +2096,7 @@ static int	rm_test_report(zbx_rm_t *manager, zbx_ipc_client_t *client, zbx_ipc_m
 	if (NULL != (job = rm_create_job(manager, name, dashboardid, access_userid, report_time, period, &userid, 1,
 			&params, error)))
 	{
+		job->is_test_report = 1;
 		zbx_ipc_client_addref(client);
 		job->client = client;
 		(void)zbx_list_append(&manager->job_queue, job, NULL);

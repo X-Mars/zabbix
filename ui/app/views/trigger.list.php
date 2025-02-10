@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,9 +19,6 @@
  * @var array $data
  */
 
-$this->addJsFile('items.js');
-$this->addJsFile('multilineinput.js');
-$this->addJsFile('class.tagfilteritem.js');
 $this->includeJsFile('trigger.list.js.php');
 
 if ($data['uncheck']) {
@@ -81,6 +78,7 @@ $filter_column1 = (new CFormGrid())
 			->setChecked($data['filter_priority'])
 			->setColumns(3)
 			->setVertical()
+			->showTitles()
 		)
 	]);
 
@@ -255,11 +253,15 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 		$description[] = NAME_DELIMITER;
 	}
 
-	$description[] = (new CLink($trigger['description']))
-		->addClass('js-trigger-edit')
-		->setAttribute('data-triggerid', $triggerid)
-		->setAttribute('data-hostid', $data['single_selected_hostid'])
-		->addClass(ZBX_STYLE_WORDWRAP);
+	$trigger_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'trigger.edit')
+		->setArgument('triggerid', $triggerid)
+		->setArgument('hostid', $data['single_selected_hostid'])
+		->setArgument('context', $data['context'])
+		->getUrl();
+
+	$description[] = (new CLink($trigger['description'], $trigger_url))->addClass(ZBX_STYLE_WORDBREAK);
 
 	if ($trigger['dependencies']) {
 		$description[] = [BR(), bold(_('Depends on').':')];
@@ -271,10 +273,15 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 			$dep_trigger_desc =
 				implode(', ', array_column($dep_trigger['hosts'], 'name')).NAME_DELIMITER.$dep_trigger['description'];
 
-			$trigger_deps[] = (new CLink($dep_trigger_desc))
-				->addClass('js-trigger-edit')
-				->setAttribute('data-triggerid', $dep_trigger['triggerid'])
-				->setAttribute('data-hostid', $data['single_selected_hostid'])
+			$dep_trigger_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'trigger.edit')
+				->setArgument('triggerid', $dep_trigger['triggerid'])
+				->setArgument('hostid', $data['single_selected_hostid'])
+				->setArgument('context', $data['context'])
+				->getUrl();
+
+			$trigger_deps[] = (new CLink($dep_trigger_desc, $dep_trigger_url))
 				->addClass(ZBX_STYLE_LINK_ALT)
 				->addClass(triggerIndicatorStyle($dep_trigger['status']));
 
@@ -296,8 +303,7 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 			$info_icons[] = makeErrorIcon((new CDiv($trigger['error']))->addClass(ZBX_STYLE_WORDBREAK));
 		}
 
-		if (array_key_exists('status', $trigger['triggerDiscovery'])
-				&& $trigger['triggerDiscovery']['status'] == ZBX_LLD_STATUS_LOST) {
+		if ($trigger['triggerDiscovery'] && $trigger['triggerDiscovery']['status'] == ZBX_LLD_STATUS_LOST) {
 			$info_icons[] = getLldLostEntityIndicator(time(), $trigger['triggerDiscovery']['ts_delete'],
 				$trigger['triggerDiscovery']['ts_disable'], $disable_source,
 				$trigger['status'] == TRIGGER_STATUS_DISABLED, _('trigger')
@@ -320,7 +326,16 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 			if (!empty($hosts)) {
 				$hosts[] = ', ';
 			}
-			$hosts[] = $host['name'];
+
+			$host_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', $data['context'] === 'host' ? 'host.edit' : 'template.edit')
+				->setArgument($data['context'] === 'host' ? 'hostid' : 'templateid', $host['hostid'])
+				->getUrl();
+
+			$hosts[] = in_array($host['hostid'], $data['editable_hosts'])
+				? new CLink($host['name'], $host_url)
+				: $host['name'];
 		}
 
 		$hosts = (new CCol($hosts))->addClass(ZBX_STYLE_WORDBREAK);
@@ -409,7 +424,8 @@ $html_page
 		'checkbox_hash' => $data['checkbox_hash'],
 		'checkbox_object' => 'g_triggerid',
 		'context' => $data['context'],
-		'token' => [CSRF_TOKEN_NAME => CCsrfTokenHelper::get('trigger')]
+		'token' => [CSRF_TOKEN_NAME => CCsrfTokenHelper::get('trigger')],
+		'form_name' => $triggers_form->getName()
 	]).');
 '))
 	->setOnDocumentReady()

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,6 +22,16 @@
 $item = $data['item'];
 $readonly = $item['templated'] || $item['discovered'];
 
+if ($item['discovered']) {
+	$discovered_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'item.prototype.edit')
+		->setArgument('context', $item['context'])
+		->setArgument('itemid', $item['itemDiscovery']['parent_itemid'])
+		->setArgument('parent_discoveryid', $item['discoveryRule']['itemid'])
+		->getUrl();
+}
+
 $formgrid = (new CFormGrid())
 	->addItem($item['parent_items']
 		? [
@@ -32,13 +42,7 @@ $formgrid = (new CFormGrid())
 	)
 	->addItem($item['discovered'] ? [
 		new CLabel(_('Discovered by')),
-		(new CFormField(
-			(new CLink($item['discoveryRule']['name']))
-				->setAttribute('data-action', 'item.prototype.edit')
-				->setAttribute('data-parent_discoveryid', $item['discoveryRule']['itemid'])
-				->setAttribute('data-itemid', $item['itemDiscovery']['parent_itemid'])
-				->setAttribute('data-context', $item['context'])
-		))->addClass('js-parent-items')
+		(new CFormField(new CLink($item['discoveryRule']['name'], $discovered_url)))->addClass('js-parent-items')
 	] : null)
 	->addItem([
 		(new CLabel(_('Name'), 'name'))->setAsteriskMark(),
@@ -153,7 +157,7 @@ $formgrid = (new CFormGrid())
 					->setHeader([
 						(new CColHeader(_('Name')))->setWidth('50%'),
 						(new CColHeader(_('Value')))->setWidth('50%'),
-						_('Action')
+						''
 					])
 					->setFooter((new CCol(
 						(new CButtonLink(_('Add')))
@@ -413,9 +417,9 @@ $formgrid = (new CFormGrid())
 				'readonly' => $readonly,
 				'data' => $item['master_item']
 					? [[
-							'id' => $item['master_item']['itemid'],
-							'prefix' => $data['host']['name'].NAME_DELIMITER,
-							'name' => $item['master_item']['name']
+						'id' => $item['master_item']['itemid'],
+						'prefix' => $data['host']['name'].NAME_DELIMITER,
+						'name' => $item['master_item']['name']
 					]]
 					: [],
 				'popup' => [
@@ -646,7 +650,7 @@ $formgrid
 				(new CTable())
 					->setId('delay-flex-table')
 					->setHeader([
-						_('Type'), _('Interval'), _('Period'), $item['discovered'] ? null : _('Action')
+						_('Type'), _('Interval'), _('Period'), ''
 					])
 					->setFooter((new CCol(
 						(new CButtonLink(_('Add')))
@@ -688,10 +692,12 @@ $custom_timeout_enabled = $item['custom_timeout'] == ZBX_ITEM_CUSTOM_TIMEOUT_ENA
 
 if ($data['can_edit_source_timeouts'] && (!$readonly || !$custom_timeout_enabled)) {
 	$edit_source_timeouts_link = $data['host']['proxyid']
-		? (new CLink(_('Timeouts')))
-			->addClass(ZBX_STYLE_LINK)
-			->addClass('js-edit-proxy')
-			->setAttribute('data-proxyid', $data['host']['proxyid'])
+		? (new CLink(_('Timeouts'), (new CUrl('zabbix.php'))
+			->setArgument('action', 'popup')
+			->setArgument('popup', 'proxy.edit')
+			->setArgument('proxyid', $data['host']['proxyid'])
+			->getUrl()
+		))->addClass(ZBX_STYLE_LINK)
 		: (new CLink(_('Timeouts'),
 			(new CUrl('zabbix.php'))->setArgument('action', 'timeouts.edit')
 		))
@@ -804,10 +810,8 @@ $formgrid
 				'readonly' => $readonly,
 				'multiple' => false,
 				'data' => $item['valuemap']
-					? [[
-							'id' => $item['valuemap']['valuemapid'],
-							'name' => $item['valuemap']['name']
-					]] : [],
+					? [['id' => $item['valuemap']['valuemapid'], 'name' => $item['valuemap']['name']]]
+					: [],
 				'popup' => [
 					'parameters' => [
 						'srctbl' => $item['context'] === 'host' ? 'valuemaps' : 'template_valuemaps',

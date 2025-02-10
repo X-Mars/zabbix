@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -54,6 +54,7 @@ void	zbx_event_get_tag(const char *text, const zbx_db_event *event, char **repla
 
 void	zbx_event_get_str_tags(const zbx_db_event *event, char **replace_to);
 void	zbx_event_get_json_tags(const zbx_db_event *event, char **replace_to);
+void	zbx_event_get_json_actions(const zbx_db_acknowledge *ack, char **replace_to);
 
 int	zbx_event_db_get_host(const zbx_db_event *event, zbx_dc_host_t *host, char *error, size_t max_error_len);
 

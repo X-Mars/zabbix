@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -53,6 +53,8 @@ class CMultilineInput extends CDiv {
 	 * @param bool     $options['monospace_font']        Monospace font type (default: true).
 	 * @param bool     $options['readonly']              Readonly component (default: false).
 	 * @param bool     $options['disabled']              Is disabled (default: false).
+	 * @param bool     $options['use_tab]                If true, on tab key pressed, adds indent instead of moving
+	 *                                                   the pointer to the next element
 	 */
 	public function __construct($name = 'multilineinput', $value = '', array $options = []) {
 		parent::__construct();

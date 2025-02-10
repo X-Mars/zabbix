@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -43,5 +43,18 @@ class CWidgetBehavior extends CBehavior {
 		$form->fill($data);
 
 		return $form;
+	}
+
+	/**
+	 * Return widget type.
+	 *
+	 * @param CWidgetElement	$widget		widget for which type is obtained
+	 *
+	 * @return string
+	 */
+	public function getWidgetType($widget) {
+		$class_attribute = $widget->query('class:dashboard-grid-widget-contents')->one()->getAttribute('class');
+
+		return str_replace('dashboard-widget-', '', explode(' ', $class_attribute)[1]);
 	}
 }

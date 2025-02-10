@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -794,7 +794,7 @@ class CUserDirectory extends CApiService {
 	 *
 	 * @throws APIException if userdirectory name is not unique.
 	 */
-	private static function checkDuplicates(array $userdirectories, array $db_userdirectories = null): void {
+	private static function checkDuplicates(array $userdirectories, ?array $db_userdirectories = null): void {
 		$names = [];
 
 		foreach ($userdirectories as $userdirectory) {
@@ -825,7 +825,7 @@ class CUserDirectory extends CApiService {
 		}
 	}
 
-	private static function checkProvisionGroups(array $userdirectories, array $db_userdirectories = null): void {
+	private static function checkProvisionGroups(array $userdirectories, ?array $db_userdirectories = null): void {
 		$role_indexes = [];
 		$user_group_indexes = [];
 
@@ -902,7 +902,7 @@ class CUserDirectory extends CApiService {
 		}
 	}
 
-	private static function checkMediaTypes(array $userdirectories, array $db_userdirectories = null): void {
+	private static function checkMediaTypes(array $userdirectories, ?array $db_userdirectories = null): void {
 		$media_indexes = [];
 
 		foreach ($userdirectories as $i1 => $userdirectory) {
@@ -1245,7 +1245,7 @@ class CUserDirectory extends CApiService {
 		}
 	}
 
-	private static function updateProvisionMedia(array &$userdirectories, array $db_userdirectories = null): void {
+	private static function updateProvisionMedia(array &$userdirectories, ?array $db_userdirectories = null): void {
 		$ins_provision_medias = [];
 		$upd_provision_medias = [];
 		$del_provision_mediaids = [];
@@ -1310,7 +1310,7 @@ class CUserDirectory extends CApiService {
 		unset($userdirectory);
 	}
 
-	private static function updateProvisionGroups(array &$userdirectories, array $db_userdirectories = null): void {
+	private static function updateProvisionGroups(array &$userdirectories, ?array $db_userdirectories = null): void {
 		$ins_provision_groups = [];
 		$upd_provision_groups = [];
 		$del_provision_groupids = [];

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,7 +24,7 @@ use Facebook\WebDriver\WebDriverKeys;
 /**
  * @backup role, module, users, report, services
  * @dataSource ExecuteNowAction
- * @onBefore prepareUserData, prepareReportData, prepareServiceData
+ * @onBefore prepareUserData, prepareReportData, prepareServiceData, prepareCauseAndSymptomData
  */
 class testUserRolesPermissions extends CWebTest {
 
@@ -46,6 +46,7 @@ class testUserRolesPermissions extends CWebTest {
 	 * @var integer
 	 */
 	protected static $super_roleid;
+	protected static $super_roleid2;
 
 	/**
 	 * Id of user that created for future checks.
@@ -72,16 +73,31 @@ class testUserRolesPermissions extends CWebTest {
 				'rules' => [
 					'services.write.mode' => 1
 				]
+			],
+			[
+				'name' => 'super_role_for_problem_ranking',
+				'type' => 3
 			]
 		]);
 		$this->assertArrayHasKey('roleids', $role);
 		self::$super_roleid = $role['roleids'][0];
+		self::$super_roleid2 = $role['roleids'][1];
 
 		$user = CDataHelper::call('user.create', [
 			[
 				'username' => 'user_for_role',
 				'passwd' => 'zabbixzabbix',
 				'roleid' => self::$super_roleid,
+				'usrgrps' => [
+					[
+						'usrgrpid' => '7'
+					]
+				]
+			],
+			[
+				'username' => 'problem_ranking',
+				'passwd' => 'zabbixzabbix',
+				'roleid' => self::$super_roleid2,
 				'usrgrps' => [
 					[
 						'usrgrpid' => '7'
@@ -178,6 +194,61 @@ class testUserRolesPermissions extends CWebTest {
 				]
 			]
 		]);
+	}
+
+	public function prepareCauseAndSymptomData() {
+		// Create host group for host.
+		CDataHelper::call('hostgroup.create', [
+			['name' => 'Group for ChangeProblemRanking access check']
+		]);
+		$groupids = CDataHelper::getIds('name');
+
+		// Create host and trapper item.
+		CDataHelper::createHosts([
+			[
+				'host' => 'Host for ChangeProblemRanking access check',
+				'groups' => [
+					'groupid' => $groupids['Group for ChangeProblemRanking access check']
+				],
+				'items' => [
+					[
+						'name' => 'Consumed energy',
+						'key_' => 'kWh',
+						'type' => ITEM_TYPE_TRAPPER,
+						'value_type' => ITEM_VALUE_TYPE_FLOAT
+					]
+				]
+			]
+		]);
+
+		// Create triggers.
+		CDataHelper::call('trigger.create', [
+			[
+				'description' => 'Problem trap>10 [Symptom]',
+				'expression' => 'last(/Host for ChangeProblemRanking access check/kWh)>10',
+				'priority' => TRIGGER_SEVERITY_WARNING
+			],
+			[
+				'description' => 'Problem trap>150 [Cause]',
+				'expression' => 'last(/Host for ChangeProblemRanking access check/kWh)>150',
+				'priority' => TRIGGER_SEVERITY_AVERAGE
+			]
+		]);
+
+		// Create problems.
+		CDBHelper::setTriggerProblem(['Problem trap>10 [Symptom]', 'Problem trap>150 [Cause]']);
+
+		// Set cause and symptom(s) for predefined problems.
+		foreach (['Problem trap>150 [Cause]' => ['Problem trap>10 [Symptom]']] as $cause => $symptoms) {
+			$causeid = CDBHelper::getValue('SELECT eventid FROM problem WHERE name='.zbx_dbstr($cause));
+
+			foreach ($symptoms as $symptom) {
+				$symptomid = CDBHelper::getValue('SELECT eventid FROM problem WHERE name='.zbx_dbstr($symptom));
+				DBexecute('UPDATE problem SET cause_eventid='.$causeid.' WHERE name='.zbx_dbstr($symptom));
+				DBexecute('INSERT INTO event_symptom (eventid, cause_eventid) VALUES ('.$symptomid.','.$causeid.')');
+				DBexecute('UPDATE event_symptom SET cause_eventid='.$causeid.' WHERE eventid='.$symptomid);
+			}
+		}
 	}
 
 	public static function getPageActionsData() {
@@ -401,6 +472,65 @@ class testUserRolesPermissions extends CWebTest {
 		}
 	}
 
+	public static function getCauseAndSymptomData() {
+		return [
+			// User role flag 'Change problem ranking' => false.
+			[
+				[
+					'state' => false
+				]
+			],
+			// User role flag 'Change problem ranking' => true.
+			[
+				[
+					'state' => true
+				]
+			]
+		];
+	}
+
+	/**
+	 * Check cause and symptom related options when 'Change problem ranking' flag is disabled/enabled on 'User roles' page.
+	 *
+	 * @dataProvider getCauseAndSymptomData
+	 */
+	public function testUserRolesPermissions_ChangeProblemRanking($data) {
+		$this->page->userLogin('problem_ranking', 'zabbixzabbix');
+		$this->changeRoleRule(['Change problem ranking' => $data['state']], self::$super_roleid2);
+		$this->page->open('zabbix.php?action=problem.view&name=Problem trap>150 [Cause]');
+
+		// Check context menu 'Mark as cause' & 'Mark selected as symptoms' options accessibility.
+		$table = $this->getTable();
+		$table->query('link', 'Problem trap>150 [Cause]')->waitUntilVisible()->one()->click();
+		$context_menu = CPopupMenuElement::find()->waitUntilVisible()->one();
+
+		if ($data['state'] === false) {
+			$this->assertFalse($context_menu->hasItems(['Mark as cause', 'Mark selected as symptoms']));
+			$this->assertFalse($context_menu->hasTitles(['PROBLEM']));
+		}
+		else {
+			$this->assertTrue($context_menu->hasItems(['Mark as cause', 'Mark selected as symptoms']));
+			$this->assertTrue($context_menu->hasTitles(['PROBLEM']));
+		}
+
+		// Check 'Convert to cause' checkbox state for symptom event.
+		$context_menu->close();
+		$table->findRow('Problem', 'Problem trap>150 [Cause]')->query('xpath:.//button[@title="Expand"]')->one()->click();
+		$table->findRow('Problem', 'Problem trap>10 [Symptom]')->query('link:Update')->waitUntilClickable()->one()->click();
+		$this->assertTrue(COverlayDialogElement::find()->waitUntilReady()->one()->asForm()
+				->getField('Convert to cause')->isEnabled($data['state'])
+		);
+		COverlayDialogElement::closeAll();
+
+		// Check 'Convert to cause' checkbox state via mass update form.
+		$this->selectTableRows();
+		$this->query('button:Mass update')->waitUntilClickable()->one()->click();
+		$this->assertTrue(COverlayDialogElement::find()->waitUntilReady()->one()->asForm()
+				->getField('Convert to cause')->isEnabled($data['state'])
+		);
+		COverlayDialogElement::closeAll();
+	}
+
 	/**
 	 * Check that Acknowledge link is disabled after all problem actions is disabled.
 	 */
@@ -421,13 +551,13 @@ class testUserRolesPermissions extends CWebTest {
 			$this->page->open('zabbix.php?action=problem.view')->waitUntilReady();
 			$problem_row = $this->query('class:list-table')->asTable()->one()->findRow('Problem', $problem);
 			$this->assertEquals($action_status, $problem_row->getColumn('Update')->query('xpath:.//*[text()="Update"]')
-					->one()->isAttributePresent('onclick'));
+					->one()->isAttributePresent('href'));
 
 			// Problem widget in dashboard.
 			$this->page->open('zabbix.php?action=dashboard.view&dashboardid=1')->waitUntilReady();
 			$table = CDashboardElement::find()->one()->getWidget('Current problems')->query('class:list-table')->asTable()->one();
 			$this->assertEquals($action_status, $table->findRow('Problem • Severity', $problem)->getColumn('Update')
-					->query('xpath:.//*[text()="Update"]')->one()->isAttributePresent('onclick'));
+					->query('xpath:.//*[text()="Update"]')->one()->isAttributePresent('href'));
 
 			// Event details page.
 			$this->page->open('tr_events.php?triggerid=99251&eventid=93')->waitUntilReady();
@@ -435,7 +565,7 @@ class testUserRolesPermissions extends CWebTest {
 			$table = $this->query('xpath://h4[text()='.CXPathHelper::escapeQuotes('Event list [previous 20]').
 					']/../..//table')->asTable()->one();
 			$this->assertEquals($action_status, $table->query('xpath:(.//*[text()="Update"])[2]')
-					->one()->isAttributePresent('onclick'));
+					->one()->isAttributePresent('href'));
 
 			if ($action_status) {
 				$this->changeRoleRule($actions);
@@ -1491,7 +1621,7 @@ class testUserRolesPermissions extends CWebTest {
 
 		$services_mode = $this->query('id:list_mode')->asSegmentedRadio()->one(false);
 
-		// Check that table service list content and edit mode in not available if the user doest have permissions.
+		// Check that table service list content and edit mode in not available if the user does not have permissions.
 		if ($data['services'] === null) {
 			$this->assertTableData();
 			$this->assertFalse($services_mode->isValid());
@@ -1781,9 +1911,14 @@ class testUserRolesPermissions extends CWebTest {
 	 * Enable/disable actions and UI.
 	 *
 	 * @param array $action		action with true/false status or UI section with page
+	 * @param string $roleid    Id of role that is created for access changes
 	 */
-	private function changeRoleRule($action) {
-		$this->page->open('zabbix.php?action=userrole.edit&roleid='.self::$super_roleid)->waitUntilReady();
+	private function changeRoleRule($action, $roleid = null) {
+		if ($roleid === null) {
+			$roleid = self::$super_roleid;
+		}
+
+		$this->page->open('zabbix.php?action=userrole.edit&roleid='.$roleid)->waitUntilReady();
 		$this->query('id:userrole-form')->waitUntilPresent()->asForm()->one()->fill($action)->submit();
 		$this->page->waitUntilReady();
 		$this->assertMessage(TEST_GOOD, 'User role updated');

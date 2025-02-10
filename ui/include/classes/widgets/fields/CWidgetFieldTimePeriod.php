@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,7 +19,6 @@ namespace Zabbix\Widgets\Fields;
 use CAbsoluteTimeParser,
 	CApiInputValidator,
 	CParser,
-	CRangeTimeParser,
 	CRelativeTimeParser,
 	CTimePeriodHelper,
 	DateTimeZone;
@@ -46,7 +45,7 @@ class CWidgetFieldTimePeriod extends CWidgetField {
 	private ?DateTimeZone $timezone = null;
 	private bool $is_date_only = false;
 
-	public function __construct(string $name, string $label = null) {
+	public function __construct(string $name, ?string $label = null) {
 		parent::__construct($name, $label);
 
 		$this
@@ -213,6 +212,7 @@ class CWidgetFieldTimePeriod extends CWidgetField {
 	public function toApi(array &$widget_fields = []): void {
 		$value = $this->getValue();
 		$default = $this->getDefault();
+		$group_name = rtrim(str_replace(['][', '['], '.', $this->name), ']');
 
 		switch ($this->getDataSource()) {
 			case self::DATA_SOURCE_DEFAULT:
@@ -224,7 +224,7 @@ class CWidgetFieldTimePeriod extends CWidgetField {
 					if (array_key_exists(self::FOREIGN_REFERENCE_KEY, $default) || $value[$name] !== $default[$name]) {
 						$widget_fields[] = [
 							'type' => ZBX_WIDGET_FIELD_TYPE_STR,
-							'name' => $this->name.'.'.$name,
+							'name' => $group_name.'.'.$name,
 							'value' => $value[$name]
 						];
 					}
@@ -241,7 +241,7 @@ class CWidgetFieldTimePeriod extends CWidgetField {
 						|| $value[self::FOREIGN_REFERENCE_KEY] !== $default[self::FOREIGN_REFERENCE_KEY]) {
 					$widget_fields[] = [
 						'type' => ZBX_WIDGET_FIELD_TYPE_STR,
-						'name' => $this->name.'.'.self::FOREIGN_REFERENCE_KEY,
+						'name' => $group_name.'.'.self::FOREIGN_REFERENCE_KEY,
 						'value' => $value[self::FOREIGN_REFERENCE_KEY]
 					];
 				}

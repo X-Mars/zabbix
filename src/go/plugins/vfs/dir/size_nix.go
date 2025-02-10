@@ -2,7 +2,7 @@
 // +build !windows
 
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -69,7 +69,8 @@ func (cp *common) osSkip(path string, d fs.DirEntry) bool {
 	}
 
 	iData := inodeData{
-		iStat.Dev, iStat.Ino,
+		Dev: uint64(iStat.Dev),
+		Ino: uint64(iStat.Ino),
 	}
 
 	_, ok = cp.files[iData]

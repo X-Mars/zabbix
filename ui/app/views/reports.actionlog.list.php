@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,7 +20,6 @@
  */
 
 $this->addJsFile('gtlc.js');
-$this->addJsFile('class.calendar.js');
 
 $this->includeJsFile('reports.actionlog.list.js.php');
 
@@ -144,11 +143,13 @@ foreach ($data['alerts'] as $alert) {
 			: (new CSpan(_('Executed')))->addClass(ZBX_STYLE_GREEN);
 	}
 	elseif ($alert['status'] == ALERT_STATUS_NOT_SENT || $alert['status'] == ALERT_STATUS_NEW) {
-		$status = (new CSpan([
-			_('In progress').':',
-			BR(),
-			_n('%1$s retry left', '%1$s retries left', $mediatype['maxattempts'] - $alert['retries'])
-		]))->addClass(ZBX_STYLE_YELLOW);
+		$status = $alert['alerttype'] == ALERT_TYPE_MESSAGE
+			? (new CSpan([
+				_('In progress').':',
+				BR(),
+				_n('%1$s retry left', '%1$s retries left', $mediatype['maxattempts'] - $alert['retries'])
+			]))->addClass(ZBX_STYLE_YELLOW)
+			: (new CSpan(_('In progress')))->addClass(ZBX_STYLE_YELLOW);
 	}
 	else {
 		$status = (new CSpan(_('Failed')))->addClass(ZBX_STYLE_RED);
@@ -161,12 +162,14 @@ foreach ($data['alerts'] as $alert) {
 
 	$actionlog_list->addRow([
 		zbx_date2str(DATE_TIME_FORMAT_SECONDS, $alert['clock']),
-		$data['actions'][$alert['actionid']]['name'],
-		$mediatype ? $mediatype['name'] : '',
+		(new CCol($data['actions'][$alert['actionid']]['name']))->addClass(ZBX_STYLE_WORDBREAK),
+		$mediatype ? (new CCol($mediatype['name']))->addClass(ZBX_STYLE_WORDBREAK) : '',
 		array_key_exists('userid', $alert) && $alert['userid']
-			? makeEventDetailsTableUser($alert + ['action_type' => ZBX_EVENT_HISTORY_ALERT], $data['users'])
-			: zbx_nl2br($alert['sendto']),
-		$message,
+			? (new CCol(
+				makeEventDetailsTableUser($alert + ['action_type' => ZBX_EVENT_HISTORY_ALERT], $data['users'])
+			))->addClass(ZBX_STYLE_WORDBREAK)
+			: (new CCol(zbx_nl2br($alert['sendto'])))->addClass(ZBX_STYLE_WORDBREAK),
+		(new CCol($message))->addClass(ZBX_STYLE_WORDBREAK),
 		$status,
 		makeInformationList($info_icons)
 	]);

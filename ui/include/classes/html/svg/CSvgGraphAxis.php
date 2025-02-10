@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -175,8 +175,8 @@ class CSvgGraphAxis extends CSvgGroup {
 		else {
 			$axis = 'y';
 			$x = ($this->type == GRAPH_YAXIS_SIDE_RIGHT)
-				? CSvgGraph::SVG_GRAPH_Y_AXIS_RIGHT_LABEL_MARGIN
-				: $this->width - CSvgGraph::SVG_GRAPH_Y_AXIS_LEFT_LABEL_MARGIN;
+				? CSvgGraph::SVG_GRAPH_Y_AXIS_LABEL_MARGIN_INNER
+				: $this->width - CSvgGraph::SVG_GRAPH_Y_AXIS_LABEL_MARGIN_INNER;
 		}
 
 		foreach ($this->labels as $pos => $label) {

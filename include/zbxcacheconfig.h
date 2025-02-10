@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,7 +23,6 @@
 #include "zbxvault.h"
 #include "zbxregexp.h"
 #include "zbxtagfilter.h"
-#include "zbxautoreg.h"
 #include "zbxpgservice.h"
 #include "zbxalgo.h"
 
@@ -199,7 +198,7 @@ typedef struct
 	char			ssl_cert_file_orig[ZBX_ITEM_SSL_CERT_FILE_LEN_MAX], *ssl_cert_file;
 	char			ssl_key_file_orig[ZBX_ITEM_SSL_KEY_FILE_LEN_MAX], *ssl_key_file;
 	char			ssl_key_password_orig[ZBX_ITEM_SSL_KEY_PASSWORD_LEN_MAX], *ssl_key_password;
-	char			*script_params;
+	zbx_vector_ptr_pair_t 	script_params;
 	char			*error;
 	unsigned char		*formula_bin;
 	int			snmp_max_repetitions;
@@ -475,6 +474,7 @@ typedef struct
 	char		*default_timezone;
 	int		auditlog_enabled;
 	int		auditlog_mode;
+	int		proxy_secrets_provider;
 
 	/* database configuration data for ZBX_CONFIG_DB_EXTENSION_* extensions */
 	zbx_config_db_t	db;
@@ -494,6 +494,7 @@ zbx_config_t;
 #define ZBX_CONFIG_FLAGS_DEFAULT_TIMEZONE		__UINT64_C(0x0000000000000100)
 #define ZBX_CONFIG_FLAGS_AUDITLOG_ENABLED		__UINT64_C(0x0000000000000200)
 #define ZBX_CONFIG_FLAGS_AUDITLOG_MODE			__UINT64_C(0x0000000000000400)
+#define ZBX_CONFIG_FLAGS_PROXY_SECRETS_PROVIDER		__UINT64_C(0x0000000000000800)
 
 typedef struct
 {
@@ -787,6 +788,37 @@ void	zbx_dc_config_get_triggers_by_triggerids(zbx_dc_trigger_t *triggers, const 
 		int *errcode, size_t num);
 void	zbx_dc_config_clean_items(zbx_dc_item_t *items, int *errcodes, size_t num);
 int	zbx_dc_get_host_by_hostid(zbx_dc_host_t *host, zbx_uint64_t hostid);
+
+#define ZBX_DC_REQUEST_HOST_ID			101
+#define ZBX_DC_REQUEST_HOST_HOST		102
+#define ZBX_DC_REQUEST_HOST_NAME		103
+
+int	zbx_dc_get_host_value(zbx_uint64_t itemid, char **replace_to, int request);
+
+/* zbx_dc_get_history_log_value() */
+#define ZBX_DC_REQUEST_ITEM_LOG_DATE		201
+#define ZBX_DC_REQUEST_ITEM_LOG_TIME		202
+#define ZBX_DC_REQUEST_ITEM_LOG_AGE		203
+#define ZBX_DC_REQUEST_ITEM_LOG_SOURCE		204
+#define ZBX_DC_REQUEST_ITEM_LOG_SEVERITY	205
+#define ZBX_DC_REQUEST_ITEM_LOG_NSEVERITY	206
+#define ZBX_DC_REQUEST_ITEM_LOG_EVENTID		207
+#define ZBX_DC_REQUEST_ITEM_LOG_TIMESTAMP	208
+
+typedef enum
+{
+	ZBX_VALUE_PROPERTY_VALUE,
+	ZBX_VALUE_PROPERTY_TIME,
+	ZBX_VALUE_PROPERTY_DATE,
+	ZBX_VALUE_PROPERTY_AGE,
+	ZBX_VALUE_PROPERTY_TIMESTAMP
+}
+zbx_expr_db_item_value_property_t;
+
+int	zbx_dc_get_history_log_value(zbx_uint64_t itemid, char **replace_to, int request, int clock, int ns,
+		const char *tz);
+
+int	zbx_dc_get_host_host(zbx_uint64_t itemid, char **replace_to);
 void	zbx_dc_config_get_hosts_by_itemids(zbx_dc_host_t *hosts, const zbx_uint64_t *itemids, int *errcodes, size_t num);
 void	zbx_dc_config_get_hosts_by_hostids(zbx_dc_host_t *hosts, const zbx_uint64_t *hostids, int *errcodes, int num);
 void	zbx_dc_config_get_items_by_keys(zbx_dc_item_t *items, zbx_host_key_t *keys, int *errcodes, size_t num);
@@ -864,6 +896,15 @@ void	zbx_dc_config_update_interface_snmp_stats(zbx_uint64_t interfaceid, int max
 int	zbx_dc_config_get_suggested_snmp_vars(zbx_uint64_t interfaceid, int *bulk);
 int	zbx_dc_config_get_interface_by_type(zbx_dc_interface_t *interface, zbx_uint64_t hostid, unsigned char type);
 int	zbx_dc_config_get_interface(zbx_dc_interface_t *interface, zbx_uint64_t hostid, zbx_uint64_t itemid);
+
+#define ZBX_DC_REQUEST_HOST_IP			1
+#define ZBX_DC_REQUEST_HOST_DNS			2
+#define ZBX_DC_REQUEST_HOST_CONN		3
+#define ZBX_DC_REQUEST_HOST_PORT		4
+
+int	zbx_dc_get_interface_value(zbx_uint64_t hostid, zbx_uint64_t itemid, char **replace_to, int request);
+int	zbx_dc_get_interface_value_itemid(zbx_uint64_t itemid, char **replace_to, int request);
+
 int	zbx_dc_config_get_poller_nextcheck(unsigned char poller_type);
 int	zbx_dc_config_get_poller_items(unsigned char poller_type, int config_timeout, int processing,
 		int config_max_concurrent_checks, zbx_dc_item_t **items);
@@ -876,7 +917,7 @@ size_t	zbx_dc_config_get_snmp_items_by_interfaceid(zbx_uint64_t interfaceid, zbx
 
 void	zbx_dc_config_update_autoreg_host(const char *host, const char *listen_ip, const char *listen_dns,
 		unsigned short listen_port, const char *host_metadata, zbx_conn_flags_t flags, int now);
-void	zbx_dc_config_delete_autoreg_host(const zbx_vector_autoreg_host_ptr_t *autoreg_hosts);
+void	zbx_dc_config_delete_autoreg_host(const zbx_vector_str_t *autoreg_hosts);
 
 #define ZBX_HK_OPTION_DISABLED		0
 #define ZBX_HK_OPTION_ENABLED		1
@@ -904,6 +945,10 @@ void	zbx_dc_config_items_apply_changes(const zbx_vector_item_diff_ptr_t *item_di
 
 void	zbx_dc_config_update_inventory_values(const zbx_vector_inventory_value_ptr_t *inventory_values);
 int	zbx_dc_get_host_inventory_value_by_itemid(zbx_uint64_t itemid, char **replace_to, int value_idx);
+int	zbx_dc_get_host_inventory_by_itemid(const char *macro, zbx_uint64_t itemid, char **replace_to);
+int	zbx_dc_get_host_inventory(const char *macro, const zbx_db_trigger *trigger, char **replace_to,
+		int N_functionid);
+int	zbx_dc_get_host_inventory_by_hostid(const char *macro, zbx_uint64_t hostid, char **replace_to);
 int	zbx_dc_get_host_inventory_value_by_hostid(zbx_uint64_t hostid, char **replace_to, int value_idx);
 
 #define ZBX_CONFSTATS_BUFFER_TOTAL	1
@@ -922,10 +967,11 @@ int	zbx_dc_config_get_proxypoller_nextcheck(void);
 #define ZBX_PROXY_TASKS_NEXTCHECK	0x04
 void	zbx_dc_requeue_proxy(zbx_uint64_t proxyid, unsigned char update_nextcheck, int proxy_conn_err,
 		int proxyconfig_frequency, int proxydata_frequency);
-int	zbx_dc_check_host_permissions(const char *host, const zbx_socket_t *sock, zbx_uint64_t *hostid,
-		zbx_uint64_t *revision, zbx_comms_redirect_t *redirect, char **error);
+int	zbx_dc_check_host_conn_permissions(const char *host, const zbx_socket_t *sock, zbx_uint64_t *hostid,
+		unsigned char *status, unsigned char *monitored_by, zbx_uint64_t *revision,
+		zbx_comms_redirect_t *redirect, char **error);
 int	zbx_dc_is_autoreg_host_changed(const char *host, unsigned short port, const char *host_metadata,
-		zbx_conn_flags_t flag, const char *interface, int now, int heartbeat);
+		zbx_conn_flags_t flag, const char *interface, int now);
 
 #if defined(HAVE_GNUTLS) || defined(HAVE_OPENSSL)
 size_t	zbx_dc_get_psk_by_identity(const unsigned char *psk_identity, unsigned char *psk_buf, unsigned int *psk_usage);
@@ -992,6 +1038,10 @@ unsigned int	zbx_dc_get_auto_registration_action_count(void);
 
 /* global configuration support */
 #define ZBX_DISCOVERY_GROUPID_UNDEFINED	0
+
+#define ZBX_PROXY_SECRETS_PROVIDER_SERVER	0
+#define ZBX_PROXY_SECRETS_PROVIDER_PROXY	1
+
 void	zbx_config_get(zbx_config_t *cfg, zbx_uint64_t flags);
 void	zbx_config_clean(zbx_config_t *cfg);
 void	zbx_config_get_hk_mode(unsigned char *history_mode, unsigned char *trends_mode);
@@ -1160,22 +1210,6 @@ int	zbx_dc_maintenance_check_immediate_update(void);
 
 int	zbx_dc_maintenance_has_tags(void);
 
-typedef struct
-{
-	char	*lld_macro;
-	char	*path;
-}
-zbx_lld_macro_path_t;
-
-ZBX_PTR_VECTOR_DECL(lld_macro_path_ptr, zbx_lld_macro_path_t *)
-
-int	zbx_lld_macro_paths_get(zbx_uint64_t lld_ruleid, zbx_vector_lld_macro_path_ptr_t *lld_macro_paths,
-		char **error);
-void	zbx_lld_macro_path_free(zbx_lld_macro_path_t *lld_macro_path);
-int	zbx_lld_macro_value_by_name(const struct zbx_json_parse *jp_row,
-		const zbx_vector_lld_macro_path_ptr_t *lld_macro_paths, const char *macro, char **value);
-int	zbx_lld_macro_paths_compare(const void *d1, const void *d2);
-
 void	zbx_dc_get_item_tags(zbx_uint64_t itemid, zbx_vector_item_tag_t *item_tags);
 void	zbx_get_item_tags(zbx_uint64_t itemid, zbx_vector_item_tag_t *item_tags);
 
@@ -1226,6 +1260,7 @@ void	zbx_dc_get_user_macro(const zbx_dc_um_handle_t *um_handle, const char *macr
 
 int	zbx_dc_expand_user_and_func_macros(const zbx_dc_um_handle_t *um_handle, char **text,
 		const zbx_uint64_t *hostids, int hostids_num, char **error);
+int	zbx_dc_expand_user_and_func_macros_itemid(zbx_uint64_t itemid, char **replace_to);
 int	zbx_dc_expand_user_and_func_macros_from_cache(zbx_um_cache_t *um_cache, char **text,
 		const zbx_uint64_t *hostids, int hostids_num, unsigned char env, char **error);
 
@@ -1282,6 +1317,8 @@ int	zbx_dc_get_proxy_name_type_by_id(zbx_uint64_t proxyid, int *status, char **n
 #define ZBX_SERVER_ICMPPINGSEC_KEY	"icmppingsec"
 /* special item key used for ICMP ping loss packages */
 #define ZBX_SERVER_ICMPPINGLOSS_KEY	"icmppingloss"
+/* special item key used for ICMP pings with retry options */
+#define ZBX_SERVER_ICMPPINGRETRY_KEY	"icmppingretry"
 
 void	zbx_dc_drules_get(time_t now, zbx_vector_dc_drule_ptr_t *drules, time_t *nextcheck);
 void	zbx_dc_drule_queue(time_t now, zbx_uint64_t druleid, int delay);
@@ -1505,5 +1542,10 @@ void	zbx_dc_set_proxy_failover_delay(const char *failover_delay);
 void	zbx_dc_set_proxy_lastonline(int lastonline);
 zbx_uint64_t	zbx_dc_get_proxy_group_revision(zbx_uint64_t proxy_groupid);
 zbx_uint64_t	zbx_dc_get_proxy_groupid(zbx_uint64_t proxyid);
+
+void	zbx_dc_set_itservices_num(int num);
+int	zbx_dc_get_itservices_num(void);
+
+int	zbx_dc_get_proxy_version(zbx_uint64_t proxyid);
 
 #endif

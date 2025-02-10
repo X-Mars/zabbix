@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -27,17 +27,18 @@
 <script>
 	const view = new class {
 
-		init({context, confirm_messages, field_switches, form_name, hostids, token}) {
+		init({context, confirm_messages, field_switches, form_name, hostid, token}) {
 			this.confirm_messages = confirm_messages;
 			this.token = token;
 			this.context = context;
-			this.hostids = hostids;
+			this.hostid = hostid;
 
 			this.form = document.forms[form_name];
 			this.filter_form = document.querySelector('form[name="zbx_filter"]');
 
 			this.initForm(field_switches);
 			this.initEvents();
+			this.#initPopupListeners();
 		}
 
 		initForm(field_switches) {
@@ -83,14 +84,12 @@
 					});
 				}
 			});
-			this.form.addEventListener('click', (e) => {
+
+			this.form.addEventListener('click', e => {
 				const target = e.target;
 				const itemids = Object.keys(chkbxRange.getSelectedIds());
 
-				if (target.classList.contains('js-update-item')) {
-					this.#edit(target, {itemid: target.dataset.itemid, context: this.context});
-				}
-				else if (target.classList.contains('js-enable-item')) {
+				if (target.classList.contains('js-enable-item')) {
 					this.#enable(null, {itemids: [target.dataset.itemid], context: this.context});
 				}
 				else if (target.classList.contains('js-disable-item')) {
@@ -118,32 +117,10 @@
 					this.#delete(target, {itemids: itemids, context: this.context});
 				}
 			});
-			document.addEventListener('click', e => {
-				const target = e.target;
 
-				if (target.classList.contains('js-create-item')) {
-					this.#edit(target, target.dataset);
-				}
-				else if (target.classList.contains('js-trigger-edit')) {
-					this.editTrigger(target.dataset);
-				}
+			document.querySelector('.js-create-item')?.addEventListener('click', () => {
+				ZABBIX.PopupManager.open('item.edit', {hostid: this.hostid, context: this.context});
 			});
-		}
-
-		editItem(target, data) {
-			this.#edit(target, data);
-		}
-
-		editTrigger(trigger_data) {
-			clearMessages();
-
-			const overlay = PopUp('trigger.edit', trigger_data, {
-				dialogueid: 'trigger-edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
 		}
 
 		executeNow(target, data) {
@@ -151,57 +128,6 @@
 
 			curl.setArgument('action', 'item.execute');
 			this.#post(curl, data);
-		}
-
-		editHost(e, hostid) {
-			e.preventDefault();
-			const host_data = {hostid};
-
-			this.openHostPopup(host_data);
-		}
-
-		editTemplate(e, templateid) {
-			e.preventDefault();
-			const template_data = {templateid};
-
-			this.openTemplatePopup(template_data);
-		}
-
-		openHostPopup(host_data) {
-			let original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', e => {
-				history.replaceState({}, '', original_url);
-				this.elementSuccess(e);
-			}, {once: true});
-
-			overlay.$dialogue[0].addEventListener('dialogue.close', e => history.replaceState({}, '', original_url));
-		}
-
-		openTemplatePopup(template_data) {
-			const overlay =  PopUp('template.edit', template_data, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
-		}
-
-		#edit(target, parameters = {}) {
-			const overlay = PopUp('item.edit', parameters, {
-				dialogueid: 'item-edit',
-				dialogue_class: 'modal-popup-large',
-				trigger_element: target,
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
 		}
 
 		#enable(target, parameters) {
@@ -304,6 +230,38 @@
 
 					addMessage(message_box);
 				});
+		}
+
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, descriptor, event}) => {
+					if ('error' in data.submit) {
+						if ('title' in data.submit.error) {
+							postMessageError(data.submit.error.title);
+						}
+
+						postMessageDetails('error', data.submit.error.messages);
+					}
+					else {
+						chkbxRange.clearSelectedOnFilterChange();
+					}
+
+					// If host or template was deleted while being in item list, redirect to item list.
+					if (descriptor.action !== 'item.delete' && data.submit.success.action === 'delete') {
+						const url = new URL('zabbix.php', location.href);
+
+						url.searchParams.set('action', 'item.list');
+						url.searchParams.set('context', this.context);
+						url.searchParams.set('filter_set', 1);
+
+						event.setRedirectUrl(url.href);
+					}
+				}
+			});
 		}
 
 		elementSuccess(e) {

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -180,6 +180,7 @@ switch ($data['popup_type']) {
 	case 'hosts':
 	case 'template_groups':
 	case 'host_groups':
+	case 'host_inventory':
 	case 'proxies':
 	case 'proxy_groups':
 	case 'host_templates':
@@ -883,6 +884,7 @@ $types = [
 	'hosts',
 	'host_templates',
 	'host_groups',
+	'host_inventory',
 	'template_groups',
 	'items',
 	'item_prototypes',

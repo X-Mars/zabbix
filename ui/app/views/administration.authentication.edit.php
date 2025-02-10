@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,7 +19,6 @@
  * @var array $data
  */
 
-$this->addJsFile('class.form.fieldset.collapsible.js');
 $this->includeJsFile('administration.authentication.edit.js.php');
 
 $form = (new CForm())
@@ -176,7 +175,7 @@ $ldap_tab = (new CFormGrid())
 							new CColHeader(_('Host')),
 							(new CColHeader(_('User groups')))->addClass(ZBX_STYLE_NOWRAP),
 							_('Default'),
-							''
+							_('Action')
 						]))->addClass(ZBX_STYLE_GREY)
 					)
 					->addItem(
@@ -470,7 +469,10 @@ $saml_tab = (new CFormGrid())
 					->addClass($saml_auth_enabled ? null : ZBX_STYLE_DISABLED)
 					->setHeader(
 						(new CRowHeader([
-							_('Name '), _('Media type'), _('Attribute'), ''
+							_('Name'),
+							_('Media type'),
+							_('Attribute'),
+							(new CColHeader(_('Action')))->setWidth('12%')
 						]))->addClass(ZBX_STYLE_GREY)
 					)
 					->addItem(

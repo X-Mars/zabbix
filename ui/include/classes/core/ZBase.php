@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -430,10 +430,6 @@ class ZBase {
 	 * Vault provider initialisation if it exists in configuration file.
 	 */
 	protected function initVault(): void {
-		if (!array_key_exists('VAULT', $this->config['DB'])) {
-			return;
-		}
-
 		switch ($this->config['DB']['VAULT']) {
 			case CVaultCyberArk::NAME:
 				$this->vault = new CVaultCyberArk($this->config['DB']['VAULT_URL'], $this->config['DB']['VAULT_PREFIX'],
@@ -469,7 +465,7 @@ class ZBase {
 				$db_credentials = $this->vault->getCredentials();
 
 				if ($db_credentials === null) {
-					throw new DBException(_('Unable to load database credentials from Vault.'));
+					throw new DBException(_('Unable to load database credentials from Vault.'), DB::INIT_ERROR);
 				}
 
 				['user' => $db_user, 'password' => $db_password] = $db_credentials;
@@ -494,7 +490,7 @@ class ZBase {
 		if (!DBconnect($error)) {
 			CDataCacheHelper::clearValues(['db_user', 'db_password']);
 
-			throw new DBException($error);
+			throw new DBException($error, DB::INIT_ERROR);
 		}
 	}
 
@@ -546,9 +542,20 @@ class ZBase {
 	 */
 	protected function authenticateUser(): void {
 		$session = new CEncryptedCookieSession();
+		$sessionid = $session->extractSessionId() ?: '';
 
-		if (!CWebUser::checkAuthentication($session->extractSessionId() ?: '')) {
+		API::getWrapper()->auth = [
+			'type' => CJsonRpc::AUTH_TYPE_COOKIE,
+			'auth' => $sessionid
+		];
+
+		if (!CWebUser::checkAuthentication($sessionid)) {
 			CWebUser::setDefault();
+
+			API::getWrapper()->auth = [
+				'type' => CJsonRpc::AUTH_TYPE_COOKIE,
+				'auth' => CWebUser::$data['sessionid']
+			];
 		}
 
 		$this->initLocales(CWebUser::$data['lang']);
@@ -558,12 +565,6 @@ class ZBase {
 		}
 
 		CSessionHelper::set('sessionid', CWebUser::$data['sessionid']);
-
-		// Set the authentication token for the API.
-		API::getWrapper()->auth = [
-			'type' => CJsonRpc::AUTH_TYPE_COOKIE,
-			'auth' => CWebUser::$data['sessionid']
-		];
 
 		if (CWebUser::isAutologinEnabled()) {
 			$session->lifetime = time() + SEC_PER_MONTH;

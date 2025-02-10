@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -88,8 +88,6 @@ class CItem extends CItemGeneral {
 	 * @return array|int item data as array or false if error
 	 */
 	public function get($options = []) {
-		$result = [];
-
 		$sqlParts = [
 			'select'	=> ['items' => 'i.itemid'],
 			'from'		=> ['items' => 'items i'],
@@ -409,43 +407,50 @@ class CItem extends CItemGeneral {
 
 		$sqlParts = $this->applyQueryOutputOptions($this->tableName(), $this->tableAlias(), $options, $sqlParts);
 		$sqlParts = $this->applyQuerySortOptions($this->tableName(), $this->tableAlias(), $options, $sqlParts);
-		$res = DBselect(self::createSelectQueryFromParts($sqlParts), $sqlParts['limit']);
-		while ($item = DBfetch($res)) {
-			// Items share table with item prototypes. Therefore remove item unrelated fields.
-			unset($item['discover']);
-
-			if (!$options['countOutput']) {
-				$result[$item['itemid']] = $item;
-				continue;
-			}
-
-			if ($options['groupCount']) {
-				$result[] = $item;
-			}
-			else {
-				$result = $item['rowscount'];
-			}
-		}
+		$resource = DBselect(self::createSelectQueryFromParts($sqlParts), $sqlParts['limit']);
 
 		if ($options['countOutput']) {
-			return $result;
+			if ($options['groupCount']) {
+				$result = [];
+
+				while ($item = DBfetch($resource)) {
+					$result[] = $item;
+				}
+
+				return $result;
+			}
+
+			return DBfetch($resource)['rowscount'];
 		}
 
-		if ($result) {
-			self::prepareItemsForApi($result, false);
+		$items = [];
+		$items_chunk = [];
 
-			$result = $this->addRelatedObjects($options, $result);
-			$result = $this->unsetExtraFields($result, ['hostid', 'interfaceid', 'value_type', 'valuemapid'],
-				$options['output']
-			);
-		}
+		do {
+			while ($item = DBfetch($resource)) {
+				$items_chunk[$item['itemid']] = $item;
+
+				if (count($items_chunk) == CItemGeneral::CHUNK_SIZE) {
+					break;
+				}
+			}
+
+			if (!$items_chunk) {
+				break;
+			}
+
+			$this->prepareChunkObjects($items_chunk, $options);
+
+			$items += $items_chunk;
+			$items_chunk = [];
+		} while ($item !== false);
 
 		// removing keys (hash -> array)
 		if (!$options['preservekeys']) {
-			$result = zbx_cleanHashes($result);
+			$items = array_values($items);
 		}
 
-		return $result;
+		return $items;
 	}
 
 	/**
@@ -465,6 +470,22 @@ class CItem extends CItemGeneral {
 		if (!CApiInputValidator::validate($api_input_rules, $options_filter, '/', $error)) {
 			self::exception(ZBX_API_ERROR_PARAMETERS, $error);
 		}
+	}
+
+	private function prepareChunkObjects(array &$items, array $options): void {
+		$items = $this->addRelatedObjects($options, $items);
+		$items = $this->unsetExtraFields($items, ['hostid', 'interfaceid', 'value_type', 'valuemapid'],
+			$options['output']
+		);
+		$items = $this->unsetExtraFields($items, ['name_upper']);
+
+		self::prepareItemsForApi($items, false);
+
+		foreach ($items as &$item) {
+			// Items share table with item prototypes. Therefore remove item unrelated fields.
+			unset($item['discover']);
+		}
+		unset($item);
 	}
 
 	/**
@@ -1005,7 +1026,7 @@ class CItem extends CItemGeneral {
 	/**
 	 * @inheritDoc
 	 */
-	protected static function inherit(array $items, array $db_items = [], array $hostids = null,
+	protected static function inherit(array $items, array $db_items = [], ?array $hostids = null,
 			bool $is_dep_items = false): void {
 		$tpl_links = self::getTemplateLinks($items, $hostids);
 
@@ -1349,7 +1370,7 @@ class CItem extends CItemGeneral {
 	 * @param array      $templateids
 	 * @param array|null $hostids
 	 */
-	public static function unlinkTemplateObjects(array $templateids, array $hostids = null): void {
+	public static function unlinkTemplateObjects(array $templateids, ?array $hostids = null): void {
 		$hostids_condition = $hostids ? ' AND '.dbConditionId('ii.hostid', $hostids) : '';
 
 		$result = DBselect(
@@ -1413,7 +1434,7 @@ class CItem extends CItemGeneral {
 	 * @param array      $templateids
 	 * @param array|null $hostids
 	 */
-	public static function clearTemplateObjects(array $templateids, array $hostids = null): void {
+	public static function clearTemplateObjects(array $templateids, ?array $hostids = null): void {
 		$hostids_condition = $hostids ? ' AND '.dbConditionId('ii.hostid', $hostids) : '';
 
 		$db_items = DBfetchArrayAssoc(DBselect(
@@ -1923,8 +1944,8 @@ class CItem extends CItemGeneral {
 	 * @param array|null $db_lld_rules
 	 * @param array|null $db_item_prototypes
 	 */
-	protected static function addDependentItems(array &$db_items, array &$db_lld_rules = null,
-			array &$db_item_prototypes = null): void {
+	protected static function addDependentItems(array &$db_items, ?array &$db_lld_rules = null,
+			?array &$db_item_prototypes = null): void {
 		$db_lld_rules = [];
 		$db_item_prototypes = [];
 

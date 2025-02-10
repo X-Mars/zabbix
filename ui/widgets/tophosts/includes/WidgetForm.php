@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -16,6 +16,8 @@
 
 namespace Widgets\TopHosts\Includes;
 
+use Widgets\TopHosts\Widget;
+
 use Zabbix\Widgets\{
 	CWidgetField,
 	CWidgetForm
@@ -23,7 +25,6 @@ use Zabbix\Widgets\{
 
 use Zabbix\Widgets\Fields\{
 	CWidgetFieldCheckBox,
-	CWidgetFieldColumnsList,
 	CWidgetFieldIntegerBox,
 	CWidgetFieldMultiSelectGroup,
 	CWidgetFieldMultiSelectHost,
@@ -33,14 +34,11 @@ use Zabbix\Widgets\Fields\{
 	CWidgetFieldTags
 };
 
-use Widgets\TopHosts\Widget;
-
 /**
  * Top hosts data widget form.
  */
 class WidgetForm extends CWidgetForm {
 
-	private const DEFAULT_HOSTS_COUNT = 10;
 	private const DEFAULT_ORDER_COLUMN = 0;
 
 	private array $field_column_values = [];
@@ -89,6 +87,13 @@ class WidgetForm extends CWidgetForm {
 				switch ($value['data']) {
 					case CWidgetFieldColumnsList::DATA_ITEM_VALUE:
 						$this->field_column_values[$key] = $value['name'] === '' ? $value['item'] : $value['name'];
+
+						if (array_key_exists('display', $value)
+								&& $value['display'] == CWidgetFieldColumnsList::DISPLAY_SPARKLINE) {
+							$values['columns'][$key]['sparkline'] = array_key_exists('sparkline', $value)
+								? array_replace(CWidgetFieldColumnsList::SPARKLINE_DEFAULT, $value['sparkline'])
+								: CWidgetFieldColumnsList::SPARKLINE_DEFAULT;
+						}
 						break;
 
 					case CWidgetFieldColumnsList::DATA_HOST_NAME:
@@ -154,7 +159,7 @@ class WidgetForm extends CWidgetForm {
 				: (new CWidgetFieldIntegerBox('show_lines', _('Host limit'), ZBX_MIN_WIDGET_LINES,
 					ZBX_MAX_WIDGET_LINES
 				))
-					->setDefault(self::DEFAULT_HOSTS_COUNT)
+					->setDefault(10)
 					->setFlags(CWidgetField::FLAG_LABEL_ASTERISK)
 			)
 			->addField(

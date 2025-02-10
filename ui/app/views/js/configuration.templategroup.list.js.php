@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,65 +20,22 @@
 ?>
 
 <script>
-	const view = {
-		delete_url: null,
-
+	const view = new class {
 		init({delete_url}) {
 			this.delete_url = delete_url;
 
+			document.querySelector('.js-create-templategroup').addEventListener('click', () => {
+				ZABBIX.PopupManager.open('templategroup.edit');
+			});
+
 			document.addEventListener('click', (e) => {
-				if (e.target.classList.contains('js-create-templategroup')) {
-					this.edit();
-				}
-				else if (e.target.classList.contains('js-edit-templategroup')) {
-					e.preventDefault();
-					this.edit({groupid: e.target.dataset.groupid});
-				}
-				else if (e.target.classList.contains('js-massdelete-templategroup')) {
+				if (e.target.classList.contains('js-massdelete-templategroup')) {
 					this.delete(e.target, Object.keys(chkbxRange.getSelectedIds()));
 				}
-				else if (e.target.classList.contains('js-edit-template')) {
-					this.editTemplate({templateid: e.target.dataset.templateid})
-				}
-			});
-		},
-
-		editTemplate(parameters) {
-			const overlay = PopUp('template.edit', parameters, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
 			});
 
-			overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => {
-				uncheckTableRows('templategroup');
-				postMessageOk(e.detail.title);
-
-				if ('success' in e.detail) {
-					postMessageOk(e.detail.success.title);
-
-					if ('messages' in e.detail.success) {
-						postMessageDetails('success', e.detail.success.messages);
-					}
-				}
-
-				location.href = location.href;
-			});
-		},
-
-		edit(parameters = {}) {
-			const original_url = location.href;
-			const overlay = PopUp('popup.templategroup.edit', parameters, {
-				dialogueid: 'templategroup_edit',
-				dialogue_class: 'modal-popup-static',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => this._reload(e.detail));
-			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-				history.replaceState({}, '', original_url);
-			}, {once: true});
-		},
+			this.#initPopupListeners();
+		}
 
 		delete(target, groupids) {
 			const confirmation = groupids.length > 1
@@ -89,10 +46,10 @@
 				return;
 			}
 
-			this._post(target, groupids, this.delete_url);
-		},
+			this.#post(target, groupids, this.delete_url);
+		}
 
-		_post(target, groupids, url) {
+		#post(target, groupids, url) {
 			target.classList.add('is-loading');
 
 			return fetch(url, {
@@ -134,17 +91,16 @@
 				.finally(() => {
 					target.classList.remove('is-loading');
 				});
-		},
+		}
 
-		_reload(success) {
-			postMessageOk(success.title);
-
-			if ('messages' in success) {
-				postMessageDetails('success', success.messages);
-			}
-
-			uncheckTableRows('templategroup');
-			location.href = location.href;
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: () => uncheckTableRows('templategroup')
+			});
 		}
 	}
 </script>

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -73,6 +73,7 @@ class testBrowserMonitoring extends CIntegrationTest {
 		return [
 			self::COMPONENT_SERVER => [
 				'LogFileSize' => 0,
+				'DebugLevel' => 4,
 				'WebDriverURL' => PHPUNIT_DRIVER_ADDRESS
 			]
 		];
@@ -93,23 +94,26 @@ class testBrowserMonitoring extends CIntegrationTest {
 			]
 		]);
 
+		$this->reloadConfigurationCache();
+
 		$response = $this->callUntilDataIsPresent('history.get', [
 			'history' => ITEM_VALUE_TYPE_TEXT,
 			'output' => 'extend',
 			'itemids' => [self::$itemid]
 		], 30, 2);
-		$this->assertArrayHasKey(0, $response['result']);
-		$this->assertArrayHasKey('value', $response['result'][0]);
+
+		$this->assertArrayHasKey(0, $response['result'], json_encode($response['result']));
+		$this->assertArrayHasKey('value', $response['result'][0], json_encode($response['result']));
 
 		$result = json_decode($response['result'][0]['value'], true);
 
-		$this->assertArrayHasKey('performance_data', $result);
-		$this->assertArrayHasKey('details', $result['performance_data']);
-		$this->assertArrayHasKey('summary', $result['performance_data']);
-		$this->assertArrayHasKey('navigation', $result['performance_data']['summary']);
-		$this->assertArrayHasKey('resource', $result['performance_data']['summary']);
-		$this->assertArrayHasKey('marks', $result['performance_data']);
-		$this->assertArrayNotHasKey('error', $result['performance_data']);
+		$this->assertArrayHasKey('performance_data', $result, json_encode($result));
+		$this->assertArrayHasKey('details', $result['performance_data'], json_encode($result));
+		$this->assertArrayHasKey('summary', $result['performance_data'], json_encode($result));
+		$this->assertArrayHasKey('navigation', $result['performance_data']['summary'], json_encode($result));
+		$this->assertArrayHasKey('resource', $result['performance_data']['summary'], json_encode($result));
+		$this->assertArrayHasKey('marks', $result['performance_data'], json_encode($result));
+		$this->assertArrayNotHasKey('error', $result['performance_data'], json_encode($result));
 
 		return true;
 	}

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,7 +22,7 @@
 window.mediatype_edit_popup = new class {
 
 	init({mediatype, message_templates, smtp_server_default, smtp_email_default}) {
-		this.overlay = overlays_stack.getById('media-type-form');
+		this.overlay = overlays_stack.getById('mediatype.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 		this.mediatypeid = mediatype.mediatypeid;
@@ -32,6 +32,10 @@ window.mediatype_edit_popup = new class {
 		this.message_templates = Object.fromEntries(message_templates.map((obj, index) => [index, { ...obj }]));
 		this.smtp_server_default = smtp_server_default;
 		this.smtp_email_default = smtp_email_default;
+
+		const return_url = new URL('zabbix.php', location.href);
+		return_url.searchParams.set('action', 'mediatype.list');
+		ZABBIX.PopupManager.setReturnUrl(return_url.href);
 
 		this.#loadView(mediatype);
 		this.#initActions();
@@ -115,7 +119,7 @@ window.mediatype_edit_popup = new class {
 		this.#post(curl.getUrl(), {mediatypeids: [this.mediatypeid]}, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 
@@ -169,7 +173,7 @@ window.mediatype_edit_popup = new class {
 		this.#post(curl.getUrl(), fields, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 

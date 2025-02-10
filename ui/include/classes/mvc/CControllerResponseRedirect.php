@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,6 +24,10 @@ class CControllerResponseRedirect extends CControllerResponse {
 	public function __construct($location) {
 		if ($location instanceof CUrl) {
 			$location = $location->getUrl();
+		}
+
+		if (!CHtmlUrlValidator::validateSameSite($location)) {
+			throw new CAccessDeniedException();
 		}
 
 		$this->location = $location;

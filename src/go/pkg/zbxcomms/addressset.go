@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,7 +23,7 @@ type AddressSet interface {
 	String() string
 
 	// next cycles the address set by selecting next address
-	next()
+	Next()
 	// reset cyckles addresses if the current is redirected
 	reset()
 	// count returns number of addresses in set

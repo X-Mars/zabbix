@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -143,13 +143,20 @@ if ($data['actions']) {
 				->addClass('js-enable-action')
 				->setAttribute('data-actionid', $action['actionid']);
 
+		$action_url = (new CUrl('zabbix.php'))
+			->setArgument('action', 'popup')
+			->setArgument('popup', 'action.edit')
+			->setArgument('actionid', $action['actionid'])
+			->setArgument('eventsource', $data['eventsource'])
+			->getUrl();
+
 		$action_list->addRow([
 			new CCheckBox('actionids['.$action['actionid'].']', $action['actionid']),
-			(new CLink($action['name']))
-				->addClass('js-action-edit')
-				->setAttribute('data-actionid', $action['actionid']),
-			$conditions,
-			$operations,
+			(new CCol(
+				new CLink($action['name'], $action_url)
+			))->addClass(ZBX_STYLE_WORDBREAK),
+			(new CCol($conditions))->addClass(ZBX_STYLE_WORDBREAK),
+			(new CCol($operations))->addClass(ZBX_STYLE_WORDBREAK),
 			$status
 		]);
 	}
