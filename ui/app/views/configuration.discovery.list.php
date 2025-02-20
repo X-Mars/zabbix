@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -62,14 +62,14 @@ $html_page = (new CHtmlPage())
 		->addVar('action', 'discovery.list')
 	);
 
-$discoveryForm = (new CForm())->setName('druleForm');
+$discovery_form = (new CForm())->setName('druleForm');
 
 // create table
-$discoveryTable = (new CTableInfo())
+$discovery_table = (new CTableInfo())
 	->setHeader([
 		(new CColHeader(
 			(new CCheckBox('all_drules'))
-				->onClick("checkAll('".$discoveryForm->getName()."', 'all_drules', 'druleids');")
+				->onClick("checkAll('".$discovery_form->getName()."', 'all_drules', 'druleids');")
 		))->addClass(ZBX_STYLE_CELL_WIDTH),
 		make_sorting_header(_('Name'), 'name', $data['sort'], $data['sortorder'], (new CUrl('zabbix.php'))
 			->setArgument('action', 'discovery.list')
@@ -102,13 +102,17 @@ foreach ($data['drules'] as $drule) {
 		$drule_icons[] = makeErrorIcon($drule['error']);
 	}
 
-	$discoveryTable->addRow([
+	$drule_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'discovery.edit')
+		->setArgument('druleid', $drule['druleid'])
+		->getUrl();
+
+	$discovery_table->addRow([
 		new CCheckBox('druleids['.$drule['druleid'].']', $drule['druleid']),
-		(new CLink($drule['name']))
-			->addClass('js-discovery-edit')
-			->setAttribute('data-druleid', $drule['druleid']),
+		(new CCol(new CLink($drule['name'], $drule_url)))->addClass(ZBX_STYLE_WORDBREAK),
 		$drule['iprange'],
-		$drule['proxy'],
+		(new CCol($drule['proxy']))->addClass(ZBX_STYLE_WORDBREAK),
 		$drule['delay'],
 		!empty($drule['checks']) ? implode(', ', $drule['checks']) : '',
 		$status,
@@ -116,8 +120,8 @@ foreach ($data['drules'] as $drule) {
 	]);
 }
 
-$discoveryForm->addItem([
-	$discoveryTable,
+$discovery_form->addItem([
+	$discovery_table,
 	new CActionButtonList('action', 'druleids', [
 		'discovery.enable' => [
 			'content' => (new CSimpleButton(_('Enable')))
@@ -141,7 +145,7 @@ $discoveryForm->addItem([
 ]);
 
 $html_page
-	->addItem($discoveryForm)
+	->addItem($discovery_form)
 	->show();
 
 (new CScriptTag('view.init();'))

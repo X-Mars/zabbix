@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -14,7 +14,6 @@
 
 #include "checks_internal.h"
 #include "checks_java.h"
-#include "poller.h"
 
 #include "zbxpoller.h"
 
@@ -175,9 +174,9 @@ static double	get_selfmon_stat(double busy, unsigned char state)
 	return (ZBX_PROCESS_STATE_BUSY == state ? busy : 100.0 - busy);
 }
 
-typedef int (*zbx_selfmon_stats_threads_cb_t)(zbx_vector_dbl_t*, int*, char**);
+typedef int (*zbx_get_usage_stats_cb_t)(zbx_vector_dbl_t*, int*, char**);
 
-static int	get_selfmon_stats_threads(unsigned char aggr_func, zbx_selfmon_stats_threads_cb_t stats_func,
+static int	get_selfmon_stats_threads(unsigned char aggr_func, zbx_get_usage_stats_cb_t get_usage_stats_cb_func,
 		int proc_num, unsigned char state, double *value, char **error)
 {
 	zbx_vector_dbl_t	usage;
@@ -185,7 +184,7 @@ static int	get_selfmon_stats_threads(unsigned char aggr_func, zbx_selfmon_stats_
 
 	zbx_vector_dbl_create(&usage);
 
-	if (SUCCEED != (ret = stats_func(&usage, &count, error)))
+	if (SUCCEED != (ret = get_usage_stats_cb_func(&usage, &count, error)))
 		goto out;
 
 	if (0 == usage.values_num)
@@ -247,6 +246,7 @@ out:
  *             config_java_gateway_port  - [IN]                                   *
  *             get_config_forks          - [IN]                                   *
  *             get_value_internal_ext_cb - [IN]                                   *
+ *             program_type              - [IN]                                   *
  *                                                                                *
  * Return value: SUCCEED - data successfully retrieved and stored in result       *
  *               NOTSUPPORTED - requested item is not supported                   *
@@ -254,7 +254,8 @@ out:
  **********************************************************************************/
 int	get_value_internal(const zbx_dc_item_t *item, AGENT_RESULT *result, const zbx_config_comms_args_t *config_comms,
 		int config_startup_time, const char *config_java_gateway, int config_java_gateway_port,
-		zbx_get_config_forks_f get_config_forks, zbx_get_value_internal_ext_f get_value_internal_ext_cb)
+		zbx_get_config_forks_f get_config_forks, zbx_get_value_internal_ext_f get_value_internal_ext_cb,
+		unsigned char program_type)
 {
 	AGENT_REQUEST	request;
 	int		ret = NOTSUPPORTED, nparams;
@@ -493,11 +494,11 @@ int	get_value_internal(const zbx_dc_item_t *item, AGENT_RESULT *result, const zb
 			case ZBX_PROCESS_TYPE_ESCALATOR:
 			case ZBX_PROCESS_TYPE_PROXYPOLLER:
 			case ZBX_PROCESS_TYPE_TIMER:
-				if (0 == (poller_get_program_type()() & ZBX_PROGRAM_TYPE_SERVER))
+				if (0 == (program_type & ZBX_PROGRAM_TYPE_SERVER))
 					process_type = ZBX_PROCESS_TYPE_UNKNOWN;
 				break;
 			case ZBX_PROCESS_TYPE_DATASENDER:
-				if (0 == (poller_get_program_type()() & ZBX_PROGRAM_TYPE_PROXY))
+				if (0 == (program_type & ZBX_PROGRAM_TYPE_PROXY))
 					process_type = ZBX_PROCESS_TYPE_UNKNOWN;
 				break;
 		}
@@ -569,13 +570,13 @@ int	get_value_internal(const zbx_dc_item_t *item, AGENT_RESULT *result, const zb
 			if (ZBX_PROCESS_TYPE_PREPROCESSOR == process_type ||
 					ZBX_PROCESS_TYPE_DISCOVERER == process_type)
 			{
-				zbx_selfmon_stats_threads_cb_t	stats_func;
+				zbx_get_usage_stats_cb_t	get_usage_stats_cb_func;
 
-				stats_func = ZBX_PROCESS_TYPE_PREPROCESSOR == process_type ?
-						zbx_preprocessor_get_usage_stats : zbx_discovery_get_usage_stats;
+				get_usage_stats_cb_func = ZBX_PROCESS_TYPE_PREPROCESSOR == process_type ?
+						zbx_get_usage_stats_preprocessor : zbx_get_usage_stats_discovery;
 
-				if (SUCCEED != get_selfmon_stats_threads(aggr_func, stats_func, process_num, state,
-						&value, &error))
+				if (SUCCEED != get_selfmon_stats_threads(aggr_func, get_usage_stats_cb_func,
+						process_num, state, &value, &error))
 				{
 					SET_MSG_RESULT(result, error);
 					goto out;
@@ -665,7 +666,7 @@ int	get_value_internal(const zbx_dc_item_t *item, AGENT_RESULT *result, const zb
 		}
 		else if (0 == strcmp(tmp, "trend"))
 		{
-			if (0 == (poller_get_program_type()() & ZBX_PROGRAM_TYPE_SERVER))
+			if (0 == (program_type & ZBX_PROGRAM_TYPE_SERVER))
 			{
 				SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid second parameter."));
 				goto out;
@@ -969,7 +970,7 @@ int	get_value_internal(const zbx_dc_item_t *item, AGENT_RESULT *result, const zb
 		char		*error = NULL;
 		zbx_tfc_stats_t	stats;
 
-		if (0 == (poller_get_program_type()() & ZBX_PROGRAM_TYPE_SERVER))
+		if (0 == (program_type & ZBX_PROGRAM_TYPE_SERVER))
 		{
 			SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid first parameter."));
 			goto out;

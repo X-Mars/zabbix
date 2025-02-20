@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -85,6 +85,12 @@ if (array_key_exists('slas', $data)) {
 	}
 }
 
+$service_url = (new CUrl('zabbix.php'))
+	->setArgument('action', 'popup')
+	->setArgument('popup', 'service.edit')
+	->setArgument('serviceid', $data['service']['serviceid'])
+	->getUrl();
+
 (new CDiv([
 	(new CDiv())
 		->addClass(ZBX_STYLE_SERVICE_INFO_GRID)
@@ -94,7 +100,7 @@ if (array_key_exists('slas', $data)) {
 				$data['is_editable']
 					? (new CButtonIcon(ZBX_ICON_PENCIL, _('Edit')))
 						->addClass('js-edit-service')
-						->setAttribute('data-serviceid', $data['service']['serviceid'])
+						->setAttribute('data-href', $service_url)
 						->setEnabled(!$data['service']['readonly'])
 					: null
 			))->addClass(ZBX_STYLE_SERVICE_ACTIONS)

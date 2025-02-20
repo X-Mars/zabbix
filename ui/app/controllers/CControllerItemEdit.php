@@ -1,6 +1,6 @@
 <?php declare(strict_types=0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -27,7 +27,7 @@ class CControllerItemEdit extends CControllerItem {
 			'clone' => 'in 1'
 		] + static::getValidationFields();
 
-		$ret = $this->validateInput($fields) && $this->validateReferredObjects();
+		$ret = $this->validateInput($fields);
 
 		if ($ret) {
 			if ($this->hasInput('clone') && !$this->hasInput('itemid')) {
@@ -51,6 +51,14 @@ class CControllerItemEdit extends CControllerItem {
 		}
 
 		return $ret;
+	}
+
+	protected function checkPermissions(): bool {
+		if (!CWebUser::isLoggedIn() || !$this->validateReferredObjects()) {
+			return false;
+		}
+
+		return parent::checkPermissions();
 	}
 
 	public function doAction() {

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -174,7 +174,7 @@ class testConfiguration extends CAPITest {
 			[
 				[
 					'options' => [
-							'host_groups' => []
+						'host_groups' => []
 					],
 					'prettyprint' => true
 				]
@@ -182,7 +182,7 @@ class testConfiguration extends CAPITest {
 			[
 				[
 					'options' => [
-							'host_groups' => ['11111111111111']
+						'host_groups' => ['11111111111111']
 					],
 					'prettyprint' => true
 				]
@@ -190,7 +190,7 @@ class testConfiguration extends CAPITest {
 			[
 				[
 					'options' => [
-							'host_groups' => ['50012']
+						'host_groups' => ['50012']
 					],
 					'prettyprint' => true
 				]

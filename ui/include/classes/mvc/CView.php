@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -145,7 +145,7 @@ class CView {
 	 *
 	 * @return string
 	 */
-	public function readJsFile(string $file_name, array $data = null, $relative_dir = '/js'): string {
+	public function readJsFile(string $file_name, ?array $data = null, $relative_dir = '/js'): string {
 		$data = $data ?? $this->data;
 
 		$file_path = $this->directory.$relative_dir.'/'.$file_name;
@@ -169,7 +169,7 @@ class CView {
 	 *
 	 * @throws RuntimeException if the file not found, not readable or returned false.
 	 */
-	public function includeJsFile(string $file_name, array $data = null): self {
+	public function includeJsFile(string $file_name, ?array $data = null): self {
 		echo $this->readJsFile($file_name, $data);
 
 		return $this;

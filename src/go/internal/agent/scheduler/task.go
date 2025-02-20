@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,6 +24,7 @@ import (
 	"golang.zabbix.com/agent2/internal/agent/resultcache"
 	"golang.zabbix.com/agent2/pkg/itemutil"
 	"golang.zabbix.com/agent2/pkg/zbxlib"
+	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/log"
 	"golang.zabbix.com/sdk/plugin"
 )
@@ -165,9 +166,10 @@ type exporterTask struct {
 
 func invokeExport(a plugin.Accessor, key string, params []string, ctx plugin.ContextProvider) (any, error) {
 	exporter, _ := a.(plugin.Exporter)
+	timeout := ctx.Timeout()
 
 	if a.HandleTimeout() {
-		return exporter.Export(key, params, ctx)
+		timeout = maxItemTimeout
 	}
 
 	var ret any
@@ -181,11 +183,10 @@ func invokeExport(a plugin.Accessor, key string, params []string, ctx plugin.Con
 
 	select {
 	case <-tc:
-	case <-time.After(time.Second * time.Duration(ctx.Timeout())):
-		err = fmt.Errorf("Timeout occurred while gathering data.")
+		return ret, err //nolint:wrapcheck
+	case <-time.After(time.Second * time.Duration(timeout)):
+		return nil, errs.New("timeout occurred while gathering data")
 	}
-
-	return ret, err
 }
 
 func (t *exporterTask) perform(s Scheduler) {
@@ -549,41 +550,41 @@ func (t *configuratorTask) isItemKeyEqual(itemkey string) bool {
 	return false
 }
 
-// commandTask executes remote commands received with active requestes
+// commandTask executes remote commands received with active requests
 type commandTask struct {
 	taskBase
-	id     uint64
-	params []string
-	output resultcache.Writer
+	id      uint64
+	params  []string
+	output  resultcache.Writer
 	timeout int
 }
 
 func (t *commandTask) ClientID() (clientid uint64) {
-        return agent.MaxBuiltinClientID;
+	return agent.MaxBuiltinClientID
 }
 
 func (t *commandTask) Output() (output plugin.ResultWriter) {
-        return nil
+	return nil
 }
 
 func (t *commandTask) ItemID() (itemid uint64) {
-        return 0
+	return 0
 }
 
 func (t *commandTask) Meta() (meta *plugin.Meta) {
-        return nil
+	return nil
 }
 
 func (t *commandTask) GlobalRegexp() plugin.RegexpMatcher {
-        return nil
+	return nil
 }
 
 func (t *commandTask) Timeout() int {
-        return t.timeout
+	return t.timeout
 }
 
 func (t *commandTask) Delay() string {
-        return ""
+	return ""
 }
 
 func (t *commandTask) isRecurring() bool {

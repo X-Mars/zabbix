@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -995,10 +995,11 @@ class testDashboardPieChartWidget extends testWidgets {
 
 		$this->page->open('zabbix.php?action=dashboard.view&dashboardid='.self::$dashboard_id);
 
+		// TODO: temporarily commented out due webdriver issue #351858989, alert is not displayed while leaving page during test execution
 		// Check that alert is present in case of saving the widget without saving the dashboard.
-		if ($data['save_widget'] == true && $data['save_dashboard'] == false) {
-			$this->page->acceptAlert();
-		}
+//		if ($data['save_widget'] == true && $data['save_dashboard'] == false) {
+//			$this->page->acceptAlert();
+//		}
 
 		$this->page->waitUntilReady();
 		$dashboard->selectPage(self::PAGE_2);
@@ -1343,21 +1344,6 @@ class testDashboardPieChartWidget extends testWidgets {
 	}
 
 	/**
-	 * Asserts range input attributes.
-	 *
-	 * @param CFormElement $form               parent form
-	 * @param string       $label              label of the range input
-	 * @param array        $expected_values    the attribute values expected
-	 */
-	protected function assertRangeSliderParameters($form, $label, $expected_values) {
-		$range = $form->getField($label)->query('xpath:.//input[@type="range"]')->one();
-
-		foreach ($expected_values as $attribute => $expected_value) {
-			$this->assertEquals($expected_value, $range->getAttribute($attribute));
-		}
-	}
-
-	/**
 	 * Asserts that data is saved and displayed as expected in the edit form.
 	 *
 	 * @param CDashboardElement $dashboard    dashboard element
@@ -1464,16 +1450,18 @@ class testDashboardPieChartWidget extends testWidgets {
 		$delete = CTestArrayHelper::get($fields, 'delete_data_set');
 		$remake = CTestArrayHelper::get($fields, 'remake_data_set');
 
+		// Index of data set.
+		$j = 0;
 		if ($delete || $remake) {
 			$form->query('xpath:.//button[@title="Delete"]')->one()->click();
 			if ($remake) {
-				$form->query('button:Add new data set')->one()->click();
-				$form->invalidate();
+				// Increment index of data set if it is deleted and remade.
+				$j = 1;
 			}
 		}
 
 		if (!$delete) {
-			$this->fillDatasets($form, $this->extractDataSets($fields));
+			$this->fillDatasets($form, $this->extractDataSets($fields), $j);
 		}
 
 		// Fill the other tabs.
@@ -1490,13 +1478,16 @@ class testDashboardPieChartWidget extends testWidgets {
 	 *
 	 * @param CFormElement $form         CFormElement to be filled
 	 * @param array        $data_sets    array of data sets to be filled
+	 * @param integer      $j            increment for data set index
 	 */
-	protected function fillDatasets($form, $data_sets) {
+	protected function fillDatasets($form, $data_sets, $j = 0) {
 		// Count of data sets that already exist (needed for updating).
 		$count_sets = $form->query('xpath:.//li[contains(@class, "list-accordion-item")]')->all()->count();
 
 		// For each data set to fill.
 		foreach ($data_sets as $i => $data_set) {
+			// If data set was remade index is incremented.
+			$i = $i + $j;
 			$type = CTestArrayHelper::get($data_set, 'type', self::TYPE_ITEM_PATTERN);
 			unset($data_set['type']);
 

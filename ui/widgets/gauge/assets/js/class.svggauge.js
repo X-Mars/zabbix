@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -260,7 +260,7 @@ class CSVGGauge {
 	 * @param {string|null} units_text  Text representation of the units of the value.
 	 */
 	setValue({value, value_text, units_text}) {
-		if (this.#config.value.show && value !== null) {
+		if (this.#config.value.show) {
 			this.#drawValueAndUnits({value, value_text, units_text});
 		}
 
@@ -744,8 +744,14 @@ class CSVGGauge {
 				);
 			}
 		}
-		else if (this.#elements.value_and_units.space !== undefined) {
-			this.#elements.value_and_units.space.container.style.display = 'none';
+		else {
+			if (this.#elements.value_and_units.space !== undefined) {
+				this.#elements.value_and_units.space.container.style.display = 'none';
+			}
+
+			if (this.#elements.value_and_units.units !== undefined) {
+				this.#elements.value_and_units.units.container.textContent = '';
+			}
 		}
 
 		let tooltip = '';

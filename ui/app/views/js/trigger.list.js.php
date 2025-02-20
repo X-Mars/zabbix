@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,14 +25,16 @@
 
 <script>
 	const view = new class {
-		init({checkbox_hash, checkbox_object, context, token}) {
+		init({checkbox_hash, checkbox_object, context, token, form_name}) {
 			this.checkbox_hash = checkbox_hash;
 			this.checkbox_object = checkbox_object;
 			this.context = context;
 			this.token = token;
+			this.form = document.forms[form_name];
 
 			this.#initFilter();
 			this.#initActions();
+			this.#initPopupListeners();
 		}
 
 		#initFilter() {
@@ -68,61 +70,42 @@
 		}
 
 		#initActions() {
-			document.addEventListener('click', (e) => {
-				if (e.target.id === 'js-create') {
-					this.#edit({'hostid': e.target.dataset.hostid, 'context': this.context})
-				}
-				else if (e.target.classList.contains('js-trigger-edit')) {
-					this.#edit({
-						'triggerid': e.target.dataset.triggerid,
-						'hostid': e.target.dataset.hostid,
-						'context': this.context
-					})
-				}
-				else if (e.target.id === 'js-copy') {
-					this.#copy();
-				}
-				else if (e.target.id === 'js-massenable-trigger') {
-					this.#enable(e.target, Object.keys(chkbxRange.getSelectedIds()), true);
-				}
-				else if (e.target.classList.contains('js-enable-trigger')) {
-					this.#enable(e.target, [e.target.dataset.triggerid]);
-				}
-				else if (e.target.id === 'js-massdisable-trigger') {
-					this.#disable(e.target, Object.keys(chkbxRange.getSelectedIds()), true);
-				}
-				else if (e.target.classList.contains('js-disable-trigger')) {
-					this.#disable(e.target, [e.target.dataset.triggerid]);
-				}
-				else if (e.target.id === 'js-massdelete-trigger') {
-					this.#delete(e.target, Object.keys(chkbxRange.getSelectedIds()));
-				}
-				else if (e.target.id === 'js-massupdate-trigger') {
-					this.#massupdate(e.target);
-				}
-			})
-		}
+			this.form.addEventListener('click', e => {
+				const target = e.target;
 
-		#edit(parameters = {}) {
-			const overlay = PopUp('trigger.edit', parameters, {
-				dialogueid: 'trigger-edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
+				if (target.classList.contains('js-enable-trigger')) {
+					this.#enable(target, [target.dataset.triggerid]);
+				}
+				else if (target.classList.contains('js-disable-trigger')) {
+					this.#disable(target, [target.dataset.triggerid]);
+				}
 			});
 
-			overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => {
-				uncheckTableRows('trigger');
-				postMessageOk(e.detail.title);
+			document.getElementById('js-create')?.addEventListener('click', e => {
+				ZABBIX.PopupManager.open('trigger.edit', {hostid: e.target.dataset.hostid, context: this.context});
+			});
+			document.getElementById('js-copy').addEventListener('click', () => this.#copy());
+			document.getElementById('js-massenable-trigger').addEventListener('click', (e) => {
+				this.#enable(e.target, Object.keys(chkbxRange.getSelectedIds()), true);
+			});
+			document.getElementById('js-massdisable-trigger').addEventListener('click', (e) => {
+				this.#disable(e.target, Object.keys(chkbxRange.getSelectedIds()), true);
+			});
+			document.getElementById('js-massupdate-trigger').addEventListener('click', (e) => {
+				this.#massupdate(e.target);
+			});
+			document.getElementById('js-massdelete-trigger').addEventListener('click', (e) => {
+				this.#delete(e.target, Object.keys(chkbxRange.getSelectedIds()));
+			});
+		}
 
-				if ('success' in e.detail) {
-					postMessageOk(e.detail.success.title);
-
-					if ('messages' in e.detail.success) {
-						postMessageDetails('success', e.detail.success.messages);
-					}
-				}
-
-				location.href = location.href;
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: () => uncheckTableRows('trigger')
 			});
 		}
 
@@ -251,62 +234,6 @@
 				});
 		}
 
-		editItem(target, data) {
-			const overlay = PopUp('item.edit', data, {
-				dialogueid: 'item-edit',
-				dialogue_class: 'modal-popup-large',
-				trigger_element: target,
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this, this.context),
-				{once: true}
-			);
-		}
-
-		editHost(e, hostid) {
-			e.preventDefault();
-			const host_data = {hostid};
-
-			this.openHostPopup(host_data);
-		}
-
-		openHostPopup(host_data) {
-			const original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit',
-				this.elementSuccess.bind(this, this.context), {once: true}
-			);
-
-			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-				history.replaceState({}, '', original_url);
-			}, {once: true});
-		}
-
-		editTemplate(e, templateid) {
-			e.preventDefault();
-			const template_data = {templateid};
-
-			this.openTemplatePopup(template_data);
-		}
-
-		openTemplatePopup(template_data) {
-			const overlay =  PopUp('template.edit', template_data, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit',
-				this.elementSuccess.bind(this, this.context), {once: true}
-			);
-		}
-
 		openCopyPopup() {
 			const parameters = {
 				triggerids: Object.keys(chkbxRange.getSelectedIds()),
@@ -323,29 +250,6 @@
 				dialogueid: 'copy',
 				dialogue_class: 'modal-popup-static'
 			});
-		}
-
-		elementSuccess(context, e) {
-			const data = e.detail;
-			let curl = null;
-
-			if ('success' in data) {
-				postMessageOk(data.success.title);
-
-				if ('messages' in data.success) {
-					postMessageDetails('success', data.success.messages);
-				}
-
-				if ('action' in data.success && data.success.action === 'delete') {
-					curl = new Curl('zabbix.php');
-					curl.setArgument('action', 'trigger.list');
-					curl.setArgument('context', context);
-				}
-			}
-
-			uncheckTableRows('triggers_' + this.checkbox_hash, [], false);
-
-			location.href = curl === null ? location.href : curl.getUrl();
 		}
 	};
 </script>

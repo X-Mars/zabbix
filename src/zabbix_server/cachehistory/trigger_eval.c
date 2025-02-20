@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -322,12 +322,23 @@ static void	evaluate_item_functions(zbx_hashset_t *funcs, const zbx_vector_uint6
 			continue;
 		}
 
-		if (ZBX_FUNCTION_TYPE_TRENDS == func->type && 0 == item->trends)
+		if (ZBX_FUNCTION_TYPE_TRENDS == func->type)
 		{
-			zbx_free(func->error);
-			func->error = zbx_eval_format_function_error(func->function, item->host.host,
-					item->key_orig, func->parameter, "item trends are disabled");
-			continue;
+			if (ITEM_VALUE_TYPE_FLOAT != item->value_type && ITEM_VALUE_TYPE_UINT64 != item->value_type)
+			{
+				zbx_free(func->error);
+				func->error = zbx_eval_format_function_error(func->function, item->host.host,
+						item->key_orig, func->parameter, "trend functions are supported only "
+						"for numeric types");
+				continue;
+			}
+			else if (0 == item->trends)
+			{
+				zbx_free(func->error);
+				func->error = zbx_eval_format_function_error(func->function, item->host.host,
+						item->key_orig, func->parameter, "item trends are disabled");
+				continue;
+			}
 		}
 
 		if (HOST_STATUS_MONITORED != item->host.status)
@@ -452,7 +463,7 @@ static void	substitute_functions_results(zbx_hashset_t *ifuncs, zbx_vector_dc_tr
 		if (NULL != tr->new_error)
 			continue;
 
-		if( SUCCEED != substitute_expression_functions_results(ifuncs, tr->eval_ctx, &tr->new_error))
+		if (SUCCEED != substitute_expression_functions_results(ifuncs, tr->eval_ctx, &tr->new_error))
 		{
 			tr->new_value = TRIGGER_VALUE_UNKNOWN;
 			continue;
@@ -562,8 +573,8 @@ static int	expand_expression_macros(zbx_eval_context_t *ctx, zbx_dc_um_handle_t 
 		return FAIL;
 	}
 
-	return zbx_eval_expand_user_macros(ctx, hostids, hostids_num,
-			(zbx_macro_expand_func_t)zbx_dc_expand_user_and_func_macros, um_handle, error);
+	return zbx_eval_substitute_macros(ctx, error, zbx_db_trigger_recovery_user_and_func_macro_eval_resolv,
+			um_handle, hostids, hostids_num);
 }
 
 static int	expand_trigger_macros(zbx_dc_trigger_t *tr, zbx_db_event *db_event, zbx_dc_um_handle_t *um_handle,
@@ -644,6 +655,9 @@ void	zbx_evaluate_expressions(zbx_vector_dc_trigger_t *triggers, const zbx_vecto
 			else
 			{
 				zbx_history_sync_item_t	*item;
+
+				if (NULL == items)
+					continue;
 
 				item = (zbx_history_sync_item_t *)bsearch(&tr->itemids.values[j], items,
 						(size_t)items_num, sizeof(zbx_history_sync_item_t),

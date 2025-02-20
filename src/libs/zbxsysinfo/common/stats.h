@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,6 +24,39 @@
 
 #if defined(HAVE_KSTAT_H) && defined(HAVE_VMINFO_T_UPDATES)	/* Solaris */
 #	include "zbxkstat.h"
+#endif
+
+#ifdef _AIX
+int	system_stat(AGENT_REQUEST *request, AGENT_RESULT *result);
+typedef struct
+{
+	/* public */
+	unsigned char	enabled;		/* collecting enabled */
+	unsigned char	data_available;		/* data is collected and available */
+	unsigned char	shared_enabled; 	/* partition runs in shared mode */
+	unsigned char	pool_util_authority;	/* pool utilization available */
+	unsigned char	aix52stats;
+	/* - general -- */
+	double		ent;
+	/* --- kthr --- */
+	double		kthr_r, kthr_b/*, kthr_p*/;
+	/* --- page --- */
+	double		fi, fo, pi, po, fr, sr;
+	/* -- faults -- */
+	double		in, sy, cs;
+	/* --- cpu ---- */
+	double		cpu_us, cpu_sy, cpu_id, cpu_wa, cpu_pc, cpu_ec, cpu_lbusy, cpu_app;
+	/* --- disk --- */
+	zbx_uint64_t	disk_bps;
+	double		disk_tps;
+	/* -- memory -- */
+	zbx_uint64_t	mem_avm, mem_fre;
+}
+ZBX_VMSTAT_DATA;
+
+#define VMSTAT_COLLECTOR_STARTED(collector)	(collector)
+
+void	collect_vmstat_data(ZBX_VMSTAT_DATA *vmstat);
 #endif
 
 typedef struct

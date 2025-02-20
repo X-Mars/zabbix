@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,9 +20,14 @@ window.maintenance_edit = new class {
 	init({maintenanceid, timeperiods, tags, allowed_edit}) {
 		this._maintenanceid = maintenanceid;
 
-		this._overlay = overlays_stack.getById('maintenance-edit');
+		this._overlay = overlays_stack.getById('maintenance.edit');
 		this._dialogue = this._overlay.$dialogue[0];
 		this._form = this._overlay.$dialogue.$body[0].querySelector('form');
+		this._allowed_edit = allowed_edit;
+
+		const return_url = new URL('zabbix.php', location.href);
+		return_url.searchParams.set('action', 'maintenance.list');
+		ZABBIX.PopupManager.setReturnUrl(return_url.href);
 
 		timeperiods.forEach((timeperiod, row_index) => {
 			this._addTimePeriod({row_index, ...timeperiod});
@@ -62,11 +67,10 @@ window.maintenance_edit = new class {
 			this._updateMultiselect($hostids);
 
 			// Update form field state according to the form data.
-
 			document.getElementById('maintenance_type').addEventListener('change', () => this._update());
-
-			this._update();
 		}
+
+		this._update();
 
 		this._form.style.display = '';
 		this._overlay.recoverFocus();
@@ -83,11 +87,11 @@ window.maintenance_edit = new class {
 		});
 
 		tags_container.querySelectorAll('[name="tags_evaltype"], [name$="[operator]"]').forEach((radio_button) => {
-			radio_button.disabled = !tags_enabled;
+			radio_button.disabled = !tags_enabled || !this._allowed_edit;
 		});
 
 		tags_container.querySelectorAll('.element-table-add, .element-table-remove').forEach((button) => {
-			button.disabled = !tags_enabled;
+			button.disabled = !tags_enabled || !this._allowed_edit;
 		});
 
 		tags_container.querySelectorAll('[name$="[tag]"]').forEach((tag_text_input) => {
@@ -179,7 +183,7 @@ window.maintenance_edit = new class {
 		this._post(curl.getUrl(), post_data, (response) => {
 			overlayDialogueDestroy(this._overlay.dialogueid);
 
-			this._dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this._dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 
@@ -206,7 +210,7 @@ window.maintenance_edit = new class {
 		this._post(curl.getUrl(), fields, (response) => {
 			overlayDialogueDestroy(this._overlay.dialogueid);
 
-			this._dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this._dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 

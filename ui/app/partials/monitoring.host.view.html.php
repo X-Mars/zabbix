@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -40,7 +40,9 @@ $table = (new CTableInfo())
 	->setPageNavigation($data['paging']);
 
 foreach ($data['hosts'] as $hostid => $host) {
-	$host_name = (new CLinkAction($host['name']))->setMenuPopup(CMenuPopupHelper::getHost($hostid));
+	$host_name = (new CLinkAction($host['name']))
+		->setMenuPopup(CMenuPopupHelper::getHost($hostid))
+		->addClass(ZBX_STYLE_WORDBREAK);
 
 	$interface = null;
 	if ($host['interfaces']) {
@@ -105,10 +107,10 @@ foreach ($data['hosts'] as $hostid => $host) {
 
 	$table->addRow([
 		[$host_name, $maintenance_icon],
-		(new CCol(getHostInterface($interface)))->addClass(ZBX_STYLE_NOWRAP),
-		getHostAvailabilityTable($host['interfaces'], $host['has_passive_checks']),
+		(new CCol(getHostInterface($interface)))->addClass(ZBX_STYLE_WORDBREAK),
+		getHostAvailabilityTable($host['interfaces']),
 		$host['tags'],
-		($host['status'] == HOST_STATUS_MONITORED)
+		$host['status'] == HOST_STATUS_MONITORED
 			? (new CSpan(_('Enabled')))->addClass(ZBX_STYLE_GREEN)
 			: (new CSpan(_('Disabled')))->addClass(ZBX_STYLE_RED),
 		[

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -41,6 +41,15 @@ class CAlert extends CApiService {
 	 * @return array|string
 	 */
 	public function get(array $options = []) {
+		if (self::$userData['type'] == USER_TYPE_SUPER_ADMIN) {
+			$media_type_output_fields = CMediatype::OUTPUT_FIELDS;
+			$user_output_fields = CUser::OUTPUT_FIELDS;
+		}
+		else {
+			$media_type_output_fields = CMediatype::LIMITED_OUTPUT_FIELDS;
+			$user_output_fields = CUser::OWN_LIMITED_OUTPUT_FIELDS;
+		}
+
 		$api_input_rules = ['type' => API_OBJECT, 'fields' => [
 			// filter
 			'alertids' =>				['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
@@ -60,8 +69,8 @@ class CAlert extends CApiService {
 			'countOutput' =>			['type' => API_FLAG, 'default' => false],
 			'groupCount' =>				['type' => API_FLAG, 'default' => false],
 			'selectHosts' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', CHost::OUTPUT_FIELDS), 'default' => null],
-			'selectMediatypes' =>		['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', CMediatype::OUTPUT_FIELDS), 'default' => null],
-			'selectUsers' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', CUser::OUTPUT_FIELDS), 'default' => null],
+			'selectMediatypes' =>		['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $media_type_output_fields), 'default' => null],
+			'selectUsers' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $user_output_fields), 'default' => null],
 			'filter' =>					['type' => API_FILTER, 'flags' => API_ALLOW_NULL, 'default' => null, 'fields' => ['alertid', 'actionid', 'eventid', 'userid', 'mediatypeid', 'status', 'acknowledgeid']],
 			'search' =>					['type' => API_FILTER, 'flags' => API_ALLOW_NULL, 'default' => null, 'fields' => ['sendto', 'subject', 'message', 'error']],
 			'searchByAny' =>			['type' => API_BOOLEAN, 'default' => false],
@@ -177,7 +186,7 @@ class CAlert extends CApiService {
 		if (self::$userData['type'] != USER_TYPE_SUPER_ADMIN && !$options['nopermissions']) {
 			if ($options['eventobject'] == EVENT_OBJECT_TRIGGER) {
 				if (self::$userData['ugsetid'] == 0) {
-					return $options['countOutput'] ? '0' : [];
+					$sql_parts['where'][] = '1=0';
 				}
 
 				$sql_parts['from']['e'] = 'events e';
@@ -209,7 +218,7 @@ class CAlert extends CApiService {
 			}
 			elseif (in_array($options['eventobject'], [EVENT_OBJECT_ITEM, EVENT_OBJECT_LLDRULE])) {
 				if (self::$userData['ugsetid'] == 0) {
-					return $options['countOutput'] ? '0' : [];
+					$sql_parts['where'][] = '1=0';
 				}
 
 				$sql_parts['from']['e'] = 'events e';
@@ -425,11 +434,13 @@ class CAlert extends CApiService {
 
 		$relation_map = $this->createRelationMap($result, 'alertid', 'mediatypeid');
 
-		$mediatypes = API::getApiService()->select('media_type', [
+		$mediatypes = API::MediaType()->get([
 			'output' => $options['selectMediatypes'],
 			'filter' => ['mediatypeid' => $relation_map->getRelatedIds()],
 			'preservekeys' => true
 		]);
+
+		$mediatypes = $this->unsetExtraFields($mediatypes, ['mediatypeid'], $options['selectMediatypes']);
 
 		$result = $relation_map->mapMany($result, $mediatypes, 'mediatypes');
 	}

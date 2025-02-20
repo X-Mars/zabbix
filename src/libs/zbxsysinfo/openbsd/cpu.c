@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -100,6 +100,8 @@ int	system_cpu_util(AGENT_REQUEST *request, AGENT_RESULT *result)
 		state = ZBX_CPU_STATE_IDLE;
 	else if (0 == strcmp(tmp, "interrupt"))
 		state = ZBX_CPU_STATE_INTERRUPT;
+	else if (0 == strcmp(tmp, "spin"))
+		state = ZBX_CPU_STATE_SPIN;
 	else
 	{
 		SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid second parameter."));

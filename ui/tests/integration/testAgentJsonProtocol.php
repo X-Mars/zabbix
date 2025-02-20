@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -389,10 +389,30 @@ class testAgentJsonProtocol extends CIntegrationTest {
 		return true;
 	}
 
+	private function purgeActions() {
+		$params = [
+			'output' => 'actionid',
+			'preservekeys' => true
+		];
+
+		$response = $this->call('action.get', $params);
+
+		$this->assertArrayHasKey('result', $response);
+
+		$ids = array_keys($response['result']);
+
+		if ($ids === []) {
+			return;
+		}
+
+		$response = $this->call('action.delete', $ids);
+	}
+
 	private function checkDiscovery($agent_component) {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->stopComponent($agent_component);
 
+		$this->purgeActions();
 		$this->call('host.delete', [self::$hostid]);
 
 		$response = $this->call('drule.create', [

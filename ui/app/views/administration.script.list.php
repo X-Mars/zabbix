@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,8 +20,6 @@
  */
 
 $this->includeJsFile('administration.script.list.js.php');
-$this->addJsFile('multilineinput.js');
-$this->addJsFile('class.form.fieldset.collapsible.js');
 
 if ($data['uncheck']) {
 	uncheckTableRows('script');
@@ -108,11 +106,15 @@ foreach ($data['scripts'] as $script) {
 				$action_count_total = (new CSpan($script['action_count_total']))->addClass(ZBX_STYLE_ENTITY_COUNT);
 
 				foreach ($script['actions'] as $action) {
+					$action_url = (new CUrl('zabbix.php'))
+						->setArgument('action', 'popup')
+						->setArgument('popup', 'action.edit')
+						->setArgument('actionid', $action['actionid'])
+						->setArgument('eventsource', $action['eventsource'])
+						->getUrl();
+
 					$actions[] = $action['is_editable']
-						? (new CLink($action['name']))
-							->addClass('js-action-edit')
-							->setAttribute('data-actionid', $action['actionid'])
-							->setAttribute('data-eventsource', $action['eventsource'])
+						? (new CLink($action['name'], $action_url))
 							->addClass(ZBX_STYLE_LINK_ALT)
 							->addClass(ZBX_STYLE_GREY)
 						: (new CSpan($action['name']))->addClass(ZBX_STYLE_GREY);
@@ -181,21 +183,31 @@ foreach ($data['scripts'] as $script) {
 		$execute_on = '';
 	}
 
-	$link = (new CLink($script['name']))
-		->addClass('js-edit')
-		->setAttribute('data-scriptid', $script['scriptid']);
+	$script_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'script.edit')
+		->setArgument('scriptid', $script['scriptid'])
+		->getUrl();
+
+	$link = new CLink($script['name'], $script_url);
 
 	$scriptsTable->addRow([
 		new CCheckBox('scriptids['.$script['scriptid'].']', $script['scriptid']),
-		(new CCol($script['menu_path'] === '' ? $link : [$script['menu_path'].'/', $link]))->addClass(ZBX_STYLE_NOWRAP),
+		(new CCol($script['menu_path'] === '' ? $link : [$script['menu_path'].'/', $link]))
+			->addClass(ZBX_STYLE_WORDBREAK),
 		$scope,
 		(new CCol($action_count_total))->addClass(ZBX_STYLE_CELL_WIDTH),
-		$actions,
+		(new CCol($actions))->addClass(ZBX_STYLE_WORDBREAK),
 		$type,
 		$execute_on,
-		(new CCol(zbx_nl2br($script['command'])))->addClass(ZBX_STYLE_MONOSPACE_FONT),
-		($script['userGroupName'] === null) ? _('All') : $script['userGroupName'],
-		($script['hostGroupName'] === null) ? _('All') : $script['hostGroupName'],
+		(new CCol(zbx_nl2br($script['command'])))
+			->addClass(ZBX_STYLE_MONOSPACE_FONT)
+			->addClass(ZBX_STYLE_WORDBREAK)
+			->addStyle('max-width: '.ZBX_TEXTAREA_BIG_WIDTH.'px;'),
+		(new CCol($script['userGroupName'] === null ? _('All') : $script['userGroupName']))
+			->addClass(ZBX_STYLE_WORDBREAK),
+		(new CCol($script['hostGroupName'] === null ? _('All') : $script['hostGroupName']))
+			->addClass(ZBX_STYLE_WORDBREAK),
 		($script['host_access'] == PERM_READ_WRITE) ? _('Write') : _('Read')
 	]);
 }

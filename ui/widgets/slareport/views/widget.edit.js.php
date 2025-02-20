@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -33,7 +33,7 @@ window.widget_slareport_form = new class {
 			title: <?= json_encode(_('Service')) ?>,
 			exclude_serviceids,
 			multiple: 0
-		}, {dialogueid: 'services', dialogue_class: 'modal-popup-generic'});
+		}, {dialogueid: 'services'});
 
 		overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => {
 			const data = [];

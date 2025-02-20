@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -30,7 +30,9 @@
 		 * Creates the event listeners for create, edit, delete, enable, disable single and mass operations.
 		 */
 		#initActions() {
-			document.getElementById('js-create').addEventListener('click', () => this.#edit());
+			document.getElementById('js-create').addEventListener('click', () => {
+				ZABBIX.PopupManager.open('correlation.edit');
+			});
 			document.getElementById('js-massdelete').addEventListener('click',
 				(e) => this.#delete(e.target, Object.keys(chkbxRange.getSelectedIds()))
 			);
@@ -42,40 +44,15 @@
 			);
 
 			document.addEventListener('click', (e) => {
-				if (e.target.classList.contains('js-edit')) {
-					this.#edit({correlationid: e.target.dataset.correlationid});
-				}
-				else if (e.target.classList.contains('js-enable')) {
+				if (e.target.classList.contains('js-enable')) {
 					this.#enable(e.target, [e.target.dataset.correlationid]);
 				}
 				else if (e.target.classList.contains('js-disable')) {
 					this.#disable(e.target, [e.target.dataset.correlationid]);
 				}
-			})
-		}
-
-		/**
-		 * Listens to submit and delete actions from edit form. If gets a successful response, reloads the page.
-		 *
-		 * @param {object} parameters  Parameters to pass to the edit form.
-		 */
-		#edit(parameters = {}) {
-			const overlay = PopUp('correlation.edit', parameters, {
-				dialogueid: 'correlation-form',
-				dialogue_class: 'modal-popup-medium',
-				prevent_navigation: true
 			});
 
-			overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => {
-				uncheckTableRows('correlation');
-				postMessageOk(e.detail.title);
-
-				if ('messages' in e.detail) {
-					postMessageDetails('success', e.detail.messages);
-				}
-
-				location.href = location.href;
-			});
+			this.#initPopupListeners();
 		}
 
 		/**
@@ -197,8 +174,20 @@
 					const message_box = makeMessageBox('bad', [<?= json_encode(_('Unexpected server error.')) ?>]);
 
 					addMessage(message_box);
-				})
-				.finally(() => target.classList.remove('is-loading'));
+
+					target.classList.remove('is-loading');
+					target.blur();
+				});
+		}
+
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: () => uncheckTableRows('correlation')
+			});
 		}
 	};
 </script>

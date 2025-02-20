@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,6 +22,7 @@
 #define ZBX_VMWARE_STATE_NEW		0x001
 #define ZBX_VMWARE_STATE_READY		0x002
 #define ZBX_VMWARE_STATE_FAILED		0x004
+#define ZBX_VMWARE_STATE_SHMEM_READY	0x100
 
 #define ZBX_VMWARE_EVENT_KEY_UNINITIALIZED	__UINT64_C(0xffffffffffffffff)
 
@@ -384,6 +385,10 @@ typedef struct
 	time_t		lastaccess;	/* timestamp when vmware.eventlog[] item was polled last time */
 	time_t		interval;	/* last interval of vmware.eventlog[] item */
 	zbx_uint64_t	owner_itemid;	/* single item that will receive all events */
+	int		job_revision;	/* actual revision of the responsible (last created) job */
+	zbx_uint64_t	top_key;	/* id of newest event */
+	zbx_uint64_t	top_time;	/* time of top_key event */
+	int		expect_num;	/* total number of events in the vc queue */
 
 	/* service event log data object that is swapped with new one during service event log update */
 	zbx_vmware_eventlog_data_t	*data;
@@ -555,7 +560,8 @@ typedef struct
 	int				jobs_num;
 
 	/* linked jobs types */
-#define ZBX_VMWARE_REQ				(8*2)
+#define ZBX_VMWARE_REQ				(8)
+#define ZBX_VMWARE_REQ_MASK			(0xFF00)
 #define ZBX_VMWARE_REQ_UPDATE_CONF		(ZBX_VMWARE_UPDATE_CONF		<< ZBX_VMWARE_REQ)
 #define ZBX_VMWARE_REQ_UPDATE_PERFCOUNTERS	(ZBX_VMWARE_UPDATE_PERFCOUNTERS	<< ZBX_VMWARE_REQ)
 #define ZBX_VMWARE_REQ_UPDATE_REST_TAGS		(ZBX_VMWARE_UPDATE_REST_TAGS	<< ZBX_VMWARE_REQ)
@@ -563,7 +569,8 @@ typedef struct
 #define ZBX_VMWARE_REQ_UPDATE_ALL										\
 					(ZBX_VMWARE_REQ_UPDATE_CONF | ZBX_VMWARE_REQ_UPDATE_PERFCOUNTERS |	\
 					ZBX_VMWARE_REQ_UPDATE_REST_TAGS | ZBX_VMWARE_REQ_UPDATE_EVENTLOG)
-	int				jobs_type;
+#define ZBX_VMWARE_JOB_RUN			(8*2)
+	int				jobs_flag;
 
 	/* vmware entity (vm, hv etc) and linked tags */
 	zbx_vmware_data_tags_t		data_tags;
@@ -576,12 +583,13 @@ struct zbx_vmware_job
 {
 	time_t				nextcheck;
 	time_t				ttl;
-#define ZBX_VMWARE_UPDATE_CONF		1
-#define ZBX_VMWARE_UPDATE_PERFCOUNTERS	2
-#define ZBX_VMWARE_UPDATE_REST_TAGS	4
-#define ZBX_VMWARE_UPDATE_EVENTLOG	8
+#define ZBX_VMWARE_UPDATE_CONF		0x01
+#define ZBX_VMWARE_UPDATE_PERFCOUNTERS	0x02
+#define ZBX_VMWARE_UPDATE_REST_TAGS	0x04
+#define ZBX_VMWARE_UPDATE_EVENTLOG	0x08
 	int				type;
 	int				expired;
+	int				revision;
 	zbx_vmware_service_t		*service;
 };
 
@@ -727,6 +735,7 @@ void	zbx_vmware_eventlog_job_create(zbx_vmware_service_t *service);
 #define ZBX_VMWARE_UNIT_WATT			13
 #define ZBX_VMWARE_UNIT_CELSIUS			14
 #define ZBX_VMWARE_UNIT_NANOSECOND		15
+#define ZBX_VMWARE_UNIT_GIGABYTES		16
 
 /*
  * SOAP support

@@ -10,7 +10,7 @@ https://docs.microsoft.com/ru-ru/sharepoint/dev/sp-add-ins/get-to-know-the-share
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -19,7 +19,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -58,9 +58,9 @@ It is recommended to fill in the values of the filter macros to avoid getting re
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Error getting directory structure.|<p>Error getting directory structure. Check the Zabbix server log for more details.</p>|`last(/Microsoft SharePoint by HTTP/sharepoint.get_dir.status)<>200`|Warning|**Manual close**: Yes|
-|Server responds slowly to API request||`last(/Microsoft SharePoint by HTTP/sharepoint.get_dir.time)>2000`|Warning|**Manual close**: Yes|
-|Bad health score||`last(/Microsoft SharePoint by HTTP/sharepoint.health_score)>"{$SHAREPOINT.MAX_HEALTH_SCORE}"`|Average||
+|MS SharePoint: Error getting directory structure.|<p>Error getting directory structure. Check the Zabbix server log for more details.</p>|`last(/Microsoft SharePoint by HTTP/sharepoint.get_dir.status)<>200`|Warning|**Manual close**: Yes|
+|MS SharePoint: Server responds slowly to API request||`last(/Microsoft SharePoint by HTTP/sharepoint.get_dir.time)>2000`|Warning|**Manual close**: Yes|
+|MS SharePoint: Bad health score||`last(/Microsoft SharePoint by HTTP/sharepoint.health_score)>"{$SHAREPOINT.MAX_HEALTH_SCORE}"`|Average||
 
 ### LLD rule Directory discovery
 
@@ -80,7 +80,7 @@ It is recommended to fill in the values of the filter macros to avoid getting re
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Sharepoint object is changed|<p>Updated date of modification of folder / file</p>|`last(/Microsoft SharePoint by HTTP/sharepoint.modified["{#SHAREPOINT.LLD.FULL_PATH}"],#1)<>last(/Microsoft SharePoint by HTTP/sharepoint.modified["{#SHAREPOINT.LLD.FULL_PATH}"],#2)`|Info|**Manual close**: Yes|
+|MS SharePoint: Sharepoint object is changed|<p>Updated date of modification of folder / file</p>|`last(/Microsoft SharePoint by HTTP/sharepoint.modified["{#SHAREPOINT.LLD.FULL_PATH}"],#1)<>last(/Microsoft SharePoint by HTTP/sharepoint.modified["{#SHAREPOINT.LLD.FULL_PATH}"],#2)`|Info|**Manual close**: Yes|
 
 ## Feedback
 

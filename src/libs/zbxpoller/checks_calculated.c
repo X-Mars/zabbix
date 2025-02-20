@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,6 +18,7 @@
 #include "zbxeval.h"
 #include "zbxtime.h"
 #include "zbxvariant.h"
+#include "zbxdbwrap.h"
 
 int	get_value_calculated(zbx_dc_item_t *dc_item, AGENT_RESULT *result)
 {
@@ -43,8 +44,8 @@ int	get_value_calculated(zbx_dc_item_t *dc_item, AGENT_RESULT *result)
 
 	zbx_eval_deserialize(&ctx, dc_item->params, ZBX_EVAL_PARSE_CALC_EXPRESSION, dc_item->formula_bin);
 
-	if (SUCCEED != zbx_eval_expand_user_macros(&ctx, &dc_item->host.hostid, 1,
-			(zbx_macro_expand_func_t)zbx_dc_expand_user_and_func_macros, um_handle, &error))
+	if (SUCCEED != zbx_eval_substitute_macros(&ctx, &error, zbx_db_trigger_recovery_user_and_func_macro_eval_resolv,
+			um_handle, &dc_item->host.hostid, 1))
 	{
 		SET_MSG_RESULT(result, zbx_dsprintf(NULL, "Cannot evaluate calculated item: %s", error));
 		zbx_free(error);

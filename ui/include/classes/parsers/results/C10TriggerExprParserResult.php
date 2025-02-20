@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -75,7 +75,7 @@ class C10TriggerExprParserResult extends CParserResult {
 	 * @param string        $length     length of the token
 	 * @param array|null    $data       additional token information
 	 */
-	public function addToken($type, $value, $pos, $length, array $data = null) {
+	public function addToken($type, $value, $pos, $length, ?array $data = null) {
 		$this->tokens[] = [
 			'type' => $type,
 			'value' => $value,

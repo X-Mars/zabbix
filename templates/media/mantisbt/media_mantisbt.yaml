@@ -1,5 +1,5 @@
 zabbix_export:
-  version: '7.2'
+  version: '7.4'
   media_types:
     - name: MantisBT
       type: WEBHOOK
@@ -42,6 +42,7 @@ zabbix_export:
           value: '{TRIGGER.ID}'
         - name: zabbix_url
           value: '{$ZABBIX.URL}'
+      status: DISABLED
       attempts: '1'
       script: |
         var Mantisbt = {

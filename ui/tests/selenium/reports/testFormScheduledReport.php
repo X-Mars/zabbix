@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1359,11 +1359,14 @@ class testFormScheduledReport extends CWebTest {
 			}
 			// Trim trailing and leading spaces in expected values before comparison.
 			if (CTestArrayHelper::get($data, 'trim', false)) {
-				$data['fields'] = array_map('trim', $data['fields']);
+				$data['fields'] = CTestArrayHelper::trim($data['fields']);
 			}
 			$name = CTestArrayHelper::get($data, 'fields.Name', self::UPDATE_REPORT_NAME);
 			$this->assertEquals(1, CDBHelper::getCount('SELECT null FROM report WHERE name='.zbx_dbstr($name)));
 			$this->assertMessage(TEST_GOOD, $success_message);
+
+			// Trim spaces in the middle of a name after DB check; spaces in links are trimmed.
+			$name = CTestArrayHelper::get($data, 'trim', false) ? preg_replace('/\s+/', ' ', $name) : $name;
 
 			if ($action === 'dashboard') {
 				// Open report form page from dashboard.

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -746,7 +746,7 @@ class testFormAction extends CLegacyWebTest {
 				$this->assertEquals('1h', $form->getField('Default operation step duration')->getValue());
 				$this->zbxTestAssertVisibleId('esc_period');
 				$this->zbxTestAssertAttribute('//input[@id=\'esc_period\']', 'maxlength', 255);
-				$this->assertEquals($operations_field->getHeadersText(), ['Steps', 'Details', 'Start in', 'Duration', 'Action']);
+				$this->assertEquals($operations_field->getHeadersText(), ['Steps', 'Details', 'Start in', 'Duration', 'Actions']);
 
 				$checkboxes = [
 					'Pause operations for suppressed problems' => 'id:pause_suppressed',
@@ -762,9 +762,9 @@ class testFormAction extends CLegacyWebTest {
 				}
 
 				$recovery_field = $form->getField('Recovery operations')->asTable();
-				$this->assertEquals($recovery_field->getHeadersText(), ['Details', 'Action']);
+				$this->assertEquals($recovery_field->getHeadersText(), ['Details', 'Actions']);
 				$update_field = $form->getField('Update operations')->asTable();
-				$this->assertEquals($update_field->getHeadersText(), ['Details', 'Action']);
+				$this->assertEquals($update_field->getHeadersText(), ['Details', 'Actions']);
 				break;
 
 			case EVENT_SOURCE_DISCOVERY:
@@ -780,9 +780,9 @@ class testFormAction extends CLegacyWebTest {
 				$this->zbxTestAssertVisibleId('esc_period');
 				$this->zbxTestAssertAttribute('//input[@id=\'esc_period\']', 'maxlength', 255);
 
-				$this->assertEquals($operations_field->getHeadersText(), ['Steps', 'Details', 'Start in', 'Duration', 'Action']);
+				$this->assertEquals($operations_field->getHeadersText(), ['Steps', 'Details', 'Start in', 'Duration', 'Actions']);
 				$recovery_field = $form->getField('Recovery operations')->asTable();
-				$this->assertEquals($recovery_field->getHeadersText(), ['Details', 'Action']);
+				$this->assertEquals($recovery_field->getHeadersText(), ['Details', 'Actions']);
 				$this->zbxTestTextNotPresent(['Pause operations for suppressed problems', 'Notify about canceled escalations',
 					'Update operations']
 				);
@@ -928,11 +928,11 @@ class testFormAction extends CLegacyWebTest {
 			$this->zbxTestAssertVisibleXpath('//div[@id="operation-message-users"]//button');
 			$this->zbxTestAssertElementText('//div[@id="operation-message-users"]//button', 'Select');
 
-			$this->zbxTestTextPresent('Send only to');
+			$this->zbxTestTextPresent('Send to media type');
 			$this->zbxTestAssertVisibleId('operation-message-mediatype-only-label');
-			$this->zbxTestDropdownAssertSelected('operation[opmessage][mediatypeid]', '- All -');
+			$this->zbxTestDropdownAssertSelected('operation[opmessage][mediatypeid]', 'All available');
 			$this->zbxTestDropdownHasOptions('operation[opmessage][mediatypeid]', [
-					'- All -',
+					'All available',
 					'Email',
 					'SMS'
 			]);
@@ -975,7 +975,7 @@ class testFormAction extends CLegacyWebTest {
 		}
 
 		if ($eventsource == EVENT_SOURCE_TRIGGERS && $new_operation_operationtype != null) {
-			$this->zbxTestTextPresent(['Conditions', 'Label', 'Name', 'Action']);
+			$this->zbxTestTextPresent(['Conditions', 'Label', 'Name', 'Actions']);
 
 			if ($add_opcondition == null) {
 				$this->zbxTestAssertVisibleXpath('//button[@class="js-add"]');
@@ -1065,7 +1065,7 @@ class testFormAction extends CLegacyWebTest {
 		$operation_details->getField('Custom message')->set(true);
 		$this->assertEquals(255, $operation_details->getField('id:operation-opmessage-subject')->waitUntilVisible()->getAttribute('maxlength'));
 		$this->assertEquals(65535, $operation_details->getField('id:operation_opmessage_message')->waitUntilVisible()->getAttribute('maxlength'));
-		$this->zbxTestClickXpath("//div[@class='overlay-dialogue modal modal-popup modal-popup-medium']//button[@title='Close']");
+		$this->zbxTestClickXpath("//div[@class='overlay-dialogue modal modal-popup modal-popup-medium undefined']//button[@title='Close']");
 	}
 
 	public static function update() {
@@ -1418,7 +1418,7 @@ class testFormAction extends CLegacyWebTest {
 				}
 
 				if (array_key_exists('media', $operation)) {
-					$operation_form->getField('Send only to')->fill($operation['media']);
+					$operation_form->getField('Send to media type')->fill($operation['media']);
 				}
 
 				$operation_form->submit();
@@ -1528,7 +1528,7 @@ class testFormAction extends CLegacyWebTest {
 		$this->zbxTestClickXpath('//div[@class="overlay-dialogue-footer"]//button[text()="Select"]');
 
 		$operation_form = $this->query('id:popup-operation')->asForm()->one();
-		$operation_form->getField('Send only to')->select('SMS');
+		$operation_form->getField('Send to media type')->select('SMS');
 		$operation_form->submit();
 		$this->zbxTestAssertElementText("//tr[@id='operations_0']//td[@class='wordbreak']",
 			"Send message to users: Admin (Zabbix Administrator) via SMS ".
@@ -1617,7 +1617,7 @@ class testFormAction extends CLegacyWebTest {
 
 		$this->page->login()->open('zabbix.php?action=action.list&eventsource=4')->waitUntilReady();
 		$this->zbxTestClickXpath('//a[text()="Service action"]');
-		$this->zbxTestClickXpathWait('//div[@data-dialogueid="action-edit"]//button[text()="Clone"]');
+		$this->zbxTestClickXpathWait('//div[@data-dialogueid="action.edit"]//button[text()="Clone"]');
 		$dialog = $this->query('class:overlay-dialogue-body')->asOverlayDialog()->one()->waitUntilReady();
 		$form = $dialog->asForm();
 		$form->getField('id:name')->fill(self::SERVICE_ACTION.' Clone');

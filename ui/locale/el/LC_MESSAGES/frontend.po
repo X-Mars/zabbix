@@ -698,6 +698,10 @@ msgid_plural "Actions disabled"
 msgstr[0] "Ενέργεια απενεργοποιημένη"
 msgstr[1] "Ενέργειες απενεργοποιημένες"
 
+#: app/controllers/CControllerPopup.php:42
+msgid "Action edit"
+msgstr ""
+
 #: app/controllers/CControllerActionEnable.php:84
 msgid "Action enabled"
 msgid_plural "Actions enabled"
@@ -1288,6 +1292,11 @@ msgstr "Ευθυγράμμιση στοιχείων χάρτη"
 #: widgets/problems/includes/WidgetForm.php:131
 msgid "All"
 msgstr "Όλα"
+
+#: app/views/mediatype.list.php:79 app/views/mediatype.list.php:81
+#: app/views/mediatype.list.php:90 app/views/popup.operation.edit.php:160
+msgid "All available"
+msgstr ""
 
 #: app/views/monitoring.dashboard.view.php:189
 msgid "All dashboards"
@@ -2077,6 +2086,14 @@ msgstr "Τύπος πλαισίου"
 msgid "Border width"
 msgstr "Πλάτος πλαισίου"
 
+#: include/classes/api/services/CHost.php:1445
+msgid "Both \"tls_connect\" and \"tls_accept\" fields must be specified when changing settings of connection encryption."
+msgstr ""
+
+#: include/classes/api/services/CHost.php:1452
+msgid "Both \"tls_psk_identity\" and \"tls_psk\" fields must be specified when changing the PSK for connection encryption."
+msgstr ""
+
 #: app/controllers/CControllerUserUpdateGeneral.php:105
 msgid "Both passwords must be equal."
 msgstr "Και οι δύο κωδικοί πρόσβασης πρέπει να είναι ίσοι."
@@ -2684,12 +2701,22 @@ msgstr ""
 msgid "Cannot delete default user directory."
 msgstr "Αδύνατη η διαγραφή του προεπιλεγμένου καταλόγου χρήστη."
 
+#: include/classes/api/services/CDRule.php:772
+#, c-format
+msgid "Cannot delete discovery check \"%1$s\" of discovery rule \"%2$s\": %3$s."
+msgstr ""
+
 #: app/controllers/CControllerDiscoveryDelete.php:68 host_discovery.php:390
 #: host_discovery.php:597
 msgid "Cannot delete discovery rule"
 msgid_plural "Cannot delete discovery rules"
 msgstr[0] "Αδύνατη η διαγραφή κανόνα εντοπισμού"
 msgstr[1] "Αδύνατη η διαγραφή κανόνα εντοπισμού"
+
+#: include/classes/api/services/CDRule.php:979
+#, c-format
+msgid "Cannot delete discovery rule \"%1$s\": %2$s."
+msgstr ""
 
 #: app/controllers/CControllerCorrelationDelete.php:68
 msgid "Cannot delete event correlation"
@@ -2718,6 +2745,11 @@ msgid_plural "Cannot delete hosts"
 msgstr[0] "Αδύνατη η διαγραφή ξενιστή"
 msgstr[1] "Αδύνατη η διαγραφή ξενιστή"
 
+#: include/classes/api/services/CHost.php:1631
+#, c-format
+msgid "Cannot delete host \"%1$s\": %2$s."
+msgstr ""
+
 #: include/classes/api/services/CHost.php:1461
 #, c-format
 msgid "Cannot delete host %1$s because maintenance \"%2$s\" must contain at least one host or host group."
@@ -2730,6 +2762,11 @@ msgid "Cannot delete host group"
 msgid_plural "Cannot delete host groups"
 msgstr[0] "Αδύνατη η διαγραφή της ομάδας διακομιστή"
 msgstr[1] "Αδύνατη η διαγραφή των ομάδων διακομιστή"
+
+#: include/classes/api/services/CHostGroup.php:767
+#, c-format
+msgid "Cannot delete host group \"%1$s\": %2$s."
+msgstr ""
 
 #: include/classes/api/services/CHostGroup.php:858
 #, c-format
@@ -2877,6 +2914,11 @@ msgid_plural "Cannot delete templates"
 msgstr[0] "Αδύνατη η διαγραφή προτύπου"
 msgstr[1] "Αδύνατη η διαγραφή προτύπου"
 
+#: include/classes/api/services/CTemplate.php:805
+#, c-format
+msgid "Cannot delete template \"%1$s\": %2$s."
+msgstr ""
+
 #: app/controllers/CControllerTemplateGroupDelete.php:75
 msgid "Cannot delete template group"
 msgid_plural "Cannot delete template groups"
@@ -2913,6 +2955,11 @@ msgid_plural "Cannot delete triggers"
 msgstr[0] "Αδύνατη η διαγραφή εναύσματος"
 msgstr[1] "Αδύνατη η διαγραφή εναύσματος"
 
+#: include/classes/api/managers/CTriggerManager.php:126
+#, c-format
+msgid "Cannot delete trigger \"%1$s\": %2$s."
+msgstr ""
+
 #: app/controllers/CControllerTriggerPrototypeDelete.php:72
 #, fuzzy
 msgid "Cannot delete trigger prototype"
@@ -2936,6 +2983,16 @@ msgid "Cannot delete user group"
 msgid_plural "Cannot delete user groups"
 msgstr[0] "Αδύνατη η διαγραφή της ομάδας χρηστών"
 msgstr[1] "Αδύνατη η διαγραφή των ομάδων χρηστών"
+
+#: include/classes/api/services/CUserGroup.php:1330
+#, c-format
+msgid "Cannot delete user group \"%1$s\", because it is used by LDAP userdirectory \"%2$s\"."
+msgstr ""
+
+#: include/classes/api/services/CUserGroup.php:1325
+#, c-format
+msgid "Cannot delete user group \"%1$s\", because it is used by SAML userdirectory."
+msgstr ""
 
 #: include/classes/api/services/CUserGroup.php:1397
 #, c-format
@@ -3391,6 +3448,16 @@ msgstr ""
 #: include/classes/api/services/CItemGeneral.php:808
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to template \"%3$s\", because an item with the same key already exists."
+msgstr ""
+
+#: include/classes/api/services/CItemGeneral.php:684
+#, c-format
+msgid "Cannot inherit LLD rules with key \"%1$s\" of both \"%2$s\" and \"%3$s\" templates, because the key must be unique on host \"%4$s\"."
+msgstr ""
+
+#: include/classes/api/services/CItemGeneral.php:685
+#, c-format
+msgid "Cannot inherit LLD rules with key \"%1$s\" of both \"%2$s\" and \"%3$s\" templates, because the key must be unique on template \"%4$s\"."
 msgstr ""
 
 #: include/classes/api/services/CItemPrototype.php:1220
@@ -4419,6 +4486,10 @@ msgstr ""
 msgid "Checks if file exists. Returns 0 - not found; 1 - file of the specified type exists"
 msgstr ""
 
+#: include/classes/data/CItemData.php:1115
+msgid "Checks if host is accessible by ICMP ping with retries. 0 - ICMP ping fails. 1 - ICMP ping successful."
+msgstr ""
+
 #: include/classes/data/CItemData.php:969
 msgid "Checks if host is accessible by ICMP ping. 0 - ICMP ping fails. 1 - ICMP ping successful."
 msgstr ""
@@ -5066,6 +5137,10 @@ msgid_plural "Connectors disabled"
 msgstr[0] "Ο σύνδεσμος απενεργοποιήθηκε"
 msgstr[1] "Οι σύνδεσμοι απενεργοποιήθηκαν"
 
+#: app/controllers/CControllerPopup.php:43
+msgid "Connector edit"
+msgstr ""
+
 #: app/controllers/CControllerConnectorEnable.php:69
 msgid "Connector enabled"
 msgid_plural "Connectors enabled"
@@ -5222,6 +5297,10 @@ msgstr[1] ""
 
 #: app/views/popup.token.view.php:51
 msgid "Copy to clipboard"
+msgstr ""
+
+#: app/controllers/CControllerPopup.php:44
+msgid "Correlation edit"
 msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:52
@@ -6594,6 +6673,22 @@ msgstr ""
 msgid "Deleted"
 msgstr ""
 
+#: include/actions.inc.php:143
+msgid "Deleted host"
+msgstr ""
+
+#: include/actions.inc.php:125
+msgid "Deleted host group"
+msgstr ""
+
+#: include/actions.inc.php:710
+msgid "Deleted host group(s)"
+msgstr ""
+
+#: include/actions.inc.php:134
+msgid "Deleted trigger"
+msgstr ""
+
 #: app/views/administration.regex.edit.php:54
 msgid "Delimiter"
 msgstr "Οριοθέτης"
@@ -7161,6 +7256,10 @@ msgid_plural "Discovery rules disabled"
 msgstr[0] "Κανόνας εντοπισμού απενεργοποιημένος"
 msgstr[1] "Κανόνες εντοπισμού απενεργοποιημένοι"
 
+#: app/controllers/CControllerPopup.php:45
+msgid "Discovery rule edit"
+msgstr ""
+
 #: app/controllers/CControllerDiscoveryEnable.php:68 host_discovery.php:580
 msgid "Discovery rule enabled"
 msgid_plural "Discovery rules enabled"
@@ -7206,12 +7305,24 @@ msgstr ""
 msgid "Display OK triggers for"
 msgstr "Εμφάνιση εναυσμάτων OK για"
 
+#: app/views/mediatype.list.php:75
+msgid "Display actions"
+msgstr ""
+
 #: app/partials/monitoring.latest.view.html.php:309
 msgid "Display graph"
 msgstr "Εμφάνιση γραφήματος"
 
+#: widgets/tophosts/views/column.edit.php:136
+msgid "Display item value as"
+msgstr ""
+
 #: widgets/itemhistory/views/column.edit.php:241
 msgid "Display local time"
+msgstr ""
+
+#: widgets/itemhistory/views/column.edit.php:240
+msgid "Display log time"
 msgstr ""
 
 #: widgets/svggraph/includes/WidgetForm.php:364
@@ -7229,6 +7340,10 @@ msgstr ""
 #: app/partials/monitoring.latest.view.html.php:308
 msgid "Display stacked graph"
 msgstr "Εμφάνιση στοιβαγμένου γραφήματος"
+
+#: widgets/topitems/views/column.edit.php:90
+msgid "Display value as"
+msgstr ""
 
 #: app/controllers/CControllerHintboxActionlist.php:99
 #: app/views/administration.queue.details.php:86
@@ -8536,6 +8651,10 @@ msgstr "Γεμισμένη περιοχή"
 msgid "Filter"
 msgstr "Φίλτρο"
 
+#: app/views/mediatype.list.php:76
+msgid "Filter actions by the scope of media type usage:"
+msgstr ""
+
 #: app/views/js/popup.tabfilter.edit.js.php:63
 msgid "Filter deleted"
 msgstr ""
@@ -9377,6 +9496,10 @@ msgstr ""
 msgid "History functions"
 msgstr ""
 
+#: app/views/administration.housekeeping.edit.php:218
+msgid "History, trends and audit log compression"
+msgstr ""
+
 #: include/classes/html/CTabFilter.php:167
 msgid "Home"
 msgstr ""
@@ -9495,6 +9618,10 @@ msgstr ""
 msgid "Host cannot have more than one default interface of the same type."
 msgstr "Ο ξενιστής δεν μπορεί να έχει πλέον της μιάς προκαθορισμένες διεπαφές ίδιου τύπου."
 
+#: widgets/hostcard/Widget.php:32
+msgid "Host card"
+msgstr ""
+
 #: app/views/administration.proxy.list.php:91 hostinventoriesoverview.php:85
 #: widgets/tophosts/includes/WidgetForm.php:159
 msgid "Host count"
@@ -9518,6 +9645,10 @@ msgid "Host disabled"
 msgid_plural "Hosts disabled"
 msgstr[0] "Ξενιστής απενεργοποιημένος"
 msgstr[1] "Ξενιστές απενεργοποιημένοι"
+
+#: app/controllers/CControllerPopup.php:46
+msgid "Host edit"
+msgstr ""
 
 #: app/controllers/CControllerHostGroupEnable.php:76
 #: app/controllers/CControllerPopupMassupdateHost.php:491
@@ -9577,6 +9708,10 @@ msgid "Host group deleted"
 msgid_plural "Host groups deleted"
 msgstr[0] ""
 msgstr[1] ""
+
+#: app/controllers/CControllerPopup.php:47
+msgid "Host group edit"
+msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:112
 msgid "Host group elements"
@@ -9709,6 +9844,12 @@ msgstr ""
 #: include/hosts.inc.php:284
 msgid "Host networks"
 msgstr "Δίκτυα ξενιστών"
+
+#: widgets/topitems/includes/WidgetForm.php:116
+#: widgets/topitems/includes/WidgetForm.php:128
+#: widgets/topitems/views/widget.edit.php:63
+msgid "Host ordering"
+msgstr ""
 
 #: widgets/hostnavigator/includes/WidgetForm.php:65
 msgid "Host patterns"
@@ -11798,6 +11939,12 @@ msgstr "Απενεργοποιημένη απογραφή ξενιστή \"%1$s\
 msgid "Inventory field"
 msgstr "Πεδίο απογραφής"
 
+#: include/classes/html/widgets/fields/CWidgetFieldMultiSelectHostInventoryView.php:30
+#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
+#: widgets/hostcard/includes/WidgetForm.php:50
+msgid "Inventory fields"
+msgstr ""
+
 #: app/views/popup.massupdate.host.php:175
 #: app/views/popup.operation.edit.php:402
 msgid "Inventory mode"
@@ -11876,6 +12023,10 @@ msgid_plural "Items disabled"
 msgstr[0] "Συλλέκτης απενεργοποιημένος"
 msgstr[1] "Συλλέκτες απενεργοποιημένοι"
 
+#: app/controllers/CControllerPopup.php:48
+msgid "Item edit"
+msgstr ""
+
 #: items.php:707
 msgid "Item enabled"
 msgid_plural "Items enabled"
@@ -11911,6 +12062,12 @@ msgstr ""
 msgid "Item not selected"
 msgstr "Συλλέκτης μή επιλεγμένος"
 
+#: widgets/topitems/includes/WidgetForm.php:145
+#: widgets/topitems/includes/WidgetForm.php:157
+#: widgets/topitems/views/widget.edit.php:81
+msgid "Item ordering"
+msgstr ""
+
 #: widgets/piechart/views/widget.edit.js.php:203
 #: widgets/svggraph/views/widget.edit.js.php:281
 msgid "Item pattern"
@@ -11943,6 +12100,10 @@ msgid "Item prototype deleted"
 msgid_plural "Item prototypes deleted"
 msgstr[0] "Πρωτότυπος συλλέκτης διεγράφη"
 msgstr[1] "Πρωτότυπος συλλέκτης διεγράφη"
+
+#: app/controllers/CControllerPopup.php:49
+msgid "Item prototype edit"
+msgstr ""
 
 #: app/controllers/CControllerPopupMassupdateItem.php:286
 #: disc_prototypes.php:457 disc_prototypes.php:483 disc_prototypes.php:522
@@ -12461,6 +12622,15 @@ msgstr ""
 msgid "Licensed under"
 msgstr ""
 
+#: widgets/topitems/includes/WidgetForm.php:125
+#: widgets/topitems/includes/WidgetForm.php:154
+msgid "Limit"
+msgstr ""
+
+#: widgets/topitems/views/widget.edit.php:95
+msgid "Limit applies to each \"Item pattern\" separately"
+msgstr ""
+
 #: app/views/administration.gui.edit.php:93
 msgid "Limit for search and filter results"
 msgstr "Όριο στοιχείων Αναζήτησης/Φίλτρου"
@@ -12485,6 +12655,11 @@ msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:598
 msgid "Line width"
+msgstr ""
+
+#: widgets/svggraph/includes/WidgetForm.php:301
+#: widgets/svggraph/includes/WidgetForm.php:333
+msgid "Linear"
 msgstr ""
 
 #: app/views/popup.massupdate.host.php:42 app/views/template.massupdate.php:45
@@ -12696,6 +12871,11 @@ msgstr "Μορφότυπος καταγραφής ώρας"
 msgid "Log unmatched SNMP traps"
 msgstr "Καταγραφή αταίριαστων SNMP traps"
 
+#: widgets/svggraph/includes/WidgetForm.php:302
+#: widgets/svggraph/includes/WidgetForm.php:334
+msgid "Logarithmic"
+msgstr ""
+
 #: app/controllers/CControllerAuditLogList.php:201
 #: app/views/administration.user.list.php:135
 #: app/views/popup.ldap.test.edit.php:33 app/views/system.warning.php:43
@@ -12855,6 +13035,10 @@ msgstr "Συντήρηση"
 #, c-format
 msgid "Maintenance \"%1$s\" already exists."
 msgstr "Συντήρηση \"%1$s\" υπάρχει ήδη."
+
+#: app/controllers/CControllerPopup.php:50
+msgid "Maintenance edit"
+msgstr ""
 
 #: app/controllers/CControllerMaintenanceTimePeriodEdit.php:142
 #: app/views/maintenance.edit.php:238
@@ -13282,6 +13466,11 @@ msgstr ""
 msgid "Media type \"%1$s\" already exists."
 msgstr ""
 
+#: include/classes/api/services/CMediatype.php:878
+#, c-format
+msgid "Media type \"%1$s\" is used by action \"%2$s\"."
+msgstr ""
+
 #: app/controllers/CControllerMediatypeCreate.php:187
 msgid "Media type added"
 msgstr "Τύπος μέσων προστέθηκε"
@@ -13301,6 +13490,10 @@ msgstr[1] "Απενεργοποιημένοι τύποι μέσων"
 
 #: app/views/administration.user.edit.php:359
 msgid "Media type disabled by Administration."
+msgstr ""
+
+#: app/controllers/CControllerPopup.php:51
+msgid "Media type edit"
 msgstr ""
 
 #: app/controllers/CControllerMediatypeEnable.php:87
@@ -13406,6 +13599,10 @@ msgstr ""
 
 #: app/views/administration.script.edit.php:90
 msgid "Menu path"
+msgstr ""
+
+#: widgets/piechart/includes/WidgetForm.php:149
+msgid "Merge sectors smaller than"
 msgstr ""
 
 #: widgets/piechart/includes/WidgetForm.php:138
@@ -13648,6 +13845,10 @@ msgid "Module disabled"
 msgid_plural "Modules disabled"
 msgstr[0] ""
 msgstr[1] ""
+
+#: app/controllers/CControllerPopup.php:52
+msgid "Module edit"
+msgstr ""
 
 #: app/controllers/CControllerModuleEnable.php:91
 msgid "Module enabled"
@@ -15085,6 +15286,10 @@ msgstr ""
 msgid "Numeral systems"
 msgstr ""
 
+#: widgets/tophosts/views/column.edit.php:139
+msgid "Numeric"
+msgstr ""
+
 #: app/partials/configuration.filter.items.php:143
 #: app/views/popup.massupdate.item.php:148 include/items.inc.php:125
 #: include/triggers.inc.php:1214 include/views/configuration.item.edit.php:123
@@ -16026,6 +16231,10 @@ msgstr ""
 msgid "Pattern"
 msgstr ""
 
+#: widgets/topitems/includes/CWidgetFieldColumnsListView.php:58
+msgid "Patterns"
+msgstr ""
+
 #: app/views/popup.action.edit.php:238
 msgid "Pause operations for suppressed problems"
 msgstr ""
@@ -16687,6 +16896,10 @@ msgid_plural "Proxies deleted"
 msgstr[0] "Διαμεσολαβητής διεγράφη"
 msgstr[1] "Διαμεσολαβητής διεγράφη"
 
+#: app/controllers/CControllerPopup.php:53
+msgid "Proxy edit"
+msgstr ""
+
 #: app/controllers/CControllerAuditLogList.php:239
 #: app/partials/configuration.host.edit.html.php:266
 #: app/views/configuration.host.list.php:153
@@ -16720,6 +16933,10 @@ msgid "Proxy group deleted"
 msgid_plural "Proxy groups deleted"
 msgstr[0] ""
 msgstr[1] ""
+
+#: app/controllers/CControllerPopup.php:54
+msgid "Proxy group edit"
+msgstr ""
 
 #: app/controllers/CControllerProxyGroupUpdate.php:74
 msgid "Proxy group updated"
@@ -17496,6 +17713,10 @@ msgstr "Επαναφορά προκαθορισμένων"
 msgid "Reset to initial view"
 msgstr ""
 
+#: app/views/administration.miscconfig.edit.php:103
+msgid "Resolve secret vault macros by"
+msgstr ""
+
 #: jsLoader.php:283
 msgid "Resolved"
 msgstr "Επιλυμένο"
@@ -17748,6 +17969,11 @@ msgstr ""
 msgid "Run script \"%1$s\" on current host"
 msgstr ""
 
+#: include/actions.inc.php:601
+#, c-format
+msgid "Run script \"%1$s\" on deleted object(s)"
+msgstr ""
+
 #: include/actions.inc.php:622
 #, c-format
 msgid "Run script \"%1$s\" on host groups"
@@ -17828,6 +18054,10 @@ msgid "SLA disabled"
 msgid_plural "SLAs disabled"
 msgstr[0] ""
 msgstr[1] ""
+
+#: app/controllers/CControllerPopup.php:58
+msgid "SLA edit"
+msgstr ""
 
 #: app/controllers/CControllerSlaEnable.php:73
 msgid "SLA enabled"
@@ -18269,6 +18499,10 @@ msgstr[1] "Δέσμη ενεργειών διεγράφη"
 msgid "Script does not have parameters."
 msgstr ""
 
+#: app/controllers/CControllerPopup.php:56
+msgid "Script edit"
+msgstr ""
+
 #: app/views/administration.timeouts.edit.php:168
 msgid "Script execution"
 msgstr ""
@@ -18481,6 +18715,10 @@ msgstr "Αποστολή σε"
 msgid "Send to back"
 msgstr ""
 
+#: app/views/popup.operation.edit.php:189
+msgid "Send to media type"
+msgstr ""
+
 #: app/views/popup.operation.edit.php:108
 msgid "Send to user groups"
 msgstr ""
@@ -18598,6 +18836,10 @@ msgid "Service deleted"
 msgid_plural "Services deleted"
 msgstr[0] "Υπηρεσία διεγράφη"
 msgstr[1] "Υπηρεσία διεγράφη"
+
+#: app/controllers/CControllerPopup.php:57
+msgid "Service edit"
+msgstr ""
 
 #: app/views/administration.userrole.edit.php:166
 #: app/views/administration.userrole.edit.php:207
@@ -19235,6 +19477,17 @@ msgstr ""
 #: include/locales.inc.php:62
 msgid "Spanish (es_ES)"
 msgstr "Ισπανικά (es_ES)"
+
+#: widgets/item/includes/WidgetForm.php:191
+#: widgets/item/includes/WidgetForm.php:321
+#: widgets/tophosts/views/column.edit.php:155
+#: widgets/tophosts/views/column.edit.php:162
+msgid "Sparkline"
+msgstr ""
+
+#: app/views/mediatype.list.php:83 app/views/mediatype.list.php:91
+msgid "Specific"
+msgstr ""
 
 #: include/classes/helpers/CRoleHelper.php:199
 msgid "Specified role was not found."
@@ -19984,6 +20237,10 @@ msgid_plural "Templates deleted"
 msgstr[0] "Σχεδιότυπο διεγράφη"
 msgstr[1] "Σχεδιότυπο διεγράφη"
 
+#: app/controllers/CControllerPopup.php:59
+msgid "Template edit"
+msgstr ""
+
 #: app/controllers/CControllerAuditLogList.php:259
 #: app/partials/configuration.templategroup.edit.html.php:52
 #: app/views/configuration.templategroup.edit.php:52
@@ -20006,6 +20263,10 @@ msgid "Template group deleted"
 msgid_plural "Template groups deleted"
 msgstr[0] ""
 msgstr[1] ""
+
+#: app/controllers/CControllerPopup.php:55
+msgid "Template group edit"
+msgstr ""
 
 #: app/controllers/CControllerTemplateGroupUpdate.php:86
 msgid "Template group updated"
@@ -20267,6 +20528,10 @@ msgstr ""
 msgid "The cloned template contains user defined macros with type \"Secret text\". The value and type of these macros were reset."
 msgstr ""
 
+#: include/classes/api/services/CHost.php:1433
+msgid "The field \"monitored_by\" must be specified when changing proxy or proxy group for host monitoring."
+msgstr ""
+
 #: app/views/administration.geomaps.edit.php:36
 msgid "The following placeholders are supported:"
 msgstr ""
@@ -20381,6 +20646,21 @@ msgstr "Θέμα"
 msgid "These parameters will be passed to the script as command-line arguments in the specified order."
 msgstr ""
 
+#: app/views/action.list.php:163
+msgid "This action has conditions or operations referencing deleted object(s)."
+msgstr ""
+
+#: app/views/action.list.php:158
+msgid "This action has missing conditions or operations due to previously deleted object(s)."
+msgstr ""
+
+#: app/controllers/CControllerDiscoveryEdit.php:175
+#, c-format
+msgid "This check cannot be removed, as it is used as a condition in %1$s discovery action."
+msgid_plural "This check cannot be removed, as it is used as a condition in %1$s discovery actions."
+msgstr[0] ""
+msgstr[1] ""
+
 #: include/func.inc.php:2566
 msgid "This day last week"
 msgstr ""
@@ -20422,6 +20702,10 @@ msgstr ""
 
 #: widgets/itemhistory/views/column.edit.php:242
 msgid "This setting will display local time instead of the timestamp. \"Show timestamp\" must also be checked in the advanced configuration."
+msgstr ""
+
+#: widgets/itemhistory/views/column.edit.php:241
+msgid "This setting will display log time instead of item's timestamp. \"Show timestamp\" must also be checked in the advanced configuration."
 msgstr ""
 
 #: include/views/configuration.item.edit.php:129
@@ -20664,6 +20948,10 @@ msgstr "Σήμερα"
 msgid "Today so far"
 msgstr ""
 
+#: app/controllers/CControllerPopup.php:60
+msgid "Token edit"
+msgstr ""
+
 #: include/views/js/monitoring.sysmaps.js.php:40
 #: include/views/js/monitoring.sysmaps.js.php:159
 #: include/views/js/monitoring.sysmaps.js.php:684
@@ -20691,6 +20979,10 @@ msgstr ""
 
 #: widgets/tophosts/Widget.php:34
 msgid "Top hosts"
+msgstr ""
+
+#: widgets/topitems/Widget.php:32
+msgid "Top items"
 msgstr ""
 
 #: widgets/toptriggers/Widget.php:29
@@ -20922,6 +21214,10 @@ msgstr[1] "Εναύσματα απενεργοποιημένα"
 msgid "Trigger displaying options"
 msgstr "Εμφάνιση επιλογών εναύσματος"
 
+#: app/controllers/CControllerPopup.php:61
+msgid "Trigger edit"
+msgstr ""
+
 #: app/controllers/CControllerTriggerEnable.php:67
 msgid "Trigger enabled"
 msgid_plural "Triggers enabled"
@@ -21061,6 +21357,10 @@ msgid "Trigger prototype deleted"
 msgid_plural "Trigger prototypes deleted"
 msgstr[0] "Πρωτότυπο έναυσμα διεγράφη"
 msgstr[1] "Πρωτότυπο έναυσμα διεγράφη"
+
+#: app/controllers/CControllerPopup.php:62
+msgid "Trigger prototype edit"
+msgstr ""
 
 #: app/controllers/CControllerTriggerMassupdate.php:219
 #: app/controllers/CControllerTriggerPrototypeDisable.php:76
@@ -22463,6 +22763,10 @@ msgstr ""
 msgid "VMware hypervisor health state rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - gray; 1 - green; 2 - yellow; 3 - red"
 msgstr ""
 
+#: include/classes/data/CItemData.php:2237
+msgid "VMware hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
+msgstr ""
+
 #: include/classes/data/CItemData.php:2051
 msgid "VMware hypervisor model, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier"
 msgstr ""
@@ -22599,6 +22903,10 @@ msgstr ""
 msgid "VMware virtual machine host memory usage, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
 
+#: include/classes/data/CItemData.php:2482
+msgid "VMware virtual machine hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
+msgstr ""
+
 #: include/classes/data/CItemData.php:2331
 msgid "VMware virtual machine hypervisor name, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
@@ -22621,6 +22929,10 @@ msgstr ""
 
 #: include/classes/data/CItemData.php:2443
 msgid "VMware virtual machine power state, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
+msgstr ""
+
+#: include/classes/data/CItemData.php:2498
+msgid "VMware virtual machine private memory size, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
 
 #: include/classes/data/CItemData.php:2359
@@ -23683,6 +23995,14 @@ msgstr ""
 msgid "Zabbix server (proxy)"
 msgstr ""
 
+#: app/views/administration.miscconfig.edit.php:112
+msgid "Zabbix server and proxy"
+msgstr ""
+
+#: app/views/administration.miscconfig.edit.php:107
+msgid "Zabbix server and proxy: secrets are retrieved from Vault by both Zabbix server and proxies, allowing them to resolve macros independently."
+msgstr ""
+
 #: jsrpc.php:91
 msgid "Zabbix server is not running: the information displayed may not be current."
 msgstr "Εξυπηρετητής zabbix ανενεργός: εμφανιζόμενη πληροφορία ασύγχρονη."
@@ -23698,6 +24018,10 @@ msgstr "Όνομα εξυπηρετητή Zabbix"
 
 #: app/partials/administration.system.info.php:40
 msgid "Zabbix server version"
+msgstr ""
+
+#: app/views/administration.miscconfig.edit.php:105
+msgid "Zabbix server: secrets are retrieved from Vault by Zabbix server and forwarded to proxies when needed."
 msgstr ""
 
 #: include/items.inc.php:92
@@ -23868,6 +24192,41 @@ msgstr ""
 msgid "acos() - The arccosine of a value as an angle, expressed in radians"
 msgstr ""
 
+#: include/classes/api/services/CDRule.php:773
+#, c-format
+msgid "action \"%1$s\" uses this discovery check"
+msgstr ""
+
+#: include/classes/api/services/CDRule.php:980
+#, c-format
+msgid "action \"%1$s\" uses this discovery rule"
+msgstr ""
+
+#: include/classes/api/services/CHost.php:1632
+#, c-format
+msgid "action \"%1$s\" uses this host"
+msgstr ""
+
+#: include/classes/api/services/CHostGroup.php:768
+#, c-format
+msgid "action \"%1$s\" uses this host group"
+msgstr ""
+
+#: include/classes/api/services/CService.php:487
+#, c-format
+msgid "action \"%1$s\" uses this service"
+msgstr ""
+
+#: include/classes/api/services/CTemplate.php:806
+#, c-format
+msgid "action \"%1$s\" uses this template"
+msgstr ""
+
+#: include/classes/api/managers/CTriggerManager.php:127
+#, c-format
+msgid "action \"%1$s\" uses this trigger"
+msgstr ""
+
 #: app/partials/monitoring.charts.subfilter.php:182
 #: app/partials/monitoring.latest.subfilter.php:186 include/forms.inc.php:144
 msgid "affects only filtered data"
@@ -23987,6 +24346,16 @@ msgstr ""
 
 #: app/views/administration.geomaps.edit.php:47
 msgid "and"
+msgstr ""
+
+#: include/classes/api/helpers/CApiPskHelper.php:27
+#: include/classes/api/helpers/CApiPskHelper.php:57
+#: include/classes/api/helpers/CApiPskHelper.php:73
+#: include/classes/api/helpers/CApiPskHelper.php:106
+#: include/classes/api/helpers/CApiPskHelper.php:139
+#: include/classes/api/helpers/CApiPskHelper.php:160
+#: include/classes/api/helpers/CApiPskHelper.php:176
+msgid "another tls_psk value is already associated with given tls_psk_identity"
 msgstr ""
 
 #: include/forms.inc.php:1450 include/views/js/item.preprocessing.js.php:237
@@ -24512,6 +24881,18 @@ msgstr ""
 msgid "discovery rule \"%1$s\" on host \"%2$s\" is not monitored"
 msgstr ""
 
+#: app/views/mediatype.list.php:78
+msgid "display all actions"
+msgstr ""
+
+#: app/views/mediatype.list.php:80
+msgid "display only actions where All available media types are used in action operation"
+msgstr ""
+
+#: app/views/mediatype.list.php:84
+msgid "display only actions where specific media type is used in action operation"
+msgstr ""
+
 #: app/views/popup.lldoperation.php:65 include/actions.inc.php:27
 #: include/classes/helpers/CCorrelationHelper.php:37
 #: include/views/js/configuration.host.discovery.edit.overr.js.php:164
@@ -24615,6 +24996,10 @@ msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:624
 msgid "first() - The oldest value in the specified time interval"
+msgstr ""
+
+#: app/controllers/CControllerPopupTriggerExpr.php:626
+msgid "firstclock() - Timestamp of the oldest value in the specified time interval"
 msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:631
@@ -24871,6 +25256,10 @@ msgstr ""
 msgid "invalid host name"
 msgstr ""
 
+#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
+msgid "invalid inventory field"
+msgstr ""
+
 #: include/classes/validators/CHistFunctionValidator.php:82
 #: include/classes/validators/CMathFunctionValidator.php:86
 #, c-format
@@ -25010,6 +25399,10 @@ msgstr "τελευταίο"
 msgid "last() - Last (most recent) T value"
 msgstr ""
 
+#: app/controllers/CControllerPopupTriggerExpr.php:733
+msgid "lastclock() - Timestamp of the last (most recent) T value"
+msgstr ""
+
 #: include/classes/graphdraw/CLineGraphDraw.php:1557
 msgid "left"
 msgstr ""
@@ -25044,6 +25437,10 @@ msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:779
 msgid "logsource() - Log source of the last log entry matching parameter V for period T (1 - match, 0 - no match)"
+msgstr ""
+
+#: app/controllers/CControllerPopupTriggerExpr.php:795
+msgid "logtimestamp() - Timestamp of the last (most recent) T log message"
 msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:786
@@ -25192,6 +25589,11 @@ msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:858
 msgid "monoinc() - Check for continuous item value increase (1 - data is monotonic, 0 - otherwise), Mode (strict - require strict monotonicity)"
+msgstr ""
+
+#: widgets/hostcard/views/widget.view.php:157
+#: widgets/hostcard/views/widget.view.php:338
+msgid "more"
 msgstr ""
 
 #: include/func.inc.php:571

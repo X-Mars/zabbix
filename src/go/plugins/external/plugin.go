@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -69,6 +69,7 @@ func NewPlugin(
 		Logger: log.New(name),
 	}
 	base.SetExternal(true)
+	base.SetHandleTimeout(true)
 
 	return &Plugin{
 		Base:          base,
@@ -95,7 +96,7 @@ func (p *Plugin) RegisterMetrics(config any) error {
 		func() error {
 			err = p.register()
 			if err != nil {
-				return errs.Wrap(err, "failed to register plugin")
+				return errs.Wrap(err, "failed plugin register request")
 			}
 
 			defer p.Stop()
@@ -130,6 +131,7 @@ func (p *Plugin) register() error {
 			},
 			ProtocolVersion: comms.ProtocolVersion,
 		},
+		p.timeout,
 	)
 	if err != nil {
 		return errs.Wrap(err, "failed to send register request to plugin")
@@ -215,7 +217,7 @@ func (p *Plugin) startPlugin(initial bool) (<-chan error, error) {
 
 	go func() {
 		defer func() {
-			p.Debugf("stoping communications broker")
+			p.Debugf("stopping communications broker")
 			p.broker.close()
 		}()
 
@@ -241,7 +243,7 @@ func (p *Plugin) startPlugin(initial bool) (<-chan error, error) {
 
 				pluginExit <- errs.New("timeout while waiting for plugin process to exit, killed process")
 			case <-p.cmdWait:
-				p.Infof("plugin %q process exited", p.Path)
+				p.Debugf("plugin %q process exited", p.Path)
 
 				pluginExit <- nil
 			}
@@ -366,6 +368,7 @@ func (p *Plugin) Validate(privateOptions any) error {
 			},
 			PrivateOptions: opts,
 		},
+		p.timeout,
 	)
 	if err != nil {
 		return errs.Wrap(err, "failed to send validate request to plugin")
@@ -380,6 +383,13 @@ func (p *Plugin) Validate(privateOptions any) error {
 
 // Export sends an `export` request to the plugin.
 func (p *Plugin) Export(key string, params []string, ctx plugin.ContextProvider) (any, error) {
+	respTimeout := p.timeout
+	if ctx.Timeout() != 0 {
+		// add 0.5 seconds to buffer the time it takes to send request and
+		// receive response
+		respTimeout = time.Second*time.Duration(ctx.Timeout()) + time.Millisecond*500
+	}
+
 	resp, err := DoWithResponseAs[comms.ExportResponse](
 		p.broker,
 		&comms.ExportRequest{
@@ -390,6 +400,7 @@ func (p *Plugin) Export(key string, params []string, ctx plugin.ContextProvider)
 			Params:  params,
 			Timeout: ctx.Timeout(),
 		},
+		respTimeout,
 	)
 	if err != nil {
 		return nil, err

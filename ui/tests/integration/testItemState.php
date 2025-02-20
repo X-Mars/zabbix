@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -257,9 +257,10 @@ class testItemState extends CIntegrationTest {
 
 		$wait = $delay + self::LOG_LINE_WAIT_TIME;
 		$key = self::$items[$scenario['name']]['key'];
+		$itemid = self::$items[$scenario['name']]['itemid'];
 
 		// Wait for item to be checked
-		$first_check = $this->getLogLineTimestamp(self::COMPONENT_SERVER, ["In process_async_result() key:'".$key."'"], $wait);
+		$first_check = $this->getLogLineTimestamp(self::COMPONENT_SERVER, ["In process_async_result() itemid:".$itemid." key:'".$key."'"], $wait);
 
 		// Wait for item state to be flushed (once per second in preprocessing manager and in poller)
 		sleep(2);
@@ -274,10 +275,10 @@ class testItemState extends CIntegrationTest {
 		);
 
 		// Verify item checks intervals
-		$check = $this->getLogLineTimestamp(self::COMPONENT_SERVER, ["In process_async_result() key:'".$key."'"], $wait);
+		$check = $this->getLogLineTimestamp(self::COMPONENT_SERVER, ["In process_async_result() itemid:".$itemid." key:'".$key."'"], $wait);
 		$this->assertTrue($check <= $first_check + $delay + 1);
 
-		$next_check = $this->getLogLineTimestamp(self::COMPONENT_SERVER, ["In process_async_result() key:'".$key."'"], $wait);
+		$next_check = $this->getLogLineTimestamp(self::COMPONENT_SERVER, ["In process_async_result() itemid:".$itemid." key:'".$key."'"], $wait);
 		$this->assertTrue($next_check <= $check + $delay + 1 && $next_check >= $check + $delay - 1);
 	}
 

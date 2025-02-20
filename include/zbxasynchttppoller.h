@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -17,7 +17,10 @@
 #include "zbxsysinc.h"
 
 #if defined(HAVE_LIBCURL) && defined(HAVE_LIBEVENT)
-#include <event.h>
+#include <curl/curl.h>
+#include <curl/multi.h>
+
+#include <event2/event.h>
 
 typedef void (*process_httpagent_result_callback_fn)(CURL *easy_handle, CURLcode err, void *arg);
 typedef void (*httpagent_action_callback_fn)(void *arg);

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -338,7 +338,20 @@ class CAudit {
 			'paths' => ['usermacro.value'],
 			'conditions' => ['type' => ZBX_MACRO_TYPE_SECRET]
 		],
-		self::RESOURCE_MEDIA_TYPE => ['paths' => ['mediatype.passwd']],
+		self::RESOURCE_MEDIA_TYPE => [
+			'paths' => ['mediatype.passwd'],
+			'conditions' => [
+				[
+					'provider' => [CMediatypeHelper::EMAIL_PROVIDER_SMTP, CMediatypeHelper::EMAIL_PROVIDER_GMAIL_RELAY,
+						CMediatypeHelper::EMAIL_PROVIDER_OFFICE365_RELAY
+					],
+					'smtp_authentication' => SMTP_AUTHENTICATION_NORMAL
+				],
+				[
+					'provider' => [CMediatypeHelper::EMAIL_PROVIDER_GMAIL, CMediatypeHelper::EMAIL_PROVIDER_OFFICE365]
+				]
+			]
+		],
 		self::RESOURCE_MFA => ['paths' => ['mfa.client_secret']],
 		self::RESOURCE_PROXY => ['paths' => ['proxy.tls_psk_identity', 'proxy.tls_psk']],
 		self::RESOURCE_SCRIPT => ['paths' => ['script.password']],
@@ -946,7 +959,7 @@ class CAudit {
 			return false;
 		}
 
-		if ($schema_fields[$field_name]['type'] === DB::FIELD_TYPE_ID && $schema_fields[$field_name]['null']
+		if ($schema_fields[$field_name]['type'] & DB::FIELD_TYPE_ID && $schema_fields[$field_name]['null']
 				&& $value == 0) {
 			return true;
 		}

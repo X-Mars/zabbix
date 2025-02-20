@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -101,7 +101,7 @@ class testFormServicesServices extends CWebTest {
 
 		// Check Problem tags table headers.
 		$problem_tags_table = $form->query('id', 'problem_tags')->asMultifieldTable()->one();
-		$this->assertSame(['Name', 'Operation', 'Value', 'Action'], $problem_tags_table->getHeadersText());
+		$this->assertSame(['Name', 'Operation', 'Value', ''], $problem_tags_table->getHeadersText());
 
 		// Check Problem tags table fields.
 		$problem_tags_table->checkValue([['tag' => '', 'operator' => 'Equals', 'value' => '']]);
@@ -115,7 +115,7 @@ class testFormServicesServices extends CWebTest {
 
 		// Check Status rules table headers.
 		$status_rules_table = $form->query('id', 'status_rules')->asMultifieldTable()->one();
-		$this->assertSame(['Name', 'Action'], $status_rules_table->getHeadersText());
+		$this->assertSame(['Name', 'Actions'], $status_rules_table->getHeadersText());
 
 		// Check Service tab fields' maxlengths.
 		$service_tab_limits = [
@@ -1263,7 +1263,7 @@ class testFormServicesServices extends CWebTest {
 		$table = $this->query('class:list-table')->asTable()->one()->waitUntilReady();
 		$table->findRow('Name', $parent, true)->query('link', $parent)->waitUntilClickable()->one()->click();
 		$this->page->waitUntilReady();
-		$table->findRow('Name', $child, true)->query("xpath:.//button[".CXPathHelper::fromClass('js-edit-service')."]")
+		$table->findRow('Name', $child, true)->query("xpath:.//button[".CXPathHelper::fromClass('js-edit-service-list')."]")
 				->one()->waitUntilClickable()->click();
 
 		$form = COverlayDialogElement::find()->asForm()->one()->waitUntilReady();

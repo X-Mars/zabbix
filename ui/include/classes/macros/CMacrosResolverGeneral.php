@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -901,18 +901,27 @@ class CMacrosResolverGeneral {
 	}
 
 	/**
-	 * Get item macros by itemid.
+	 * Get item macros by item ID.
 	 *
-	 * @param array  $macros
-	 * @param array  $macros[<itemid>]
-	 * @param array  $macros[<itemid>][<macro>]
-	 * @param array  $macro_values
-	 * @param array  $macro_values[<itemid>]
-	 * @param string $macro_values[<itemid>][<token>]
+	 * @param array $macros
+	 * @param array $macro_values
+	 *
+	 * $macros = [
+	 *     <itemid> => [
+	 *         <macro> => [[
+	 *             'token' => (string) Macro token.
+	 *             'macrofunc' => (array) Macro function.
+	 *         ]]
+	 *     ]
+	 * ]
+	 *
+	 * $macro_values = [
+	 *     <itemid> => (array) List of macro values.
+	 * ]
 	 *
 	 * @return array
 	 */
-	protected static function getItemMacrosByItemId(array $macros, array $macro_values) {
+	protected static function getItemMacrosByItemId(array $macros, array $macro_values): array {
 		if (!$macros) {
 			return $macro_values;
 		}
@@ -965,7 +974,7 @@ class CMacrosResolverGeneral {
 	 *
 	 * @return array
 	 */
-	protected static function getItemValueMacrosByItemId(array $macros, array $macro_values) {
+	protected static function getItemValueMacrosByItemId(array $macros, array $macro_values): array {
 		if (!$macros) {
 			return $macro_values;
 		}
@@ -993,7 +1002,8 @@ class CMacrosResolverGeneral {
 							: formatHistoryValue($value, $db_items[$itemid]);
 					}
 				}
-				elseif ($db_items[$itemid]['value_type'] == ITEM_VALUE_TYPE_LOG) {
+				elseif ($db_items[$itemid]['value_type'] == ITEM_VALUE_TYPE_LOG
+						&& substr($macro, 0, 8) === 'ITEM.LOG') {
 					switch ($macro) {
 						case 'ITEM.LOG.DATE':
 							$value = date('Y.m.d', $history[$itemid][0]['timestamp']);
@@ -1001,6 +1011,10 @@ class CMacrosResolverGeneral {
 
 						case 'ITEM.LOG.TIME':
 							$value = date('H:i:s', $history[$itemid][0]['timestamp']);
+							break;
+
+						case 'ITEM.LOG.TIMESTAMP':
+							$value = $history[$itemid][0]['timestamp'];
 							break;
 
 						case 'ITEM.LOG.AGE':
@@ -1021,6 +1035,35 @@ class CMacrosResolverGeneral {
 
 						case 'ITEM.LOG.EVENTID':
 							$value = $history[$itemid][0]['logeventid'];
+							break;
+					}
+
+					foreach ($tokens as $token) {
+						$macro_values[$itemid][$token['token']] = array_key_exists('macrofunc', $token)
+							? CMacroFunction::calcMacrofunc($value, $token['macrofunc'])
+							: $value;
+					}
+				}
+				elseif (substr($macro, 0, 10) === 'ITEM.VALUE' || substr($macro, 0, 14) === 'ITEM.LASTVALUE') {
+					switch ($macro) {
+						case 'ITEM.VALUE.DATE':
+						case 'ITEM.LASTVALUE.DATE':
+							$value = date('Y.m.d', $history[$itemid][0]['clock']);
+							break;
+
+						case 'ITEM.VALUE.TIME':
+						case 'ITEM.LASTVALUE.TIME':
+							$value = date('H:i:s', $history[$itemid][0]['clock']);
+							break;
+
+						case 'ITEM.VALUE.TIMESTAMP':
+						case 'ITEM.LASTVALUE.TIMESTAMP':
+							$value = $history[$itemid][0]['clock'];
+							break;
+
+						case 'ITEM.VALUE.AGE':
+						case 'ITEM.LASTVALUE.AGE':
+							$value = zbx_date2age($history[$itemid][0]['clock']);
 							break;
 					}
 
@@ -1096,17 +1139,25 @@ class CMacrosResolverGeneral {
 	 * Get item macros.
 	 *
 	 * @param array $macros
-	 * @param array $macros[<functionid>]
-	 * @param array $macros[<functionid>][<macro>]  An array of the tokens.
 	 * @param array $macro_values
 	 * @param array $triggers
 	 * @param array $options
-	 * @param bool  $options['events']              Resolve {ITEM.VALUE} macro using 'clock' and 'ns' fields.
-	 * @param bool  $options['html']
+	 *
+	 * $macros = [
+	 *     <functionid> => [
+	 *         'macro' => (array) List of tokens.
+	 *     ]
+	 * ]
+	 *
+	 * $options = [
+	 *      'events' => (bool) Resolve {ITEM.VALUE.*} macro using 'clock' and 'ns' fields
+	 *      'html' => (bool)
+	 * ]
 	 *
 	 * @return array
 	 */
-	protected static function getItemMacros(array $macros, array $macro_values, array $triggers = [], array $options = []) {
+	protected static function getItemMacros(array $macros, array $macro_values, array $triggers = [],
+			array $options = []): array {
 		if (!$macros) {
 			return $macro_values;
 		}
@@ -1128,50 +1179,70 @@ class CMacrosResolverGeneral {
 
 		// False passed to DBfetch to get data without null converted to 0, which is done by default.
 		foreach ($functions as $function) {
-			foreach ($macros[$function['functionid']] as $m => $tokens) {
-				$clock = null;
+			foreach ($macros[$function['functionid']] as $macro => $tokens) {
 				$value = null;
+				$clock = null;
 
-				switch ($m) {
-					case 'ITEM.VALUE':
-						if ($options['events']) {
-							$trigger = $triggers[$function['triggerid']];
-							$history = Manager::History()->getValueAt($function, $trigger['clock'], $trigger['ns']);
+				if (substr($macro, 0, 10) === 'ITEM.VALUE' && $options['events']) {
+					$trigger = $triggers[$function['triggerid']];
+					$history = Manager::History()->getValueAt($function, $trigger['clock'], $trigger['ns']);
 
-							if (is_array($history)) {
-								if (array_key_exists('clock', $history)) {
-									$clock = $history['clock'];
-								}
+					if ($history !== null) {
+						$clock = $history['clock'];
 
-								if (array_key_exists('value', $history)
-										&& $function['value_type'] != ITEM_VALUE_TYPE_BINARY) {
-									$value = $history['value'];
-								}
-							}
+						if ($function['value_type'] != ITEM_VALUE_TYPE_BINARY) {
+							$value = $history['value'];
+						}
+					}
+				}
+				else {
+					$history = Manager::History()->getLastValues([$function], 1, timeUnitToSeconds(
+						CSettingsHelper::get(CSettingsHelper::HISTORY_PERIOD)
+					));
+
+					if ($history !== null && array_key_exists($function['itemid'], $history)) {
+						$clock = $history[$function['itemid']][0]['clock'];
+
+						if ($function['value_type'] != ITEM_VALUE_TYPE_BINARY) {
+							$value = $history[$function['itemid']][0]['value'];
+						}
+					}
+				}
+
+				if ($clock !== null) {
+					switch ($macro) {
+						case 'ITEM.VALUE.DATE':
+						case 'ITEM.LASTVALUE.DATE':
+							$value = date('Y.m.d', $clock);
 							break;
-						}
-						// break; is not missing here
 
-					case 'ITEM.LASTVALUE':
-						$history = Manager::History()->getLastValues([$function], 1, timeUnitToSeconds(
-							CSettingsHelper::get(CSettingsHelper::HISTORY_PERIOD)
-						));
+						case 'ITEM.VALUE.TIME':
+						case 'ITEM.LASTVALUE.TIME':
+							$value = date('H:i:s', $clock);
+							break;
 
-						if (array_key_exists($function['itemid'], $history)) {
-							$clock = $history[$function['itemid']][0]['clock'];
+						case 'ITEM.VALUE.TIMESTAMP':
+						case 'ITEM.LASTVALUE.TIMESTAMP':
+							$value = $clock;
+							break;
 
-							if ($function['value_type'] != ITEM_VALUE_TYPE_BINARY) {
-								$value = $history[$function['itemid']][0]['value'];
-							}
-						}
-						break;
+						case 'ITEM.VALUE.AGE':
+						case 'ITEM.LASTVALUE.AGE':
+							$value = zbx_date2age($clock);
+							break;
+					}
 				}
 
 				foreach ($tokens as $token) {
 					if ($value !== null) {
-						$macro_value = array_key_exists('macrofunc', $token)
-							? CMacroFunction::calcMacrofunc($value, $token['macrofunc'])
-							: formatHistoryValue($value, $function);
+						if (array_key_exists('macrofunc', $token)) {
+							$macro_value = CMacroFunction::calcMacrofunc($value, $token['macrofunc']);
+						}
+						else {
+							$macro_value = in_array($macro, ['ITEM.VALUE', 'ITEM.LASTVALUE'])
+								? formatHistoryValue($value, $function)
+								: $value;
+						}
 					}
 					else {
 						$macro_value = UNRESOLVED_MACRO_STRING;
@@ -1256,21 +1327,31 @@ class CMacrosResolverGeneral {
 					case 'ITEM.LOG.DATE':
 						$value = date('Y.m.d', $history[$function['itemid']][0]['timestamp']);
 						break;
+
 					case 'ITEM.LOG.TIME':
 						$value = date('H:i:s', $history[$function['itemid']][0]['timestamp']);
 						break;
+
+					case 'ITEM.LOG.TIMESTAMP':
+						$value = $history[$function['itemid']][0]['timestamp'];
+						break;
+
 					case 'ITEM.LOG.AGE':
 						$value = zbx_date2age($history[$function['itemid']][0]['timestamp']);
 						break;
+
 					case 'ITEM.LOG.SOURCE':
 						$value = $history[$function['itemid']][0]['source'];
 						break;
+
 					case 'ITEM.LOG.SEVERITY':
 						$value = get_item_logtype_description($history[$function['itemid']][0]['severity']);
 						break;
+
 					case 'ITEM.LOG.NSEVERITY':
 						$value = $history[$function['itemid']][0]['severity'];
 						break;
+
 					case 'ITEM.LOG.EVENTID':
 						$value = $history[$function['itemid']][0]['logeventid'];
 						break;
@@ -2208,7 +2289,7 @@ class CMacrosResolverGeneral {
 		}
 
 		$db_interfaces = API::HostInterface()->get([
-			'output' => ['hostid', 'type', 'useip', 'ip', 'dns'],
+			'output' => ['hostid', 'type', 'useip', 'ip', 'dns', 'port'],
 			'hostids' => array_keys($hostids),
 			'filter' => ['main' => INTERFACE_PRIMARY]
 		]);
@@ -2232,7 +2313,9 @@ class CMacrosResolverGeneral {
 		}
 		unset($host_interface);
 
-		$interface_macros = ['IPADDRESS' => 'ip', 'HOST.IP' => 'ip', 'HOST.DNS' => 'dns', 'HOST.CONN' => 'conn'];
+		$interface_macros = ['IPADDRESS' => 'ip', 'HOST.IP' => 'ip', 'HOST.DNS' => 'dns', 'HOST.CONN' => 'conn',
+			'HOST.PORT' => 'port'
+		];
 
 		foreach ($macros as $triggerid => $macro_data) {
 			if (!array_key_exists($triggerid, $trigger_hosts_by_f_num)) {
@@ -2475,6 +2558,7 @@ class CMacrosResolverGeneral {
 			$hostids += array_flip($usermacros_data['hostids']);
 		}
 
+		$user_macro_parser_with_regex = new CUserMacroParser(['allow_regex' => true]);
 		$user_macro_parser = new CUserMacroParser();
 
 		/*
@@ -2504,14 +2588,14 @@ class CMacrosResolverGeneral {
 				]);
 
 				foreach ($db_host_macros as $db_host_macro) {
-					if ($user_macro_parser->parse($db_host_macro['macro']) != CParser::PARSE_SUCCESS) {
+					if ($user_macro_parser_with_regex->parse($db_host_macro['macro']) != CParser::PARSE_SUCCESS) {
 						continue;
 					}
 
 					$hostid = $db_host_macro['hostid'];
-					$macro = $user_macro_parser->getMacro();
-					$context = $user_macro_parser->getContext();
-					$regex = $user_macro_parser->getRegex();
+					$macro = $user_macro_parser_with_regex->getMacro();
+					$context = $user_macro_parser_with_regex->getContext();
+					$regex = $user_macro_parser_with_regex->getRegex();
 					$value = self::getMacroValue($db_host_macro);
 
 					if (!array_key_exists($hostid, $host_macros) || !array_key_exists($macro, $host_macros[$hostid])) {
@@ -2593,10 +2677,10 @@ class CMacrosResolverGeneral {
 			$global_macros = [];
 
 			foreach ($db_global_macros as $db_global_macro) {
-				if ($user_macro_parser->parse($db_global_macro['macro']) == CParser::PARSE_SUCCESS) {
-					$macro = $user_macro_parser->getMacro();
-					$context = $user_macro_parser->getContext();
-					$regex = $user_macro_parser->getRegex();
+				if ($user_macro_parser_with_regex->parse($db_global_macro['macro']) == CParser::PARSE_SUCCESS) {
+					$macro = $user_macro_parser_with_regex->getMacro();
+					$context = $user_macro_parser_with_regex->getContext();
+					$regex = $user_macro_parser_with_regex->getRegex();
 					$value = self::getMacroValue($db_global_macro);
 
 					if (!array_key_exists($macro, $global_macros)) {
@@ -2628,7 +2712,7 @@ class CMacrosResolverGeneral {
 							}
 							elseif ($data['context'] !== null && count($global_macros[$data['macro']]['regex'])) {
 								foreach ($global_macros[$data['macro']]['regex'] as $regex => $val) {
-									if (preg_match('/'.strtr(trim($regex, '/'), ['/' => '\/']).'/', $data['context'])) {
+									if (preg_match('/'.self::handleSlashEscaping($regex).'/', $data['context'])) {
 										$data['value']['value'] = $val;
 										break;
 									}
@@ -2715,7 +2799,7 @@ class CMacrosResolverGeneral {
 				// Searching context coincidence, if regex array not empty.
 				elseif ($context !== null && count($host_macros[$hostid][$macro]['regex'])) {
 					foreach ($host_macros[$hostid][$macro]['regex'] as $regex => $val) {
-						if (preg_match('/'.strtr(trim($regex, '/'), ['/' => '\\/']).'/', $context) === 1) {
+						if (preg_match('/'.self::handleSlashEscaping($regex).'/', $context) === 1) {
 							return [
 								'value' => $val,
 								'value_default' => $value_default
@@ -2837,6 +2921,34 @@ class CMacrosResolverGeneral {
 		}
 
 		return $macro_values;
+	}
+
+	/**
+	 * Escape slashes in the regular expression based on preceding backslashes.
+	 *
+	 * @param string $regex
+	 *
+	 * @return string
+	 */
+	private static function handleSlashEscaping(string $regex): string {
+		$formatted_regex = '';
+		$backslash_count = 0;
+
+		for ($p = 0; isset($regex[$p]); $p++) {
+			if ($regex[$p] === '\\') {
+				$backslash_count++;
+			}
+			else {
+				if ($regex[$p] === '/' && $backslash_count % 2 == 0) {
+					$formatted_regex .= '\\';
+				}
+				$backslash_count = 0;
+			}
+
+			$formatted_regex .= $regex[$p];
+		}
+
+		return $formatted_regex;
 	}
 
 	/**

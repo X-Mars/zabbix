@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1679,20 +1679,18 @@ int	zbx_get_agent_item_nextcheck(zbx_uint64_t itemid, const char *delay, int now
  *                               bitmask (0x01 - Monday, 0x02 - Tuesday...)   *
  *             start_time - [IN] report start time in seconds after           *
  *                               midnight                                     *
- *             tz         - [IN] report starting timezone                     *
  *                                                                            *
  * Return value: The timestamp when the report must be prepared or -1 if an   *
  *               error occurred.                                              *
  *                                                                            *
  ******************************************************************************/
-int	zbx_get_report_nextcheck(int now, unsigned char cycle, unsigned char weekdays, int start_time,
-		const char *tz)
+int	zbx_get_report_nextcheck(int now, unsigned char cycle, unsigned char weekdays, int start_time)
 {
 	struct tm	*tm;
 	time_t		yesterday = now - SEC_PER_DAY;
 	int		nextcheck, tm_hour, tm_min, tm_sec;
 
-	if (NULL == (tm = zbx_localtime(&yesterday, tz)))
+	if (NULL == (tm = localtime(&yesterday)))
 		return -1;
 
 	tm_sec = start_time % 60;

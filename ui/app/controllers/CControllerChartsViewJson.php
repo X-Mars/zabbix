@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -36,6 +36,22 @@ class CControllerChartsViewJson extends CControllerCharts {
 		];
 
 		$ret = $this->validateInput($fields) && $this->validateTimeSelectorPeriod();
+
+		if ($ret && $this->hasInput('subfilter_tagnames')) {
+			$tagnames = $this->getInput('subfilter_tagnames', []);
+			$ret = !$tagnames || count($tagnames) == count(array_filter($tagnames, 'is_string'));
+		}
+
+		if ($ret && $this->hasInput('subfilter_tags')) {
+			$tags = $this->getInput('subfilter_tags', []);
+			foreach ($tags as $tag => $values) {
+				if (!is_scalar($tag) || !is_array($values)
+						|| count($values) != count(array_filter($values, 'is_string'))) {
+					$ret = false;
+					break;
+				}
+			}
+		}
 
 		if (!$ret) {
 			$this->setResponse(new CControllerResponseFatal());

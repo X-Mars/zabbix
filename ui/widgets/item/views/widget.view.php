@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -39,6 +39,16 @@ else {
 	];
 
 	$rows = [];
+
+	if ($data['sparkline']) {
+		$rows[] = (new CSparkline())
+			->setColor('#'.$data['sparkline']['color'])
+			->setLineWidth($data['sparkline']['width'])
+			->setFill($data['sparkline']['fill'])
+			->setValue($data['sparkline']['value'])
+			->setTimePeriodFrom($data['sparkline']['from'])
+			->setTimePeriodTo($data['sparkline']['to']);
+	}
 
 	foreach ($classes_vertical as $row_key => $row_class) {
 		$cols = [];
@@ -89,9 +99,7 @@ else {
 		$rows[] = new CDiv($cols);
 	}
 
-	$body = new CDiv(
-		new CLink($rows, $data['url'])
-	);
+	$body = new CLink($rows, $data['url']);
 
 	if ($data['bg_color'] !== '') {
 		$body->addStyle('background-color: #'.$data['bg_color'].';');

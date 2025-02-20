@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1231,7 +1231,12 @@ int	zbx_xml_try_read_value(const char *data, size_t len, const char *xpath, xmlD
 	int		ret = FAIL;
 
 	if (NULL == data)
+	{
+		if (NULL != error)
+			*error = zbx_dsprintf(*error, "Received empty response.");
+
 		goto out;
+	}
 
 	xmlSetStructuredErrorFunc(NULL, &libxml_handle_error_try_read_value);
 

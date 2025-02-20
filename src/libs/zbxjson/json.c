@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -138,7 +138,7 @@ void	zbx_json_initarray(struct zbx_json *j, size_t allocate)
  *          to the closing bracket                                            *
  *                                                                            *
  ******************************************************************************/
-void	zbx_json_init_with(struct zbx_json *j, const char *src)
+void	zbx_json_init_with(struct zbx_json *j, const char *src, size_t len)
 {
 	if (NULL == src)
 	{
@@ -146,13 +146,12 @@ void	zbx_json_init_with(struct zbx_json *j, const char *src)
 		return;
 	}
 
-	size_t	len = strlen(src);
-
 	j->buffer = NULL;
 	j->buffer_allocated = 0;
 	__zbx_json_realloc(j, len + 1);
 
-	memcpy(j->buffer, src, len + 1);
+	memcpy(j->buffer, src, len);
+	j->buffer[len] = '\0';
 
 	j->buffer_size = len;
 	j->buffer_offset = len - 1;	/* position to the closing bracket */
@@ -280,14 +279,15 @@ static char	zbx_num2hex(unsigned char c)
 
 static char	*__zbx_json_insstring_limit(char *p, const char *string, zbx_json_type_t type, size_t str_len)
 {
-	const char	*sptr;
+	const char	*sptr, *start;
 	char		buffer[] = {"null"};
 
 	if (NULL != string && ZBX_JSON_TYPE_STRING == type)
 		*p++ = '"';
 
-	for (sptr = (NULL != string ? string : buffer); (0 == str_len || (size_t)(sptr - string) < str_len) &&
-			'\0' != *sptr; sptr++)
+	start = (NULL != string ? string : buffer);
+
+	for (sptr = start; (0 == str_len || (size_t)(sptr - start) < str_len) && '\0' != *sptr; sptr++)
 	{
 		switch (*sptr)
 		{
@@ -1334,6 +1334,8 @@ struct zbx_json	*zbx_json_clone(const struct zbx_json *src)
 		dst->buffer = (char *)zbx_malloc(NULL, dst->buffer_allocated);
 		memcpy(dst->buffer, src->buffer, src->buffer_size);
 	}
+	else
+		dst->buffer = dst->buf_stat;
 
 	return dst;
 }

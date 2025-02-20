@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -322,7 +322,7 @@ class CHistory extends CApiService {
 	 * @throws APIException if the input is invalid
 	 * @throws APIException if compression is enabled
 	 */
-	private static function validateClear(array $itemids, array &$db_items = null): void {
+	private static function validateClear(array $itemids, ?array &$db_items = null): void {
 		global $DB;
 
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];

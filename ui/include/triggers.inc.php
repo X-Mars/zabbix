@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -629,7 +629,7 @@ function make_trigger_details($trigger, $eventid) {
  *
  * @return array|bool
  */
-function analyzeExpression(string $expression, int $type, string &$error = null) {
+function analyzeExpression(string $expression, int $type, ?string &$error = null) {
 	if ($expression === '') {
 		return ['', null];
 	}
@@ -872,53 +872,50 @@ function getExpressionTree(CExpressionParser $expression_parser, int $start, int
 		$lParentheses = -1;
 		$rParentheses = -1;
 		$expressions = [];
+
 		$openSymbolNum = $start;
+		while (strpos(CExpressionParser::WHITESPACES, $expression[$openSymbolNum]) !== false) {
+			$openSymbolNum++;
+		}
 
-		for ($i = $start, $level = 0; $i <= $end; $i++) {
-			switch ($expression[$i]) {
-				case ' ':
-				case "\r":
-				case "\n":
-				case "\t":
-					if ($openSymbolNum == $i) {
-						$openSymbolNum++;
-					}
-					break;
-
-				case '(':
-					if ($level == 0) {
-						$lParentheses = $i;
-					}
-					$level++;
-					break;
-
-				case ')':
-					$level--;
-					if ($level == 0) {
-						$rParentheses = $i;
-					}
-					break;
-
-				default:
-					/*
-					 * Once reached the end of a complete expression, parse the expression on the left side of the
-					 * operator.
-					 */
-					if ($level == 0 && array_key_exists($i, $tokens)
-							&& $tokens[$i]['type'] == CExpressionParserResult::TOKEN_TYPE_OPERATOR
-							&& $tokens[$i]['match'] === $operator) {
-						// Find the last symbol of the expression before the operator.
-						$closeSymbolNum = $i - 1;
-
-						// Trim blank symbols after the expression.
-						while (strpos(CExpressionParser::WHITESPACES, $expression[$closeSymbolNum]) !== false) {
-							$closeSymbolNum--;
+		for ($i = $openSymbolNum, $level = 0; $i <= $end; $i++) {
+			if (array_key_exists($i, $tokens)) {
+				switch ($tokens[$i]['type']) {
+					case CExpressionParserResult::TOKEN_TYPE_OPEN_BRACE:
+						if ($level == 0) {
+							$lParentheses = $i;
 						}
+						$level++;
+						break;
 
-						$expressions[] = getExpressionTree($expression_parser, $openSymbolNum, $closeSymbolNum);
-						$openSymbolNum = $i + $tokens[$i]['length'];
-						$operatorFound = true;
-					}
+					case CExpressionParserResult::TOKEN_TYPE_CLOSE_BRACE:
+						$level--;
+						if ($level == 0) {
+							$rParentheses = $i;
+						}
+						break;
+
+					case CExpressionParserResult::TOKEN_TYPE_OPERATOR:
+						/*
+						 * Once reached the end of a complete expression, parse the expression on the left side of the
+						 * operator.
+						 */
+						if ($level == 0 && $tokens[$i]['match'] === $operator) {
+							// Find the last symbol of the expression before the operator.
+							$closeSymbolNum = $i - 1;
+
+							// Trim blank symbols after the expression.
+							while (strpos(CExpressionParser::WHITESPACES, $expression[$closeSymbolNum]) !== false) {
+								$closeSymbolNum--;
+							}
+
+							$expressions[] = getExpressionTree($expression_parser, $openSymbolNum, $closeSymbolNum);
+							$openSymbolNum = $i + $tokens[$i]['length'];
+							$operatorFound = true;
+						}
+						break;
+				}
+				$i += $tokens[$i]['length'] - 1;
 			}
 		}
 
@@ -996,7 +993,7 @@ function getExpressionTree(CExpressionParser $expression_parser, int $start, int
  *
  * @return bool|string  Returns new expression or false if expression is incorrect.
  */
-function remakeExpression($expression, $expression_id, $action, $new_expression, string &$error = null) {
+function remakeExpression($expression, $expression_id, $action, $new_expression, ?string &$error = null) {
 	if ($expression === '') {
 		return false;
 	}
@@ -1265,13 +1262,16 @@ function get_item_function_info(string $expr) {
 		'countunique' => $rules['numeric_as_uint'] + $rules['string_as_uint'],
 		'find' => $rules['numeric_as_0or1'] + $rules['string_as_0or1'],
 		'first' => $rules['numeric'] + $rules['string'],
+		'firstclock' => $rules['numeric'] + $rules['string'],
 		'forecast' => $rules['numeric_as_float'],
 		'fuzzytime' => $rules['numeric_as_0or1'],
 		'kurtosis' => $rules['numeric_as_float'],
 		'last' => $rules['numeric'] + $rules['string'],
+		'lastclock' => $rules['numeric'] + $rules['string'],
 		'logeventid' => $rules['log_as_0or1'],
 		'logseverity' => $rules['log_as_uint'],
 		'logsource' => $rules['log_as_0or1'],
+		'logtimestamp' => $rules['log_as_0or1'],
 		'mad' => $rules['numeric_as_float'],
 		'max' => $rules['numeric'],
 		'min' => $rules['numeric'],
@@ -1876,9 +1876,19 @@ function makeTriggerTemplatesHtml($triggerid, array $parent_templates, $flag, bo
 					$prototype = '0';
 				}
 
-				$name = (new CLink($template['name']))
+				$trigger_url = (new CUrl('zabbix.php'))
+					->setArgument('action', 'popup')
+					->setArgument('popup', $prototype === '1' ? 'trigger.prototype.edit' : 'trigger.edit')
+					->setArgument('triggerid', $parent_templates['links'][$triggerid]['triggerid'])
+					->setArgument('context', 'template')
+					->setArgument($attribute_name === 'data-parent_discoveryid'
+						? 'parent_discoveryid'
+						: 'data-hostid',
+					$attribute_value)
+					->getUrl();
+
+				$name = (new CLink($template['name'], $trigger_url))
 					->addClass('js-related-trigger-edit')
-					->setAttribute('data-prototype', $prototype)
 					->setAttribute('data-triggerid', $parent_templates['links'][$triggerid]['triggerid'])
 					->setAttribute('data-context', 'template')
 					->setAttribute($attribute_name, $attribute_value);

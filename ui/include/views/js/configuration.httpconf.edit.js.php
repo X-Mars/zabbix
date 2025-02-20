@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -43,15 +43,8 @@
 		/** @type {HTMLTableElement} */
 		#headers;
 
-		/** @type {boolean} */
-		#variables_headers_initialized = false;
-
 		/** @type {HTMLTableElement} */
 		#steps;
-
-		constructor() {
-			this.#registerEvents();
-		}
 
 		init({is_templated, variables, headers, steps, context}) {
 			this.#form = document.getElementById('webscenario-form');
@@ -62,27 +55,8 @@
 			this.#steps = document.getElementById('steps');
 
 			this.#initTemplates();
-
-			this.#form.addEventListener('click', e => {
-				const target = e.target;
-
-				if (target.matches('.js-edit-template')) {
-					e.preventDefault();
-					this.#openTemplatePopup(target.dataset);
-				}
-			});
-
-			jQuery('#tabs').on('tabscreate tabsactivate', (e, ui) => {
-				const panel = e.type === 'tabscreate' ? ui.panel : ui.newPanel;
-
-				if (panel.attr('id') === 'scenario-tab' && !this.#variables_headers_initialized) {
-					this.#initVariables(variables);
-					this.#initHeaders(headers);
-
-					this.#variables_headers_initialized = true;
-				}
-			});
-
+			this.#initVariables(variables);
+			this.#initHeaders(headers);
 			this.#initSteps(steps);
 
 			for (const id of ['agent', 'authentication']) {
@@ -90,6 +64,7 @@
 			}
 
 			this.#updateForm();
+			this.#initPopupListeners();
 		}
 
 		#initTemplates() {
@@ -249,46 +224,25 @@
 			}
 		}
 
-		editHost(e, hostid) {
-			e.preventDefault();
-			const host_data = {hostid};
+		#initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, event}) => {
+					if (data.submit.success.action === 'delete') {
+						const url = new URL('httpconf.php', location.href);
 
-			this.#openHostPopup(host_data);
-		}
+						url.searchParams.set('context', this.#context);
 
-		#openHostPopup(host_data) {
-			const original_url = location.href;
-			const overlay = PopUp('popup.host.edit', host_data, {
-				dialogueid: 'host_edit',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
+						event.setRedirectUrl(url.href);
+					}
+					else {
+						this.refresh();
+					}
+				}
 			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit',
-				this.#events.elementSuccess.bind(this, this.#context), {once: true}
-			);
-			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-				history.replaceState({}, '', original_url);
-			}, {once: true});
-		}
-
-		editTemplate(e, templateid) {
-			e.preventDefault();
-			const template_data = {templateid};
-
-			this.#openTemplatePopup(template_data);
-		}
-
-		#openTemplatePopup(template_data) {
-			const overlay =  PopUp('template.edit', template_data, {
-				dialogueid: 'templates-form',
-				dialogue_class: 'modal-popup-large',
-				prevent_navigation: true
-			});
-
-			overlay.$dialogue[0].addEventListener('dialogue.submit',
-				this.#events.elementSuccess.bind(this, this.#context), {once: true}
-			);
 		}
 
 		refresh() {
@@ -296,35 +250,6 @@
 			const fields = getFormFields(this.#form);
 
 			post(curl.getUrl(), fields);
-		}
-
-		#registerEvents() {
-			this.#events = {
-				elementSuccess(context, e) {
-					const data = e.detail;
-					let curl = null;
-
-					if ('success' in data) {
-						postMessageOk(data.success.title);
-
-						if ('messages' in data.success) {
-							postMessageDetails('success', data.success.messages);
-						}
-
-						if ('action' in data.success && data.success.action === 'delete') {
-							curl = new Curl('httpconf.php');
-							curl.setArgument('context', context);
-						}
-					}
-
-					if (curl === null) {
-						view.refresh();
-					}
-					else {
-						location.href = curl.getUrl();
-					}
-				}
-			};
 		}
 	};
 </script>

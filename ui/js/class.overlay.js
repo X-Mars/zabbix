@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -47,8 +47,8 @@ function Overlay(type, dialogueid) {
 		class: 'btn-overlay-close',
 		title: t('S_CLOSE')
 	}).click(function(e) {
-		overlayDialogueDestroy(this.dialogueid);
 		e.preventDefault();
+		overlayDialogueDestroy(this.dialogueid, this.CLOSE_BY_USER);
 	}.bind(this));
 
 	this.$dialogue.$controls = jQuery('<div>', {class: 'overlay-dialogue-controls'});
@@ -97,6 +97,20 @@ function Overlay(type, dialogueid) {
 }
 
 /**
+ * Indication of overlay dialog being closed by user intent.
+ *
+ * @type {string}
+ */
+Overlay.prototype.CLOSE_BY_USER = 'close-by-user';
+
+/**
+ * Indication of overlay dialog being closed by script.
+ *
+ * @type {string}
+ */
+Overlay.prototype.CLOSE_BY_SCRIPT = 'close-by-script';
+
+/**
  * Centers the $dialog.
  */
 Overlay.prototype.centerDialog = function() {
@@ -142,18 +156,18 @@ Overlay.prototype.centerDialog = function() {
  */
 Overlay.prototype.recoverFocus = function() {
 	if (this.$btn_focus) {
-		this.$btn_focus.focus();
+		this.$btn_focus[0].focus({preventScroll: true});
 		return;
 	}
 
 	if (jQuery('[autofocus=autofocus]', this.$dialogue).length) {
-		jQuery('[autofocus=autofocus]', this.$dialogue)[0].focus();
+		jQuery('[autofocus=autofocus]', this.$dialogue)[0].focus({preventScroll: true});
 	}
 	else if (jQuery('.overlay-dialogue-body form :focusable', this.$dialogue).length) {
-		jQuery('.overlay-dialogue-body form :focusable', this.$dialogue)[0].focus();
+		jQuery('.overlay-dialogue-body form :focusable', this.$dialogue)[0].focus({preventScroll: true});
 	}
 	else {
-		jQuery(':focusable:first', this.$dialogue)[0].focus();
+		jQuery(':focusable:first', this.$dialogue)[0].focus({preventScroll: true});
 	}
 };
 
@@ -346,7 +360,7 @@ Overlay.prototype.makeButton = function(obj) {
 			this.cancel_action = null;
 
 			if (!obj.keepOpen) {
-				overlayDialogueDestroy(this.dialogueid);
+				overlayDialogueDestroy(this.dialogueid, this.CLOSE_BY_USER);
 			}
 		}
 
@@ -563,4 +577,6 @@ Overlay.prototype.setProperties = function(obj) {
 				break;
 		}
 	}
+
+	this.$dialogue[0].dispatchEvent(new CustomEvent('dialogue.update', {detail: {properties: Object.keys(obj)}}));
 };

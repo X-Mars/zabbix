@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -88,7 +88,7 @@ class CGraphPrototypeHelper extends CGraphGeneralHelper {
 	 * @throws Exception
 	 */
 	protected static function getDestinationItems(array $src_graphs, array $dst_options,
-			array $src_options = null): array {
+			?array $src_options = null): array {
 		$dst_hostids = reset($dst_options);
 		$src_item_graphs = [];
 

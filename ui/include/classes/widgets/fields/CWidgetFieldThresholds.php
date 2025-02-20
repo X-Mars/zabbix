@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -31,7 +31,7 @@ class CWidgetFieldThresholds extends CWidgetField {
 	/**
 	 * Create widget field for Thresholds selection.
 	 */
-	public function __construct(string $name, string $label = null, bool $is_binary_units = false) {
+	public function __construct(string $name, ?string $label = null, bool $is_binary_units = false) {
 		parent::__construct($name, $label);
 
 		$this->is_binary_units = $is_binary_units;

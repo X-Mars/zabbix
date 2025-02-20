@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -58,6 +58,6 @@ void	pp_task_queue_push_immediate(zbx_pp_queue_t *queue, zbx_pp_task_t *task);
 void	pp_task_queue_push_finished(zbx_pp_queue_t *queue, zbx_pp_task_t *task);
 zbx_pp_task_t	*pp_task_queue_pop_finished(zbx_pp_queue_t *queue);
 
-void	pp_task_queue_get_sequence_stats(zbx_pp_queue_t *queue, zbx_vector_pp_sequence_stats_ptr_t *stats);
+void	pp_task_queue_get_sequence_stats(zbx_pp_queue_t *queue, zbx_vector_pp_top_stats_ptr_t *stats);
 
 #endif

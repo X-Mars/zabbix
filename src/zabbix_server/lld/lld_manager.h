@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -50,6 +50,9 @@ typedef struct
 
 	/* the oldest value in queue */
 	zbx_lld_data_t	*head;
+
+	/* possible duplicate data */
+	zbx_lld_data_t	*dup;
 }
 zbx_lld_rule_t;
 

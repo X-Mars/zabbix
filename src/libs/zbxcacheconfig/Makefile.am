@@ -10,7 +10,8 @@ libzbxcacheconfig_a_SOURCES = \
 	dbconfig_maintenance.c \
 	dbsync.c \
 	dbsync.h \
-	lld_macro.c \
+	inventory.c \
+	item.c \
 	trigger.c \
 	user_macro.c \
 	user_macro.h \

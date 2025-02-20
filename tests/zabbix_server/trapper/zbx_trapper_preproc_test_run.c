@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,8 +18,9 @@
 #include "zbxmockjson.h"
 #include "zbxembed.h"
 #include "libs/zbxpreproc/pp_execute.h"
-#include "libs/zbxtrapper/trapper_preproc.h"
+#include "zbxtrapper.h"
 #include "zbx_item_constants.h"
+#include "zbxpreprocbase.h"
 
 zbx_es_t	es_engine;
 
@@ -62,13 +63,18 @@ int	__wrap_zbx_preprocessor_test(unsigned char value_type, const char *value, co
 		preproc->steps[i] = *steps->values[i];
 	preproc->steps_num = steps->values_num;
 
+	preproc->history_cache = zbx_pp_history_cache_create();
 	/* prepare history */
 	if (NULL != history)
 	{
-		preproc->history = zbx_pp_history_create(0);
-		*preproc->history = *history;
+		zbx_pp_history_t	*history_in = zbx_pp_history_create(0);
+
+		*history_in = *history;
+
+		zbx_pp_history_cache_history_set_and_release(preproc->history_cache, NULL, history_in);
 		preproc->history_num = 1;
 		memset(history, 0, sizeof(zbx_pp_history_t));
+		history->refcount = 1;
 	}
 
 	zbx_variant_set_none(&value_out);
@@ -96,11 +102,14 @@ int	__wrap_zbx_preprocessor_test(unsigned char value_type, const char *value, co
 		zbx_pp_history_clear(history);
 		zbx_pp_history_init(history);
 
-		if (NULL != preproc->history)
+		zbx_pp_history_t	*history_out = zbx_pp_history_cache_history_acquire(preproc->history_cache);
+
+		if (NULL != history_out)
 		{
-			*history = *preproc->history;
-			zbx_free(preproc->history);
+			history->step_history = history_out->step_history;
+			zbx_pp_history_init(history_out);
 		}
+		zbx_pp_history_cache_history_set_and_release(preproc->history_cache, history_out, NULL);
 	}
 
 	if (ZBX_VARIANT_ERR != value_out.type)

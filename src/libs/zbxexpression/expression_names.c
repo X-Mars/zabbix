@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,29 +20,6 @@
 #include "zbx_discoverer_constants.h"
 #include "zbxdbhigh.h"
 #include "zbxexpression.h"
-
-const char	*item_logtype_string(unsigned char logtype)
-{
-	switch (logtype)
-	{
-		case ITEM_LOGTYPE_INFORMATION:
-			return "Information";
-		case ITEM_LOGTYPE_WARNING:
-			return "Warning";
-		case ITEM_LOGTYPE_ERROR:
-			return "Error";
-		case ITEM_LOGTYPE_FAILURE_AUDIT:
-			return "Failure Audit";
-		case ITEM_LOGTYPE_SUCCESS_AUDIT:
-			return "Success Audit";
-		case ITEM_LOGTYPE_CRITICAL:
-			return "Critical";
-		case ITEM_LOGTYPE_VERBOSE:
-			return "Verbose";
-		default:
-			return "unknown";
-	}
-}
 
 const char	*alert_type_string(unsigned char type)
 {

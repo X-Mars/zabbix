@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -28,7 +28,7 @@ class CPatternSelect extends CMultiSelect {
 		$data_params = $this->getAttribute('data-params');
 		$params = json_decode($data_params, true);
 
-		if (array_key_exists('data', $params) && $params['data']) {
+		if (array_key_exists('data', $params)) {
 			foreach ($params['data'] as &$item) {
 				$item = [
 					'name' => $item,

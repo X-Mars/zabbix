@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -517,10 +517,12 @@ class CApiService {
 			}
 			elseif (array_key_exists('groupBy', $options) && $options['groupBy']) {
 				foreach ($options['groupBy'] as $field) {
-					$field = $this->fieldId($field, $table_alias);
+					if ($this->hasField($field, $table_name)) {
+						$field = $this->fieldId($field, $table_alias);
 
-					array_unshift($sql_parts['select'], $field);
-					$sql_parts['group'][] = $field;
+						array_unshift($sql_parts['select'], $field);
+						$sql_parts['group'][] = $field;
+					}
 				}
 			}
 		}
@@ -528,10 +530,12 @@ class CApiService {
 			$sql_parts['select'] = [];
 
 			foreach ($options['groupBy'] as $field) {
-				$field = $this->fieldId($field, $table_alias);
+				if ($this->hasField($field, $table_name)) {
+					$field = $this->fieldId($field, $table_alias);
 
-				array_unshift($sql_parts['select'], $field);
-				$sql_parts['group'][] = $field;
+					array_unshift($sql_parts['select'], $field);
+					$sql_parts['group'][] = $field;
+				}
 			}
 		}
 		// custom output
@@ -950,84 +954,74 @@ class CApiService {
 
 		$filter = [];
 		foreach ($options['filter'] as $field => $value) {
-			// Skip missing fields, text fields and empty values.
-			if (!isset($tableSchema['fields'][$field]) || $tableSchema['fields'][$field]['type'] == DB::FIELD_TYPE_TEXT
-					|| zbx_empty($value)) {
+			if ($value === null || !array_key_exists($field, $tableSchema['fields'])
+					|| ($tableSchema['fields'][$field]['type'] & DB::SUPPORTED_FILTER_TYPES) == 0) {
 				continue;
 			}
 
 			$values = [];
 
-			switch ($tableSchema['fields'][$field]['type']) {
-				case DB::FIELD_TYPE_INT:
-					foreach ((array) $value as $val) {
-						if (!is_int($val) && (!is_string($val) || !preg_match('/^'.ZBX_PREG_INT.'$/', $val))) {
-							continue;
-						}
-
-						if ($val < ZBX_MIN_INT32 || $val > ZBX_MAX_INT32) {
-							continue;
-						}
-
-						$values[] = $val;
+			if ($tableSchema['fields'][$field]['type'] & DB::FIELD_TYPE_INT) {
+				foreach ((array) $value as $val) {
+					if (!is_int($val) && (!is_string($val) || !preg_match('/^'.ZBX_PREG_INT.'$/', $val))) {
+						continue;
 					}
-					break;
 
-				case DB::FIELD_TYPE_ID:
-					foreach ((array) $value as $val) {
-						if (!is_int($val) && (!is_string($val) || !ctype_digit($val))) {
-							continue;
-						}
-
-						if ($val < 0 || bccomp((string) $val, ZBX_DB_MAX_ID) > 0) {
-							continue;
-						}
-
-						$values[] = $val;
+					if ($val < ZBX_MIN_INT32 || $val > ZBX_MAX_INT32) {
+						continue;
 					}
-					break;
 
-				case DB::FIELD_TYPE_UINT:
-					foreach ((array) $value as $val) {
-						if (!is_int($val) && (!is_string($val) || !ctype_digit($val))) {
-							continue;
-						}
-
-						if (bccomp((string) $val, ZBX_MIN_INT64) < 0 || bccomp((string) $val, ZBX_MAX_INT64) > 0) {
-							continue;
-						}
-
-						$values[] = $val;
+					$values[] = $val;
+				}
+			}
+			elseif ($tableSchema['fields'][$field]['type'] & DB::FIELD_TYPE_ID) {
+				foreach ((array) $value as $val) {
+					if (!is_int($val) && (!is_string($val) || !ctype_digit($val))) {
+						continue;
 					}
-					break;
 
-				case DB::FIELD_TYPE_FLOAT:
-					foreach ((array) $value as $val) {
-						if (!is_numeric($val)) {
-							continue;
-						}
-
-						$values[] = $val;
+					if ($val < 0 || bccomp((string) $val, ZBX_DB_MAX_ID) > 0) {
+						continue;
 					}
-					break;
 
-				default:
-					$values = (array) $value;
+					$values[] = $val;
+				}
+			}
+			elseif ($tableSchema['fields'][$field]['type'] & DB::FIELD_TYPE_UINT) {
+				foreach ((array) $value as $val) {
+					if (!is_int($val) && (!is_string($val) || !ctype_digit($val))) {
+						continue;
+					}
+
+					if (bccomp((string) $val, ZBX_MIN_INT64) < 0 || bccomp((string) $val, ZBX_MAX_INT64) > 0) {
+						continue;
+					}
+
+					$values[] = $val;
+				}
+			}
+			elseif ($tableSchema['fields'][$field]['type'] & DB::FIELD_TYPE_FLOAT) {
+				foreach ((array) $value as $val) {
+					if (!is_numeric($val)) {
+						continue;
+					}
+
+					$values[] = $val;
+				}
+			}
+			else {
+				$values = (array) $value;
 			}
 
 			$fieldName = $this->fieldId($field, $tableShort);
-			switch ($tableSchema['fields'][$field]['type']) {
-				case DB::FIELD_TYPE_ID:
-					$filter[$field] = dbConditionId($fieldName, $values);
-					break;
-
-				case DB::FIELD_TYPE_INT:
-				case DB::FIELD_TYPE_UINT:
-					$filter[$field] = dbConditionInt($fieldName, $values);
-					break;
-
-				default:
-					$filter[$field] = dbConditionString($fieldName, $values);
+			if ($tableSchema['fields'][$field]['type'] & DB::FIELD_TYPE_ID) {
+				$filter[$field] = dbConditionId($fieldName, $values);
+			}
+			elseif ($tableSchema['fields'][$field]['type'] & (DB::FIELD_TYPE_INT | DB::FIELD_TYPE_UINT)) {
+				$filter[$field] = dbConditionInt($fieldName, $values);
+			}
+			else {
+				$filter[$field] = dbConditionString($fieldName, $values);
 			}
 		}
 
@@ -1239,7 +1233,7 @@ class CApiService {
 	 * @param array $objects
 	 * @param array $objects_old
 	 */
-	protected function addAuditBulk($action, $resourcetype, array $objects, array $objects_old = null) {
+	protected function addAuditBulk($action, $resourcetype, array $objects, ?array $objects_old = null) {
 		CAuditOld::addBulk(self::$userData['userid'], self::$userData['userip'], self::$userData['username'], $action,
 			$resourcetype, $objects, $objects_old
 		);

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -201,8 +201,8 @@ typedef struct
 	zbx_timespec_t		ts;
 	zbx_vector_eval_token_t	stack;
 	zbx_vector_eval_token_t	ops;
-	zbx_eval_function_cb_t	common_func_cb;
-	zbx_eval_function_cb_t	history_func_cb;
+	zbx_eval_function_cb_t	eval_function_common_cb;
+	zbx_eval_function_cb_t	eval_function_history_cb;
 	void			*data_cb;
 }
 zbx_eval_context_t;
@@ -210,6 +210,7 @@ zbx_eval_context_t;
 typedef int	(*zbx_macro_expand_func_t)(void *data, char **str, const zbx_uint64_t *hostids, int hostids_num, \
 		char **error);
 typedef void	(*zbx_get_expressions_by_name_f)(zbx_vector_expression_t *expressions, const char *name);
+typedef int (*zbx_eval_subst_macros_func_t)(zbx_token_type_t token_type, char **value, char **error, va_list args);
 
 void	zbx_init_library_eval(zbx_get_expressions_by_name_f get_expressions_by_name_func);
 
@@ -222,12 +223,15 @@ void	zbx_eval_deserialize(zbx_eval_context_t *ctx, const char *expression, zbx_u
 		const unsigned char *data);
 void	zbx_eval_compose_expression(const zbx_eval_context_t *ctx, char **expression);
 int	zbx_eval_execute(zbx_eval_context_t *ctx, const zbx_timespec_t *ts, zbx_variant_t *value, char **error);
-int	zbx_eval_execute_ext(zbx_eval_context_t *ctx, const zbx_timespec_t *ts, zbx_eval_function_cb_t common_func_cb,
-		zbx_eval_function_cb_t history_func_cb, void *data, zbx_variant_t *value, char **error);
+int	zbx_eval_execute_ext(zbx_eval_context_t *ctx, const zbx_timespec_t *ts,
+		zbx_eval_function_cb_t eval_function_common_cb, zbx_eval_function_cb_t eval_function_history_cb,
+		void *data, zbx_variant_t *value, char **error);
 void	zbx_eval_get_functionids(zbx_eval_context_t *ctx, zbx_vector_uint64_t *functionids);
 void	zbx_eval_get_functionids_ordered(zbx_eval_context_t *ctx, zbx_vector_uint64_t *functionids);
-int	zbx_eval_expand_user_macros(const zbx_eval_context_t *ctx, const zbx_uint64_t *hostids, int hostids_num,
-		zbx_macro_expand_func_t um_expand_cb, void *data, char **error);
+int	zbx_eval_substitute_macros(const zbx_eval_context_t *ctx, char **error, zbx_eval_subst_macros_func_t resolver,
+		...);
+int	zbx_eval_query_subtitute_user_macros(const char *itemquery, size_t len, char **out, char **error,
+		zbx_eval_subst_macros_func_t resolver, ...);
 
 void	zbx_eval_set_exception(zbx_eval_context_t *ctx, char *message);
 

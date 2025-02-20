@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,9 +22,6 @@
 $this->addJsFile('layout.mode.js');
 $this->addJsFile('class.tabfilter.js');
 $this->addJsFile('class.tabfilteritem.js');
-$this->addJsFile('class.tagfilteritem.js');
-$this->addJsFile('items.js');
-$this->addJsFile('multilineinput.js');
 
 $this->includeJsFile('monitoring.host.view.js.php');
 
@@ -35,7 +32,7 @@ $nav_items = new CList();
 if ($data['can_create_hosts']) {
 	$nav_items->addItem(
 		(new CSimpleButton(_('Create host')))
-			->onClick('view.createHost()')
+			->addClass('js-create-host')
 	);
 }
 

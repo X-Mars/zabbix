@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -126,13 +126,14 @@ class testFormUserGroups extends CLegacyWebTest {
 		}
 
 		$this->zbxTestClickXpath("//button[@id='cancel']/../button[@id='add']");
+		$this->page->waitUntilReady();
 
 		switch ($data['expected']) {
 			case TEST_GOOD:
+				$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'User group added');
 				$this->zbxTestCheckTitle('Configuration of user groups');
 				$this->zbxTestCheckHeader('User groups');
 				$this->zbxTestTextNotPresent(['Page received incorrect data', 'Cannot add user group']);
-				$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'User group added');
 				$sql = "SELECT usrgrpid FROM usrgrp WHERE name='".$data['name']."'";
 				$this->assertEquals(1, CDBHelper::getCount($sql));
 

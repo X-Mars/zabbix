@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,10 +23,10 @@
 static int				escalators_number;
 static zbx_rtc_notify_generic_cb_t	rtc_notify_generic_cb;
 
-void	zbx_init_escalations(int escalators_num, zbx_rtc_notify_generic_cb_t rtc_notify_cb)
+void	zbx_init_escalations(int escalators_num, zbx_rtc_notify_generic_cb_t rtc_notify_generic_func)
 {
 	escalators_number = escalators_num;
-	rtc_notify_generic_cb = rtc_notify_cb;
+	rtc_notify_generic_cb = rtc_notify_generic_func;
 }
 
 void	zbx_start_escalations(zbx_ipc_async_socket_t *rtc, zbx_vector_escalation_new_ptr_t *escalations)

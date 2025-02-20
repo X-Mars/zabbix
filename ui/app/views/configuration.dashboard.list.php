@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -49,12 +49,14 @@ $table = (new CTableInfo())
 foreach ($data['dashboards'] as $dashboardid => $dashboard) {
 	$table->addRow([
 		new CCheckBox('dashboardids['.$dashboardid.']', $dashboardid),
-		new CLink($dashboard['name'],
-			(new CUrl('zabbix.php'))
-				->setArgument('action', 'template.dashboard.edit')
-				->setArgument('dashboardid', $dashboardid)
-				->getUrl()
-		)
+		(new CCol(
+			new CLink($dashboard['name'],
+				(new CUrl('zabbix.php'))
+					->setArgument('action', 'template.dashboard.edit')
+					->setArgument('dashboardid', $dashboardid)
+					->getUrl()
+			)
+		))->addClass(ZBX_STYLE_WORDBREAK)
 	]);
 }
 

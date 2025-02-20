@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -34,16 +34,28 @@ ZBX_VECTOR_DECL(pp_step_history, zbx_pp_step_history_t)
 typedef struct
 {
 	zbx_vector_pp_step_history_t	step_history;
+	unsigned int			refcount;
 }
 zbx_pp_history_t;
 
+typedef struct zbx_pp_history_cache zbx_pp_history_cache_t;
+
 zbx_pp_history_t	*zbx_pp_history_create(int history_num);
-void	zbx_pp_history_init(zbx_pp_history_t *history);
-void	zbx_pp_history_clear(zbx_pp_history_t *history);
-void	zbx_pp_history_free(zbx_pp_history_t *history);
-void	zbx_pp_history_reserve(zbx_pp_history_t *history, int history_num);
-void	zbx_pp_history_add(zbx_pp_history_t *history, int index, zbx_variant_t *value, zbx_timespec_t ts);
-void	zbx_pp_history_pop(zbx_pp_history_t *history, int index, zbx_variant_t *value, zbx_timespec_t *ts);
+void			zbx_pp_history_init(zbx_pp_history_t *history);
+void			zbx_pp_history_clear(zbx_pp_history_t *history);
+zbx_pp_history_t	*zbx_pp_history_release(zbx_pp_history_t *history);
+void			zbx_pp_history_reserve(zbx_pp_history_t *history, int history_num);
+void			zbx_pp_history_add(zbx_pp_history_t *history, int index, zbx_variant_t *value,
+					zbx_timespec_t ts);
+void			zbx_pp_history_get(const zbx_pp_history_t *history, int index, const zbx_variant_t **value,
+					zbx_timespec_t *ts);
+
+zbx_pp_history_cache_t	*zbx_pp_history_cache_create(void);
+zbx_pp_history_cache_t	*zbx_pp_history_cache_acquire(zbx_pp_history_cache_t *history_cache);
+void			zbx_pp_history_cache_release(zbx_pp_history_cache_t *history_cache);
+zbx_pp_history_t	*zbx_pp_history_cache_history_acquire(zbx_pp_history_cache_t *history_cache);
+void			zbx_pp_history_cache_history_set_and_release(zbx_pp_history_cache_t *history_cache,
+				zbx_pp_history_t *history_in, zbx_pp_history_t *history_out);
 
 typedef enum
 {
@@ -68,10 +80,13 @@ ZBX_PTR_VECTOR_DECL(pp_step_ptr, zbx_pp_step_t *)
 typedef struct
 {
 	zbx_uint32_t		refcount;
+	zbx_uint32_t		refcount_peak;
 
 	zbx_uint64_t		hostid;
 	int			steps_num;
 	zbx_pp_step_t		*steps;
+
+	zbx_uint64_t		pp_revision;
 
 	int			dep_itemids_num;
 	zbx_uint64_t		*dep_itemids;
@@ -80,9 +95,8 @@ typedef struct
 	unsigned char		value_type;
 	unsigned char		flags;
 	zbx_pp_process_mode_t	mode;
-
-	zbx_pp_history_t	*history;	/* the preprocessing history */
 	int			history_num;	/* the number of preprocessing steps requiring history */
+	zbx_pp_history_cache_t	*history_cache;	/* the preprocessing history */
 }
 zbx_pp_item_preproc_t;
 
@@ -91,6 +105,7 @@ zbx_pp_item_preproc_t	*zbx_pp_item_preproc_create(zbx_uint64_t hostid, unsigned 
 		unsigned char flags);
 void	zbx_pp_item_preproc_release(zbx_pp_item_preproc_t *preproc);
 int	zbx_pp_preproc_has_history(int type);
+int	zbx_pp_preproc_has_serial_history(int type);
 
 typedef struct
 {

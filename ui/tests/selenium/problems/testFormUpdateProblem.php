@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -175,7 +175,8 @@ class testFormUpdateProblem extends CWebTest {
 						'Suppress' => 'Manual problem suppression. Date-time input accepts relative and absolute time format.',
 						'Unsuppress' => 'Deactivates manual suppression.',
 						'Acknowledge' => 'Confirms the problem is noticed (acknowledging user will be recorded). '.
-								'Status change triggers action update operation.'
+								'Status change triggers action update operation.',
+						'Convert to cause' => 'Converts a symptom event back to cause event'
 					],
 					'history' => [],
 					'Acknowledge' => true,
@@ -213,7 +214,8 @@ class testFormUpdateProblem extends CWebTest {
 					'hintboxes' => [
 						'Suppress' => 'Manual problem suppression. Date-time input accepts relative and absolute time format.',
 						'Unsuppress' => 'Deactivates manual suppression.',
-						'Unacknowledge' => 'Undo problem acknowledgement.'
+						'Unacknowledge' => 'Undo problem acknowledgement.',
+						'Convert to cause' => 'Converts a symptom event back to cause event'
 					]
 				]
 			],
@@ -238,7 +240,8 @@ class testFormUpdateProblem extends CWebTest {
 						'Suppress' => 'Manual problem suppression. Date-time input accepts relative and absolute time format.',
 						'Unsuppress' => 'Deactivates manual suppression.',
 						'Acknowledge' => 'Confirms the problem is noticed (acknowledging user will be recorded). '.
-								'Status change triggers action update operation.'
+								'Status change triggers action update operation.',
+						'Convert to cause' => 'Converts a symptom event back to cause event'
 					]
 				]
 			],
@@ -255,7 +258,8 @@ class testFormUpdateProblem extends CWebTest {
 						'Unsuppress' => 'Deactivates manual suppression.',
 						'Acknowledge' => 'Confirms the problem is noticed (acknowledging user will be recorded). '.
 								'Status change triggers action update operation.',
-						'Unacknowledge' => 'Undo problem acknowledgement.'
+						'Unacknowledge' => 'Undo problem acknowledgement.',
+						'Convert to cause' => 'Converts a symptom event back to cause event'
 					],
 					'close_enabled' => true,
 					'unsuppress_enabled' => true,
@@ -342,6 +346,7 @@ class testFormUpdateProblem extends CWebTest {
 			'id:suppress_time_option' => ['value' => 'Until', 'enabled' => false],
 			'id:suppress_until_problem' => ['maxlength' => 255, 'value' => 'now+1d', 'enabled' => false, 'placeholder' => 'now+1d'],
 			'id:unsuppress_problem' => ['value' => false, 'enabled' => CTestArrayHelper::get($data, 'unsuppress_enabled', false)],
+			'id:change_rank' => ['value' => false, 'enabled' => false],
 			'Close problem' => ['value' => false, 'enabled' => CTestArrayHelper::get($data, 'close_enabled', false)]
 		];
 
@@ -870,8 +875,8 @@ class testFormUpdateProblem extends CWebTest {
 		$row = $table->findRow('Problem', 'Trigger for icon test');
 		$row->getColumn('Update')->query('tag:a')->waitUntilClickable()->one()->click();
 
-		$dialog = COverlayDialogElement::find()->one()->waitUntilReady();
-		$form = $dialog->query('id:acknowledge_form')->asForm()->one();
+		$dialog = COverlayDialogElement::find()->one();
+		$form = $dialog->waitUntilReady()->query('id:acknowledge_form')->asForm()->one();
 		$form->fill(['id:suppress_problem' => true, 'id:suppress_time_option' => 'Indefinitely']);
 		$form->submit();
 		$dialog->ensureNotPresent();
@@ -894,6 +899,7 @@ class testFormUpdateProblem extends CWebTest {
 
 		// Unsuppress problem.
 		$row->getColumn('Update')->query('tag:a')->waitUntilClickable()->one()->click();
+		$dialog->waitUntilReady();
 		$form->fill(['id:unsuppress_problem' => true]);
 		$form->submit();
 		$dialog->ensureNotPresent();
@@ -902,6 +908,10 @@ class testFormUpdateProblem extends CWebTest {
 
 		// Check unsuppressed icon and hint.
 		$this->checkIconAndHint($row, 'zi-eye', 'Unsuppressed by: Admin (Zabbix Administrator)');
+
+		// TODO: Unstable test on Jenkins. Sometimes suppress and unsuppress events have the same acknowledege time and
+		// are displayed in the wrong order in history table in the acknowlge popup. Failure in checkHistoryTable()
+		// sleep(1);
 
 		// Unsuppress the problem in DB: 'Trigger for icon test'.
 		DBexecute('DELETE FROM event_suppress WHERE event_suppressid=10051');
@@ -971,7 +981,7 @@ class testFormUpdateProblem extends CWebTest {
 	 */
 	private function checkIconAndHint($row, $class, $text) {
 		// Assert blinking icon in Info column.
-		$icon = $row->getColumn('Info')->query('class', [$class, 'js-blink'])->waitUntilVisible();
+		$icon = $row->getColumn('Info')->query('class', [$class, 'js-blink'])->waitUntilPresent();
 		$this->assertTrue($icon->exists());
 
 		// Check icon hintbox.

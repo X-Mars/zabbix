@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -480,7 +480,7 @@ class testFormUserMedia extends CWebTest {
 			$this->assertEquals($row->getColumn('Status')->getText(), 'Disabled');
 
 			// Remove one of the media.
-			$row->getColumn('Action')->query('button:Remove')->one()->click();
+			$row->getColumn('Actions')->query('button:Remove')->one()->click();
 			$this->assertFalse($table->findRow('Send to', 'test@zabbix.com')->isValid());
 
 			$this->query('button', $action)->one()->click();

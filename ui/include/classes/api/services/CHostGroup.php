@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -71,9 +71,7 @@ class CHostGroup extends CApiService {
 			'graphids' =>							['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
 			'triggerids' =>							['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
 			'maintenanceids' =>						['type' => API_IDS, 'flags' => API_ALLOW_NULL | API_NORMALIZE, 'default' => null],
-			'monitored_hosts' =>					['type' => API_BOOLEAN, 'flags' => API_DEPRECATED, 'replacement' => 'with_monitored_hosts'],
 			'with_monitored_hosts' =>				['type' => API_BOOLEAN, 'default' => false],
-			'real_hosts' =>							['type' => API_BOOLEAN, 'flags' => API_DEPRECATED, 'replacement' => 'with_hosts'],
 			'with_hosts' =>							['type' => API_BOOLEAN, 'default' => false],
 			'with_items' =>							['type' => API_BOOLEAN, 'default' => false],
 			'with_item_prototypes' =>				['type' => API_BOOLEAN, 'default' => false],
@@ -451,90 +449,6 @@ class CHostGroup extends CApiService {
 		// delete sysmap element
 		DB::delete('sysmaps_elements', ['elementtype' => SYSMAP_ELEMENT_TYPE_HOST_GROUP, 'elementid' => $groupids]);
 
-		// disable actions
-		// actions from conditions
-		$actionids = [];
-		$db_actions = DBselect(
-			'SELECT DISTINCT c.actionid'.
-			' FROM conditions c'.
-			' WHERE c.conditiontype='.ZBX_CONDITION_TYPE_HOST_GROUP.
-				' AND '.dbConditionString('c.value', $groupids)
-		);
-		while ($db_action = DBfetch($db_actions)) {
-			$actionids[$db_action['actionid']] = $db_action['actionid'];
-		}
-
-		// actions from operations
-		$db_actions = DBselect(
-			'SELECT o.actionid'.
-			' FROM operations o,opgroup og'.
-			' WHERE o.operationid=og.operationid AND '.dbConditionInt('og.groupid', $groupids).
-			' UNION'.
-			' SELECT o.actionid'.
-			' FROM operations o,opcommand_grp ocg'.
-			' WHERE o.operationid=ocg.operationid AND '.dbConditionInt('ocg.groupid', $groupids)
-		);
-		while ($db_action = DBfetch($db_actions)) {
-			$actionids[$db_action['actionid']] = $db_action['actionid'];
-		}
-
-		if (!empty($actionids)) {
-			$update = [];
-			$update[] = [
-				'values' => ['status' => ACTION_STATUS_DISABLED],
-				'where' => ['actionid' => $actionids]
-			];
-			DB::update('actions', $update);
-		}
-
-		// delete action conditions
-		DB::delete('conditions', [
-			'conditiontype' => ZBX_CONDITION_TYPE_HOST_GROUP,
-			'value' => $groupids
-		]);
-
-		// delete action operation groups
-		$operationids = [];
-		$db_operations = DBselect(
-			'SELECT DISTINCT og.operationid'.
-			' FROM opgroup og'.
-			' WHERE '.dbConditionInt('og.groupid', $groupids)
-		);
-		while ($db_operation = DBfetch($db_operations)) {
-			$operationids[$db_operation['operationid']] = $db_operation['operationid'];
-		}
-		DB::delete('opgroup', [
-			'groupid' => $groupids
-		]);
-
-		// delete action operation commands
-		$db_operations = DBselect(
-			'SELECT DISTINCT ocg.operationid'.
-			' FROM opcommand_grp ocg'.
-			' WHERE '.dbConditionInt('ocg.groupid', $groupids)
-		);
-		while ($db_operation = DBfetch($db_operations)) {
-			$operationids[$db_operation['operationid']] = $db_operation['operationid'];
-		}
-		DB::delete('opcommand_grp', [
-			'groupid' => $groupids
-		]);
-
-		// delete empty operations
-		$del_operationids = [];
-		$db_operations = DBselect(
-			'SELECT DISTINCT o.operationid'.
-			' FROM operations o'.
-			' WHERE '.dbConditionInt('o.operationid', $operationids).
-				' AND NOT EXISTS (SELECT NULL FROM opgroup og WHERE o.operationid=og.operationid)'.
-				' AND NOT EXISTS (SELECT NULL FROM opcommand_grp ocg WHERE o.operationid=ocg.operationid)'
-		);
-		while ($db_operation = DBfetch($db_operations)) {
-			$del_operationids[$db_operation['operationid']] = $db_operation['operationid'];
-		}
-
-		DB::delete('operations', ['operationid' => $del_operationids]);
-
 		$this->unlinkHosts($db_groups);
 
 		DB::delete('hstgrp', ['groupid' => $groupids]);
@@ -584,7 +498,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	protected function validateUpdate(array &$groups, array &$db_groups = null): void {
+	protected function validateUpdate(array &$groups, ?array &$db_groups = null): void {
 		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_NOT_EMPTY | API_NORMALIZE, 'uniq' => [['uuid'], ['groupid'], ['name']], 'fields' => [
 			'uuid' => 		['type' => API_UUID],
 			'groupid' =>	['type' => API_ID, 'flags' => API_REQUIRED],
@@ -619,7 +533,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validateDelete(array $groupids, array &$db_groups = null): void {
+	private function validateDelete(array $groupids, ?array &$db_groups = null): void {
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];
 
 		if (!CApiInputValidator::validate($api_input_rules, $groupids, '/', $error)) {
@@ -699,6 +613,7 @@ class CHostGroup extends CApiService {
 			);
 		}
 
+		self::checkUsedInActions($db_groups);
 		self::checkMaintenances($groupids);
 	}
 
@@ -710,7 +625,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if host group names are not unique.
 	 */
-	private static function checkDuplicates(array $groups, array $db_groups = null): void {
+	private static function checkDuplicates(array $groups, ?array $db_groups = null): void {
 		$names = [];
 
 		foreach ($groups as $group) {
@@ -760,7 +675,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	private static function checkUuidDuplicates(array $groups, array $db_groups = null): void {
+	private static function checkUuidDuplicates(array $groups, ?array $db_groups = null): void {
 		$group_indexes = [];
 
 		foreach ($groups as $i => $group) {
@@ -814,6 +729,47 @@ class CHostGroup extends CApiService {
 		}
 	}
 
+	private static function checkUsedInActions(array $db_groups): void {
+		$groupids = array_keys($db_groups);
+
+		$row = DBfetch(DBselect(
+			'SELECT c.value AS groupid,a.name'.
+			' FROM conditions c'.
+			' JOIN actions a ON c.actionid=a.actionid'.
+			' WHERE c.conditiontype='.ZBX_CONDITION_TYPE_HOST_GROUP.
+				' AND '.dbConditionString('c.value', $groupids),
+			1
+		));
+
+		if (!$row) {
+			$row = DBfetch(DBselect(
+				'SELECT og.groupid,a.name'.
+				' FROM opgroup og'.
+				' JOIN operations o ON og.operationid=o.operationid'.
+				' JOIN actions a ON o.actionid=a.actionid'.
+				' WHERE '.dbConditionId('og.groupid', $groupids),
+				1
+			));
+		}
+
+		if (!$row) {
+			$row = DBfetch(DBselect(
+				'SELECT ocg.groupid,a.name'.
+				' FROM opcommand_grp ocg'.
+				' JOIN operations o ON ocg.operationid=o.operationid'.
+				' JOIN actions a ON o.actionid=a.actionid'.
+				' WHERE '.dbConditionId('ocg.groupid', $groupids),
+				1
+			));
+		}
+
+		if ($row) {
+			self::exception(ZBX_API_ERROR_PARAMETERS, _s('Cannot delete host group "%1$s": %2$s.',
+				$db_groups[$row['groupid']]['name'], _s('action "%1$s" uses this host group', $row['name'])
+			));
+		}
+	}
+
 	/**
 	 * Check that no maintenance object will be left without hosts and host groups as the result of the given host
 	 * groups deletion.
@@ -824,18 +780,20 @@ class CHostGroup extends CApiService {
 	 */
 	private static function checkMaintenances(array $groupids): void {
 		$maintenance = DBfetch(DBselect(
-			'SELECT m.maintenanceid,m.name'.
-			' FROM maintenances m'.
-			' WHERE NOT EXISTS ('.
-				'SELECT NULL'.
-				' FROM maintenances_groups mg'.
-				' WHERE m.maintenanceid=mg.maintenanceid'.
-					' AND '.dbConditionId('mg.groupid', $groupids, true).
-			')'.
+			'SELECT mg.maintenanceid,m.name'.
+			' FROM maintenances_groups mg'.
+			' JOIN maintenances m ON mg.maintenanceid=m.maintenanceid'.
+			' WHERE '.dbConditionId('mg.groupid', $groupids).
+				' AND NOT EXISTS ('.
+					'SELECT NULL'.
+					' FROM maintenances_groups mg1'.
+					' WHERE mg.maintenanceid=mg1.maintenanceid'.
+						' AND '.dbConditionId('mg1.groupid', $groupids, true).
+				')'.
 				' AND NOT EXISTS ('.
 					'SELECT NULL'.
 					' FROM maintenances_hosts mh'.
-					' WHERE m.maintenanceid=mh.maintenanceid'.
+					' WHERE mg.maintenanceid=mh.maintenanceid'.
 				')'
 		, 1));
 
@@ -1324,7 +1282,7 @@ class CHostGroup extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid.
 	 */
-	private function validatePropagate(array &$data, array &$db_groups = null): void {
+	private function validatePropagate(array &$data, ?array &$db_groups = null): void {
 		$api_input_rules = ['type' => API_OBJECT, 'fields' => [
 			'groups' =>			['type' => API_OBJECTS, 'flags' => API_REQUIRED | API_NOT_EMPTY | API_NORMALIZE, 'uniq' => [['groupid']], 'fields' => [
 				'groupid' =>		['type' => API_ID, 'flags' => API_REQUIRED]

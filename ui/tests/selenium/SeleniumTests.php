@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -87,6 +87,7 @@ require_once dirname(__FILE__).'/dashboardWidgets/testDashboardTopHostsWidget.ph
 require_once dirname(__FILE__).'/dashboardWidgets/testDashboardTopTriggersWidget.php';
 require_once dirname(__FILE__).'/dashboardWidgets/testDashboardTriggerOverviewWidget.php';
 require_once dirname(__FILE__).'/dashboardWidgets/testDashboardURLWidget.php';
+require_once dirname(__FILE__).'/dashboardWidgets/testDashboardWidgetCommunication.php';
 
 // Event correlation.
 require_once dirname(__FILE__).'/eventCorrelation/testFormEventCorrelation.php';
@@ -112,17 +113,14 @@ require_once dirname(__FILE__).'/graphs/testPageMonitoringHostsGraph.php';
 // Host and template groups.
 require_once dirname(__FILE__).'/hostAndTemplateGroups/testFormHostGroup.php';
 require_once dirname(__FILE__).'/hostAndTemplateGroups/testFormHostGroupSearchPage.php';
-require_once dirname(__FILE__).'/hostAndTemplateGroups/testFormHostGroupStandalone.php';
 require_once dirname(__FILE__).'/hostAndTemplateGroups/testFormTemplateGroup.php';
 require_once dirname(__FILE__).'/hostAndTemplateGroups/testFormTemplateGroupSearchPage.php';
-require_once dirname(__FILE__).'/hostAndTemplateGroups/testFormTemplateGroupStandalone.php';
 require_once dirname(__FILE__).'/hostAndTemplateGroups/testPageHostGroups.php';
 require_once dirname(__FILE__).'/hostAndTemplateGroups/testPageTemplateGroups.php';
 
 // Hosts.
 require_once dirname(__FILE__).'/hosts/testFormHostFromConfiguration.php';
 require_once dirname(__FILE__).'/hosts/testFormHostFromMonitoring.php';
-require_once dirname(__FILE__).'/hosts/testFormHostFromStandalone.php';
 require_once dirname(__FILE__).'/hosts/testFormHostLinkTemplates.php';
 require_once dirname(__FILE__).'/hosts/testFormHostPrototype.php';
 require_once dirname(__FILE__).'/hosts/testInheritanceHostPrototype.php';
@@ -174,11 +172,11 @@ require_once dirname(__FILE__).'/macros/testFormMacrosHostPrototype.php';
 require_once dirname(__FILE__).'/macros/testFormMacrosTemplate.php';
 
 // Maps.
-require_once dirname(__FILE__).'/maps/testFormMap.php';
-require_once dirname(__FILE__).'/maps/testFormSysmap.php';
+require_once dirname(__FILE__).'/maps/testFormMapConstructor.php';
+require_once dirname(__FILE__).'/maps/testFormMapProperties.php';
 require_once dirname(__FILE__).'/maps/testPageMaps.php';
 
-// Maintenance
+// Maintenance.
 require_once dirname(__FILE__).'/maintenance/testFormMaintenance.php';
 require_once dirname(__FILE__).'/maintenance/testPageMaintenance.php';
 
@@ -213,6 +211,7 @@ require_once dirname(__FILE__).'/preprocessing/testFormPreprocessingLowLevelDisc
 require_once dirname(__FILE__).'/preprocessing/testFormPreprocessingTest.php';
 
 // Problems.
+require_once dirname(__FILE__).'/problems/testCauseAndSymptomEvents.php';
 require_once dirname(__FILE__).'/problems/testFormUpdateProblem.php';
 require_once dirname(__FILE__).'/problems/testPageProblems.php';
 
@@ -340,6 +339,7 @@ require_once dirname(__FILE__).'/testPageInventory.php';
 require_once dirname(__FILE__).'/testPageSearch.php';
 require_once dirname(__FILE__).'/testPageStatusOfZabbix.php';
 require_once dirname(__FILE__).'/testPagesWithoutData.php';
+require_once dirname(__FILE__).'/testPSKEncryption.php';
 require_once dirname(__FILE__).'/testSidebarMenu.php';
 require_once dirname(__FILE__).'/testTimezone.php';
 require_once dirname(__FILE__).'/testUrlParameters.php';
@@ -424,6 +424,7 @@ class SeleniumTests {
 		$suite->addTestSuite('testDashboardTopTriggersWidget');
 		$suite->addTestSuite('testDashboardTriggerOverviewWidget');
 		$suite->addTestSuite('testDashboardURLWidget');
+		$suite->addTestSuite('testDashboardWidgetCommunication');
 
 		// Event correlation.
 		$suite->addTestSuite('testFormEventCorrelation');
@@ -449,17 +450,14 @@ class SeleniumTests {
 		// Groups.
 		$suite->addTestSuite('testFormHostGroup');
 		$suite->addTestSuite('testFormHostGroupSearchPage');
-		$suite->addTestSuite('testFormHostGroupStandalone');
 		$suite->addTestSuite('testFormTemplateGroup');
 		$suite->addTestSuite('testFormTemplateGroupSearchPage');
-		$suite->addTestSuite('testFormTemplateGroupStandalone');
 		$suite->addTestSuite('testPageHostGroups');
 		$suite->addTestSuite('testPageTemplateGroups');
 
 		// Hosts.
 		$suite->addTestSuite('testFormHostFromConfiguration');
 		$suite->addTestSuite('testFormHostFromMonitoring');
-		$suite->addTestSuite('testFormHostFromStandalone');
 		$suite->addTestSuite('testFormHostLinkTemplates');
 		$suite->addTestSuite('testFormHostPrototype');
 		$suite->addTestSuite('testInheritanceHostPrototype');
@@ -515,8 +513,8 @@ class SeleniumTests {
 		$suite->addTestSuite('testPageMaintenance');
 
 		// Maps.
-		$suite->addTestSuite('testFormMap');
-		$suite->addTestSuite('testFormSysmap');
+		$suite->addTestSuite('testFormMapConstructor');
+		$suite->addTestSuite('testFormMapProperties');
 		$suite->addTestSuite('testPageMaps');
 
 		// Media types.
@@ -550,6 +548,7 @@ class SeleniumTests {
 		$suite->addTestSuite('testFormPreprocessingTest');
 
 		// Problems.
+		$suite->addTestSuite('testCauseAndSymptomEvents');
 		$suite->addTestSuite('testPageProblems');
 		$suite->addTestSuite('testFormUpdateProblem');
 
@@ -677,6 +676,7 @@ class SeleniumTests {
 		$suite->addTestSuite('testPageSearch');
 		$suite->addTestSuite('testPageStatusOfZabbix');
 		$suite->addTestSuite('testPagesWithoutData');
+		$suite->addTestSuite('testPSKEncryption');
 		$suite->addTestSuite('testSidebarMenu');
 		$suite->addTestSuite('testTimezone');
 		$suite->addTestSuite('testUrlParameters');

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,6 +18,8 @@ require_once dirname(__FILE__).'/../../include/CWebTest.php';
 
 /**
  * @backup profiles
+ *
+ * @dataSource DynamicItemWidgets
  */
 class testGraphAxis extends CWebTest {
 
@@ -146,7 +148,7 @@ class testGraphAxis extends CWebTest {
 	public function testGraphAxis_DaylightSaving($data) {
 		// Set timezone.
 		$this->page->login()->open('zabbix.php?action=userprofile.edit')->waitUntilReady();
-		$form = $this->query('name:user_form')->asForm()->waitUntilVisible()->one();
+		$form = $this->query('name:userprofile_form')->asForm()->waitUntilVisible()->one();
 
 		/** For Pacific/Chatham timezone on clock change dates (in September and April) there might be one fail
 		 *  for short period at night when info is not updated yet: 2:45 -> 3:45 or 3:45 -> 2:45.

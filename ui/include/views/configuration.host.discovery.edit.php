@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -123,7 +123,7 @@ $parameters_table = (new CTable())
 	->setHeader([
 		(new CColHeader(_('Name')))->setWidth('50%'),
 		(new CColHeader(_('Value')))->setWidth('50%'),
-		_('Action')
+		''
 	])
 	->setAttribute('style', 'width: 100%;');
 
@@ -633,7 +633,7 @@ $item_tab
 // Append delay_flex to form list.
 $delayFlexTable = (new CTable())
 	->setId('delayFlexTable')
-	->setHeader([_('Type'), _('Interval'), _('Period'), _('Action')])
+	->setHeader([_('Type'), _('Interval'), _('Period'), ''])
 	->setAttribute('style', 'width: 100%;');
 
 foreach ($data['delay_flex'] as $i => $delay_flex) {
@@ -691,11 +691,14 @@ $edit_source_timeouts_link = null;
 
 if ($data['can_edit_source_timeouts']
 		&& (!$data['limited'] || $data['custom_timeout'] == ZBX_ITEM_CUSTOM_TIMEOUT_DISABLED)) {
+	$proxy_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'proxy.edit')
+		->setArgument('proxyid', $data['host']['proxyid'])
+		->getUrl();
+
 	$edit_source_timeouts_link = $data['host']['proxyid']
-		? (new CLink(_('Timeouts')))
-			->addClass(ZBX_STYLE_LINK)
-			->setAttribute('data-proxyid', $data['host']['proxyid'])
-			->onClick('view.editProxy(event, this.dataset.proxyid);')
+		? (new CLink(_('Timeouts'), $proxy_url))->addClass(ZBX_STYLE_LINK)
 		: (new CLink(_('Timeouts'),
 			(new CUrl('zabbix.php'))->setArgument('action', 'timeouts.edit')
 		))
@@ -769,7 +772,10 @@ $item_tab
 	])
 	->addItem([
 		new CLabel(_('Description'), 'description'),
-		new CFormField((new CTextArea('description', $data['description']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH))
+		new CFormField((new CTextArea('description', $data['description']))
+			->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
+			->setMaxLength(DB::getFieldLength('hosts', 'description'))
+		)
 	])
 	->addItem([
 		new CLabel(_('Enabled'), 'status'),
@@ -814,7 +820,7 @@ $condition_tab->addItem([
 $condition_table = (new CTable())
 	->setId('conditions')
 	->addStyle('width: 100%;')
-	->setHeader([_('Label'), _('Macro'), '', _('Regular expression'), _('Action')]);
+	->setHeader([_('Label'), _('Macro'), '', _('Regular expression'), '']);
 
 $operators = CSelect::createOptionsFromArray([
 	CONDITION_OPERATOR_REGEXP => _('matches'),

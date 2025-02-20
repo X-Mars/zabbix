@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -755,17 +755,33 @@ switch ($data['method']) {
 					$result = CArrayHelper::renameObjectsKeys($sysmaps, ['sysmapid' => 'id']);
 				}
 				break;
+
+			case 'host_inventory':
+				$inventory_fields = array_column(getHostInventories(true), 'title', 'nr');
+
+				if (array_key_exists('search', $data)) {
+					$inventory_fields = preg_grep('/'.preg_quote($data['search']).'/i', $inventory_fields);
+				}
+
+				foreach (array_slice($inventory_fields, 0, $limit, true) as $nr => $title) {
+					$result[] = ['id' => (string) $nr, 'name' => $title];
+				}
+				break;
 		}
 		break;
 
 	case 'patternselect.get':
 		$search = (array_key_exists('search', $data) && $data['search'] !== '') ? $data['search'] : null;
+		$hostids = array_key_exists('hostids', $data) ? $data['hostids'] : null;
+		$items = array_key_exists('items', $data) ? $data['items'] : null;
+		$groupids = array_key_exists('groupids', $data) ? getSubGroups($data['groupids']) : null;
 		$wildcard_enabled = array_key_exists('wildcard_allowed', $data) && strpos($search, '*') !== false;
 
 		switch ($data['object_name']) {
 			case 'hosts':
 				$options = [
 					'output' => ['name'],
+					'groupids' => $groupids,
 					'search' => ['name' => $search.($wildcard_enabled ? '*' : '')],
 					'searchWildcardsEnabled' => $wildcard_enabled,
 					'preservekeys' => true,
@@ -777,8 +793,6 @@ switch ($data['method']) {
 				break;
 
 			case 'items':
-				$hostids = null;
-
 				if (array_key_exists('host_pattern', $data)) {
 					$host_pattern_multiple = array_key_exists('host_pattern_multiple', $data)
 						&& $data['host_pattern_multiple'] == 1;
@@ -788,6 +802,8 @@ switch ($data['method']) {
 
 					$hosts = API::Host()->get([
 						'output' => [],
+						'hostids' => $hostids,
+						'groupids' => $groupids,
 						'search' => [
 							'name' => $host_pattern_wildcard_enabled ? $host_patterns : null
 						],
@@ -813,10 +829,17 @@ switch ($data['method']) {
 					'filter' => array_key_exists('filter', $data) ? $data['filter'] : null,
 					'templated' => array_key_exists('real_hosts', $data) ? false : null,
 					'hostids' => $hostids,
+					'groupids' => $groupids,
 					'webitems' => true,
 					'sortfield' => 'name',
 					'limit' => $limit
 				];
+
+				if ($items) {
+					$options['search'][$name_field] = [...$items, $options['search'][$name_field]];
+					$options['searchWildcardsEnabled'] = true;
+					$options['searchByAny'] = true;
+				}
 
 				$db_result = API::Item()->get($options);
 

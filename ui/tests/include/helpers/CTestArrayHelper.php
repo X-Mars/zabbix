@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -100,5 +100,16 @@ class CTestArrayHelper {
 		unset($value);
 
 		return $array;
+	}
+
+	/**
+	 * Check if array is multidimensional.
+	 *
+	 * @param array $array	multidimensional or not multidimensional array under attention
+	 *
+	 * @return boolean
+	 */
+	public static function isMultidimensional($array) {
+		return (count($array) !== count($array, COUNT_RECURSIVE));
 	}
 }

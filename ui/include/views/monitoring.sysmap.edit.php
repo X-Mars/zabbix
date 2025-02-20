@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -280,7 +280,7 @@ $map_tab->addRow(_('Show suppressed problems'),
 // Create url table.
 $url_table = (new CTable())
 	->setAttribute('style', 'width: 100%;')
-	->setHeader([_('Name'), _('URL'), _('Element'), _('Action')]);
+	->setHeader([_('Name'), _('URL'), _('Element'), '']);
 if (empty($data['sysmap']['urls'])) {
 	$data['sysmap']['urls'][] = ['name' => '', 'url' => '', 'elementtype' => 0];
 }

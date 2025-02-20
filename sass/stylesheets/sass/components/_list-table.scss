@@ -192,6 +192,12 @@
 		}
 	}
 
+	.wordbreak {
+		white-space: normal;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
 	&.compact-view {
 		td {
 			padding-top: 2px;
@@ -322,14 +328,6 @@
 		}
 	}
 
-	.tag {
-		cursor: pointer;
-
-		&:not(:last-of-type) {
-			margin-right: 3px;
-		}
-	}
-
 	&.compact-view {
 		.tag {
 			max-width: 40px;
@@ -345,6 +343,16 @@
 			@media screen and (min-width: 1600px) {
 				max-width: 133px;
 			}
+		}
+	}
+}
+
+.hintbox-wrap {
+	.tag {
+		cursor: pointer;
+
+		&:last-child {
+			margin-right: 0;
 		}
 	}
 }

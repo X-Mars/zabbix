@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -16,6 +16,7 @@ package smart
 
 import (
 	"encoding/json"
+	"runtime"
 	"strings"
 
 	"golang.zabbix.com/sdk/conf"
@@ -41,16 +42,16 @@ var impl Plugin
 
 // Options -
 type Options struct {
-	plugin.SystemOptions `conf:"optional,name=System"`
-	Timeout              int    `conf:"optional,range=1:30"`
-	Path                 string `conf:"optional"`
+	Timeout int    `conf:"optional,range=1:30"`
+	Path    string `conf:"optional"`
 }
 
 // Plugin -
 type Plugin struct {
 	plugin.Base
-	options Options
-	ctl     SmartController
+	options  Options
+	ctl      SmartController
+	cpuCount int
 }
 
 func init() {
@@ -60,14 +61,22 @@ func init() {
 		"smart.disk.get", "Returns JSON data of smart device.",
 		"smart.attribute.discovery", "Returns JSON array of smart device attributes.",
 	)
+
 	if err != nil {
 		panic(errs.Wrap(err, "failed to register metrics"))
 	}
+
+	cpuCount := runtime.NumCPU()
+	if cpuCount < 1 {
+		cpuCount = 1
+	}
+
+	impl.cpuCount = cpuCount
 }
 
 // Configure -
 func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
-	if err := conf.Unmarshal(options, &p.options); err != nil {
+	if err := conf.UnmarshalStrict(options, &p.options); err != nil {
 		p.Errf("cannot unmarshal configuration options: %s", err)
 	}
 
@@ -81,7 +90,13 @@ func (p *Plugin) Configure(global *plugin.GlobalOptions, options interface{}) {
 // Validate -
 func (p *Plugin) Validate(options interface{}) error {
 	var o Options
-	return conf.Unmarshal(options, &o)
+
+	err := conf.UnmarshalStrict(options, &o)
+	if err != nil {
+		return errs.Wrap(err, "plugin config validation failed")
+	}
+
+	return nil
 }
 
 // Export -

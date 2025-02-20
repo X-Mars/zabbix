@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -74,6 +74,34 @@ void	zbx_lld_deserialize_item_value(const unsigned char *data, zbx_uint64_t *ite
 		(void)zbx_deserialize_value(data, mtime);
 	}
 }
+
+zbx_uint32_t	zbx_lld_serialize_value(unsigned char **data, const char *value)
+{
+	zbx_uint32_t	data_len = 0, value_len;
+
+	if (NULL != value)
+	{
+		zbx_serialize_prepare_str(data_len, value);
+		*data = (unsigned char *)zbx_malloc(NULL, data_len);
+		(void)zbx_serialize_str(*data, value, value_len);
+	}
+	else
+	{
+		*data = NULL;
+		data_len = 0;
+	}
+
+	return data_len;
+}
+
+
+void	zbx_lld_deserialize_value(const unsigned char *data, char **value)
+{
+	zbx_uint32_t	value_len;
+
+	data += zbx_deserialize_str(data, value, value_len);
+}
+
 
 zbx_uint32_t	zbx_lld_serialize_diag_stats(unsigned char **data, zbx_uint64_t items_num, zbx_uint64_t values_num)
 {

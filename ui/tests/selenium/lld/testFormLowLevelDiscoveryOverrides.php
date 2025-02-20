@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -2128,7 +2128,7 @@ class testFormLowLevelDiscoveryOverrides extends CWebTest {
 	 * @return array
 	 */
 	private function setFiltersTableMapping($filters_table) {
-		$mapping = $filters_table->detectFieldMapping();
+		$mapping = $filters_table->detectFieldMapping(['Label', 'Macro', '', 'Regular expression', 'Action']);
 		$mapping['Regular expression']['name'] = 'value';
 		$mapping['Regular expression']['selector'] = 'xpath:./div/input';
 

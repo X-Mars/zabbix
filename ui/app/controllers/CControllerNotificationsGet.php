@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -301,7 +301,8 @@ class CControllerNotificationsGet extends CController {
 					TRIGGER_SEVERITY_NOT_CLASSIFIED => $this->settings['sounds.'.TRIGGER_SEVERITY_NOT_CLASSIFIED],
 					TRIGGER_SEVERITY_WARNING => $this->settings['sounds.'.TRIGGER_SEVERITY_WARNING]
 				]
-			]
+			],
+			CSRF_TOKEN_NAME => CCsrfTokenHelper::get('notifications')
 		]);
 	}
 }

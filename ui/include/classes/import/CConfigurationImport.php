@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1471,8 +1471,8 @@ class CConfigurationImport {
 
 			foreach ($discovery_rules as $discovery_rule) {
 				// If rule was not processed we should not create/update any of its prototypes.
-				if (array_key_exists($hostid, $processed_discovery_rules)
-						&& !array_key_exists($discovery_rule['key_'], $processed_discovery_rules[$hostid])) {
+				if (!array_key_exists($hostid, $processed_discovery_rules)
+						|| !array_key_exists($discovery_rule['key_'], $processed_discovery_rules[$hostid])) {
 					continue;
 				}
 
@@ -1863,9 +1863,23 @@ class CConfigurationImport {
 		$triggers_to_process_dependencies = [];
 
 		foreach ($this->getFormattedTriggers() as $trigger) {
-			$triggerid = null;
+			$hostids = $this->extractHostids($trigger);
 
-			$is_template_trigger = $this->isTemplateTrigger($trigger);
+			if (!$hostids) {
+				continue;
+			}
+
+			$triggerid = null;
+			$is_template_trigger = false;
+
+			foreach ($hostids as $hostid) {
+				if ($this->importedObjectContainer->isTemplateProcessed($hostid)) {
+					$is_template_trigger = true;
+				}
+				elseif (!$this->importedObjectContainer->isHostProcessed($hostid)) {
+					continue 2;
+				}
+			}
 
 			if ($is_template_trigger && array_key_exists('uuid', $trigger)) {
 				$triggerid = $this->referencer->findTriggeridByUuid($trigger['uuid']);
@@ -1916,35 +1930,35 @@ class CConfigurationImport {
 		$this->processTriggerDependencies($triggers_to_process_dependencies);
 	}
 
-	private function isTemplateTrigger(array $trigger): bool {
+	private function extractHostids(array $trigger): array {
 		$expression_parser = new CExpressionParser(['usermacros' => true]);
 
 		if ($expression_parser->parse($trigger['expression']) != CParser::PARSE_SUCCESS) {
-			return false;
+			return [];
 		}
 
-		foreach ($expression_parser->getResult()->getHosts() as $host) {
-			$host = $this->referencer->findTemplateidByHost($host);
+		$hosts = $expression_parser->getResult()->getHosts();
 
-			if ($host !== null) {
-				return true;
+		if ($trigger['recovery_expression'] !== '') {
+			if ($expression_parser->parse($trigger['recovery_expression']) != CParser::PARSE_SUCCESS) {
+				return [];
 			}
+
+			$hosts = array_merge($hosts, $expression_parser->getResult()->getHosts());
 		}
 
-		if ($trigger['recovery_expression'] === ''
-				|| $expression_parser->parse($trigger['recovery_expression']) != CParser::PARSE_SUCCESS) {
-			return false;
-		}
+		$hostids = [];
+		foreach (array_unique($hosts) as $host) {
+			$hostid = $this->referencer->findTemplateidOrHostidByHost($host);
 
-		foreach ($expression_parser->getResult()->getHosts() as $host) {
-			$host = $this->referencer->findTemplateidByHost($host);
-
-			if ($host !== null) {
-				return true;
+			if ($hostid === null) {
+				return [];
 			}
+
+			$hostids[] = $hostid;
 		}
 
-		return false;
+		return $hostids;
 	}
 
 	/**
@@ -2940,7 +2954,7 @@ class CConfigurationImport {
 			$resolve_entity_keys = [];
 			$itemid_to_item_key_by_hosts = [];
 
-			for ($level = 0; $level < ZBX_DEPENDENT_ITEM_MAX_LEVELS; $level++) {
+			while ($db_items) {
 				$missing_master_itemids = [];
 
 				foreach ($db_items as $itemid => $item) {
@@ -2993,12 +3007,6 @@ class CConfigurationImport {
 				else {
 					break;
 				}
-			}
-
-			if ($missing_master_itemids) {
-				throw new Exception(_s('Incorrect value for field "%1$s": %2$s.', 'master_itemid',
-					_('maximum number of dependency levels reached')
-				));
 			}
 
 			foreach ($resolve_entity_keys as $item) {
@@ -3059,12 +3067,6 @@ class CConfigurationImport {
 					else {
 						throw new Exception(_s('Incorrect value for field "%1$s": %2$s.', 'master_itemid',
 							_s('value "%1$s" not found', $master_key)
-						));
-					}
-
-					if ($level > ZBX_DEPENDENT_ITEM_MAX_LEVELS) {
-						throw new Exception(_s('Incorrect value for field "%1$s": %2$s.', 'master_itemid',
-							_('maximum number of dependency levels reached')
 						));
 					}
 				}

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -391,7 +391,7 @@ function getSystemStatusTotals(array $data) {
  *
  * @return CTableInfo
  */
-function makeSeverityTable(array $data, $hide_empty_groups = false, CUrl $groupurl = null) {
+function makeSeverityTable(array $data, $hide_empty_groups = false, ?CUrl $groupurl = null) {
 	$table = new CTableInfo();
 
 	foreach ($data['data']['groups'] as $group) {
@@ -748,14 +748,17 @@ function makeProblemsPopup(array $problems, array $triggers, array $actions, arr
 			}
 		}
 
+		$problem_update_url = (new CUrl('zabbix.php'))
+			->setArgument('action', 'popup')
+			->setArgument('popup', 'acknowledge.edit')
+			->setArgument('eventids[]', $problem['eventid'])
+			->getUrl();
+
 		// Create acknowledge link.
 		$is_acknowledged = ($problem['acknowledged'] == EVENT_ACKNOWLEDGED);
 		$problem_update_link = ($allowed['add_comments'] || $allowed['change_severity'] || $allowed['acknowledge']
 				|| $can_be_closed || $allowed['suppress'])
-			? (new CLink(_('Update')))
-				->addClass(ZBX_STYLE_LINK_ALT)
-				->setAttribute('data-eventid', $problem['eventid'])
-				->onClick('acknowledgePopUp({eventids: [this.dataset.eventid]}, this);')
+			? (new CLink(_('Update'), $problem_update_url))->addClass(ZBX_STYLE_LINK_ALT)
 			: new CSpan(_('Update'));
 
 		$table->addRow(array_merge($row, [

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -779,9 +779,8 @@ int	zbx_STL(const zbx_vector_history_record_t *values_in, int freq, int is_robus
 
 		for (j = 0; j < 5; j++)
 		{
-			zbx_history_record_t	x;
+			zbx_history_record_t	x = {0};
 
-			x.value.dbl = 0;
 			zbx_vector_history_record_append_ptr(work_temp, &x);
 		}
 

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -35,6 +35,7 @@
 #include "zbxshmem.h"
 #include "zbxstr.h"
 #include "zbxtime.h"
+#include "zbxtypes.h"
 #include "zbxvariant.h"
 #include "zbxipcservice.h"
 
@@ -57,7 +58,7 @@ static char		*sql = NULL;
 static size_t		sql_alloc = 4 * ZBX_KIBIBYTE;
 
 static zbx_get_program_type_f	get_program_type_cb = NULL;
-static zbx_history_sync_f	sync_history_cb = NULL;
+static zbx_sync_history_cache_f	sync_history_cache_cb = NULL;
 
 #define ZBX_IDS_SIZE	14
 
@@ -109,6 +110,7 @@ typedef struct
 
 	zbx_hc_proxyqueue_t	proxyqueue;
 	int			processing_num;
+	double			last_error_ts;
 }
 ZBX_DC_CACHE;
 
@@ -160,6 +162,7 @@ static size_t		item_values_alloc = 0, item_values_num = 0;
 static void	hc_add_item_values(dc_item_value_t *values, int values_num);
 static void	hc_queue_item(zbx_hc_item_t *item);
 static int	hc_queue_elem_compare_func(const void *d1, const void *d2);
+static void	hc_get_items(zbx_vector_uint64_pair_t *items);
 
 void	zbx_pp_value_opt_clear(zbx_pp_value_opt_t *opt)
 {
@@ -662,6 +665,7 @@ void	zbx_db_flush_trends(ZBX_DC_TREND *trends, int *trends_num, zbx_vector_uint6
 			table_name = "trends_uint";
 			break;
 		default:
+			zbx_this_should_never_happen_backtrace();
 			assert(0);
 	}
 
@@ -1291,12 +1295,6 @@ static void	DCexport_history(const zbx_dc_history_t *history, int history_num, z
 		if (0 != (ZBX_DC_FLAGS_NOT_FOR_MODULES & h->flags))
 			continue;
 
-		if (ITEM_VALUE_TYPE_BIN == h->value_type)
-		{
-			/* exporting binary value type history is not supported */
-			continue;
-		}
-
 		if (NULL == (item_info = (zbx_item_info_t *)zbx_hashset_search(items_info, &h->itemid)))
 		{
 			THIS_SHOULD_NEVER_HAPPEN;
@@ -1326,9 +1324,12 @@ static void	DCexport_history(const zbx_dc_history_t *history, int history_num, z
 							connector_filters->values[k].connectorid);
 				}
 			}
+		}
 
-			if (0 == connector_object.ids.values_num && FAIL == history_export_enabled)
-				continue;
+		if (0 == connector_object.ids.values_num &&
+				(FAIL == history_export_enabled || ITEM_VALUE_TYPE_BIN == h->value_type))
+		{
+			continue;
 		}
 
 		zbx_json_clean(&json);
@@ -1375,9 +1376,8 @@ static void	DCexport_history(const zbx_dc_history_t *history, int history_num, z
 				zbx_json_adduint64(&json, ZBX_PROTO_TAG_VALUE, h->value.ui64);
 				break;
 			case ITEM_VALUE_TYPE_STR:
-				zbx_json_addstring(&json, ZBX_PROTO_TAG_VALUE, h->value.str, ZBX_JSON_TYPE_STRING);
-				break;
 			case ITEM_VALUE_TYPE_TEXT:
+			case ITEM_VALUE_TYPE_BIN:
 				zbx_json_addstring(&json, ZBX_PROTO_TAG_VALUE, h->value.str, ZBX_JSON_TYPE_STRING);
 				break;
 			case ITEM_VALUE_TYPE_LOG:
@@ -1389,7 +1389,6 @@ static void	DCexport_history(const zbx_dc_history_t *history, int history_num, z
 				zbx_json_addstring(&json, ZBX_PROTO_TAG_VALUE, h->value.log->value,
 						ZBX_JSON_TYPE_STRING);
 				break;
-			case ITEM_VALUE_TYPE_BIN:
 			case ITEM_VALUE_TYPE_NONE:
 			default:
 				THIS_SHOULD_NEVER_HAPPEN;
@@ -1409,7 +1408,7 @@ static void	DCexport_history(const zbx_dc_history_t *history, int history_num, z
 			zbx_vector_uint64_clear(&connector_object.ids);
 		}
 
-		if (SUCCEED == history_export_enabled)
+		if (SUCCEED == history_export_enabled && ITEM_VALUE_TYPE_BIN != h->value_type)
 			zbx_history_export_write(json.buffer, json.buffer_size);
 	}
 
@@ -1842,8 +1841,8 @@ static void	sync_history_cache_full(const zbx_events_funcs_t *events_cbs, int co
 
 		do
 		{
-			sync_history_cb(&values_num, &triggers_num, events_cbs, NULL, config_history_storage_pipelines,
-					&more);
+			sync_history_cache_cb(&values_num, &triggers_num, events_cbs, NULL,
+					config_history_storage_pipelines, &more);
 
 			zabbix_log(LOG_LEVEL_WARNING, "syncing history data... " ZBX_FS_DBL "%%",
 					(double)values_num / (cache->history_num + values_num) * 100);
@@ -1931,7 +1930,7 @@ void	zbx_sync_history_cache(const zbx_events_funcs_t *events_cbs, zbx_ipc_async_
 	*values_num = 0;
 	*triggers_num = 0;
 
-	sync_history_cb(values_num, triggers_num, events_cbs, rtc, config_history_storage_pipelines, more);
+	sync_history_cache_cb(values_num, triggers_num, events_cbs, rtc, config_history_storage_pipelines, more);
 }
 
 /******************************************************************************
@@ -2037,7 +2036,7 @@ static void	dc_local_add_history_text_bin_helper(unsigned char value_type, zbx_u
 		size_t	maxlen = (ITEM_VALUE_TYPE_BIN == item_value_type ? ZBX_HISTORY_BIN_VALUE_LEN :
 				ZBX_HISTORY_VALUE_LEN);
 
-		item_value->value.value_str.len = (size_t)zbx_db_strlen_n(value_orig, maxlen) + 1;
+		item_value->value.value_str.len = zbx_db_strlen_n(value_orig, maxlen) + 1;
 		dc_string_buffer_realloc(item_value->value.value_str.len);
 
 		item_value->value.value_str.pvalue = string_values_offset;
@@ -2581,6 +2580,50 @@ static zbx_hc_item_t	*hc_add_item(zbx_uint64_t itemid, zbx_hc_data_t *data)
 
 /******************************************************************************
  *                                                                            *
+ * Purpose: item might already being processed and last value might hold      *
+ *          metadata, clear all values except first and last                  *
+ *                                                                            *
+ * Parameters: itemid - [IN] the item id                                      *
+ *                                                                            *
+ * Return value: number of values cleared or FAIL if item was not found       *
+ *                                                                            *
+ ******************************************************************************/
+int	zbx_hc_clear_item_middle(zbx_uint64_t itemid)
+{
+	int	i = 0;
+
+	LOCK_CACHE;
+
+	zbx_hc_item_t	*item;
+
+	if (NULL != (item = hc_get_item(itemid)))
+	{
+		if (NULL != item->tail->next)
+		{
+			for (zbx_hc_data_t *tail = item->tail; NULL != tail->next->next;)
+			{
+				zbx_hc_data_t	*next = tail->next;
+
+				tail->next = next->next;
+
+				hc_free_data(next);
+				item->values_num--;
+				i++;
+			}
+		}
+
+		cache->history_num -= i;
+	}
+	else
+		i = FAIL;
+
+	UNLOCK_CACHE;
+
+	return i;
+}
+
+/******************************************************************************
+ *                                                                            *
  * Purpose: copies string value to history cache                              *
  *                                                                            *
  * Parameters: str - [IN] the string value                                    *
@@ -2792,6 +2835,60 @@ static int	hc_clone_history_data(zbx_hc_data_t **data, const dc_item_value_t *it
 
 /******************************************************************************
  *                                                                            *
+ * Purpose: compare uint64 pairs by second value for descending sorting       *
+ *                                                                            *
+ ******************************************************************************/
+static int	diag_compare_pair_second_desc(const void *d1, const void *d2)
+{
+	const zbx_uint64_pair_t	*p1 = (const zbx_uint64_pair_t *)d1;
+	const zbx_uint64_pair_t	*p2 = (const zbx_uint64_pair_t *)d2;
+
+	ZBX_RETURN_IF_NOT_EQUAL(p2->second, p1->second);
+
+	return 0;
+}
+
+/******************************************************************************
+ *                                                                            *
+ * Purpose: log history cache full message and top values                     *
+ *                                                                            *
+ ******************************************************************************/
+static void	hc_print_history_cache_full(zbx_vector_uint64_pair_t *items)
+{
+	int	limit;
+	char	*str = NULL;
+	size_t	str_alloc = 0, str_offset = 0;
+	double	time_now = zbx_time();
+
+	if (SEC_PER_MIN > time_now - cache->last_error_ts)
+	{
+		zabbix_log(LOG_LEVEL_DEBUG, "History cache is full. Sleeping for 1 second.");
+		return;
+	}
+
+	zabbix_log(LOG_LEVEL_WARNING, "History cache is full. Sleeping for 1 second.");
+
+	cache->last_error_ts = time_now;
+
+	zbx_vector_uint64_pair_sort(items, diag_compare_pair_second_desc);
+
+	limit = MIN(25, items->values_num);
+
+	zbx_snprintf_alloc(&str, &str_alloc, &str_offset, "items with most values in history cache:\n");
+
+	for (int i = 0; i < limit; i++)
+	{
+		zbx_snprintf_alloc(&str, &str_alloc, &str_offset, "  itemid:" ZBX_FS_UI64 " values:" ZBX_FS_UI64
+				"\n", items->values[i].first, items->values[i].second);
+	}
+
+	zabbix_log(LOG_LEVEL_WARNING, "%s", str);
+
+	zbx_free(str);
+}
+
+/******************************************************************************
+ *                                                                            *
  * Purpose: adds item values to the history cache                             *
  *                                                                            *
  * Parameters: values     - [IN] the item values to add                       *
@@ -2837,9 +2934,17 @@ static void	hc_add_item_values(dc_item_value_t *values, int values_num)
 		{
 			do
 			{
+				zbx_vector_uint64_pair_t	items;
+
+				zbx_vector_uint64_pair_create(&items);
+
+				hc_get_items(&items);
+
 				UNLOCK_CACHE;
 
-				zabbix_log(LOG_LEVEL_DEBUG, "History cache is full. Sleeping for 1 second.");
+				hc_print_history_cache_full(&items);
+
+				zbx_vector_uint64_pair_destroy(&items);
 				sleep(1);
 
 				LOCK_CACHE;
@@ -3062,6 +3167,30 @@ int	zbx_hc_get_history_compression_age(void)
 
 /******************************************************************************
  *                                                                            *
+ * Purpose: calculate usage percentage of hc memory buffer                    *
+ *                                                                            *
+ ******************************************************************************/
+double	zbx_hc_mem_pused(void)
+{
+	return 100 * (double)(zbx_dbcache_get_hc_mem()->total_size - zbx_dbcache_get_hc_mem()->free_size) /
+			zbx_dbcache_get_hc_mem()->total_size;
+}
+
+double	zbx_hc_mem_pused_lock(void)
+{
+	double	pused;
+
+	zbx_dbcache_lock();
+
+	pused = zbx_hc_mem_pused();
+
+	zbx_dbcache_unlock();
+
+	return pused;
+}
+
+/******************************************************************************
+ *                                                                            *
  * Purpose: Allocate shared memory for trend cache (part of database cache)   *
  *                                                                            *
  * Comments: Is optionally called from zbx_init_database_cache()              *
@@ -3112,16 +3241,16 @@ out:
  * Purpose: Allocate shared memory for database cache                         *
  *                                                                            *
  ******************************************************************************/
-int	zbx_init_database_cache(zbx_get_program_type_f get_program_type, zbx_history_sync_f sync_history,
-		zbx_uint64_t history_cache_size, zbx_uint64_t history_index_cache_size,zbx_uint64_t *trends_cache_size,
-		char **error)
+int	zbx_init_database_cache(zbx_get_program_type_f get_program_type,
+		zbx_sync_history_cache_f sync_history_cache_func, zbx_uint64_t history_cache_size,
+		zbx_uint64_t history_index_cache_size, zbx_uint64_t *trends_cache_size, char **error)
 {
 	int	ret;
 
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
 
 	get_program_type_cb = get_program_type;
-	sync_history_cb = sync_history;
+	sync_history_cache_cb = sync_history_cache_func;
 
 	if (NULL != cache)
 	{
@@ -3178,6 +3307,7 @@ int	zbx_init_database_cache(zbx_get_program_type_f get_program_type, zbx_history
 	cache->processing_num = 0;
 	cache->history_num_total = 0;
 	cache->history_progress_ts = 0;
+	cache->last_error_ts = 0;
 
 	cache->db_trigger_queue_lock = 1;
 
@@ -3374,15 +3504,32 @@ void	zbx_hc_get_mem_stats(zbx_shmem_stats_t *data, zbx_shmem_stats_t *index)
 
 /******************************************************************************
  *                                                                            *
+ * Purpose: checks if item is present in history cache                        *
+ *                                                                            *
+ ******************************************************************************/
+int	zbx_hc_is_itemid_cached(zbx_uint64_t itemid)
+{
+	int	ret = FAIL;
+
+	LOCK_CACHE;
+
+	if (NULL != zbx_hashset_search(&cache->history_items, &itemid))
+		ret = SUCCEED;
+
+	UNLOCK_CACHE;
+
+	return ret;
+}
+
+/******************************************************************************
+ *                                                                            *
  * Purpose: get statistics of cached items                                    *
  *                                                                            *
  ******************************************************************************/
-void	zbx_hc_get_items(zbx_vector_uint64_pair_t *items)
+static void	hc_get_items(zbx_vector_uint64_pair_t *items)
 {
 	zbx_hashset_iter_t	iter;
 	zbx_hc_item_t		*item;
-
-	LOCK_CACHE;
 
 	zbx_vector_uint64_pair_reserve(items, cache->history_items.num_data);
 
@@ -3392,6 +3539,18 @@ void	zbx_hc_get_items(zbx_vector_uint64_pair_t *items)
 		zbx_uint64_pair_t	pair = {item->itemid, item->values_num};
 		zbx_vector_uint64_pair_append_ptr(items, &pair);
 	}
+}
+
+/******************************************************************************
+ *                                                                            *
+ * Purpose: get statistics of cached items                                    *
+ *                                                                            *
+ ******************************************************************************/
+void	zbx_hc_get_items(zbx_vector_uint64_pair_t *items)
+{
+	LOCK_CACHE;
+
+	hc_get_items(items);
 
 	UNLOCK_CACHE;
 }

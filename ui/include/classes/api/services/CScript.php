@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -82,7 +82,6 @@ class CScript extends CApiService {
 			'searchWildcardsEnabled' =>	['type' => API_BOOLEAN, 'default' => false],
 			// output
 			'output' =>					['type' => API_OUTPUT, 'in' => implode(',', $script_fields), 'default' => API_OUTPUT_EXTEND],
-			'selectGroups' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL | API_DEPRECATED, 'in' => implode(',', $group_fields), 'default' => null],
 			'selectHostGroups' =>		['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $group_fields), 'default' => null],
 			'selectHosts' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $host_fields), 'default' => null],
 			'selectActions' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $this->action_fields), 'default' => null],
@@ -302,7 +301,7 @@ class CScript extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid
 	 */
-	protected function validateUpdate(array &$scripts, array &$db_scripts = null) {
+	protected function validateUpdate(array &$scripts, ?array &$db_scripts = null) {
 		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_NOT_EMPTY | API_NORMALIZE | API_ALLOW_UNEXPECTED, 'uniq' => [['scriptid']], 'fields' => [
 			'scriptid' => ['type' => API_ID, 'flags' => API_REQUIRED]
 		]];
@@ -788,6 +787,7 @@ class CScript extends CApiService {
 		$db_groups = API::HostGroup()->get([
 			'output' => [],
 			'groupids' => $groupids,
+			'filter' => ['flags' => ZBX_FLAG_DISCOVERY_NORMAL],
 			'preservekeys' => true
 		]);
 
@@ -827,7 +827,7 @@ class CScript extends CApiService {
 	 *
 	 * @throws APIException if the input is invalid
 	 */
-	private static function validateDelete(array &$scriptids, array &$db_scripts = null) {
+	private static function validateDelete(array &$scriptids, ?array &$db_scripts = null) {
 		$api_input_rules = ['type' => API_IDS, 'flags' => API_NOT_EMPTY, 'uniq' => true];
 
 		if (!CApiInputValidator::validate($api_input_rules, $scriptids, '/', $error)) {
@@ -1045,7 +1045,6 @@ class CScript extends CApiService {
 		]);
 
 		$scripts = $this->addRelatedGroupsAndHosts([
-			'selectGroups' => null,
 			'selectHostGroups' => null,
 			'selectHosts' => ['hostid']
 		], $scripts, $hostids);
@@ -1228,7 +1227,6 @@ class CScript extends CApiService {
 		]);
 
 		$scripts = $this->addRelatedGroupsAndHosts([
-			'selectGroups' => null,
 			'selectHostGroups' => null,
 			'selectHosts' => ['hostid']
 		], $scripts, $hostids);
@@ -1287,8 +1285,7 @@ class CScript extends CApiService {
 	protected function applyQueryOutputOptions($tableName, $tableAlias, array $options, array $sqlParts) {
 		$sqlParts = parent::applyQueryOutputOptions($tableName, $tableAlias, $options, $sqlParts);
 
-		if ($options['selectGroups'] !== null || $options['selectHostGroups'] !== null
-				|| $options['selectHosts'] !== null) {
+		if ($options['selectHostGroups'] !== null || $options['selectHosts'] !== null) {
 			$sqlParts = $this->addQuerySelect($this->fieldId('groupid'), $sqlParts);
 			$sqlParts = $this->addQuerySelect($this->fieldId('host_access'), $sqlParts);
 		}
@@ -1416,12 +1413,11 @@ class CScript extends CApiService {
 	 *
 	 * @return array $result
 	 */
-	private function addRelatedGroupsAndHosts(array $options, array $result, array $hostids = null) {
-		$is_groups_select = $options['selectGroups'] !== null;
+	private function addRelatedGroupsAndHosts(array $options, array $result, ?array $hostids = null) {
 		$is_hostgroups_select = $options['selectHostGroups'] !== null;
 		$is_hosts_select = $options['selectHosts'] !== null;
 
-		if (!$is_groups_select && !$is_hostgroups_select && !$is_hosts_select) {
+		if (!$is_hostgroups_select && !$is_hosts_select) {
 			return $result;
 		}
 
@@ -1451,15 +1447,9 @@ class CScript extends CApiService {
 			}
 		}
 
-		if ($options['selectGroups'] === API_OUTPUT_EXTEND || $options['selectHostGroups'] === API_OUTPUT_EXTEND) {
-			$select_groups = API_OUTPUT_EXTEND;
-		}
-		else {
-			$select_groups = array_unique(array_merge(
-				is_array($options['selectGroups']) ? $options['selectGroups'] : [],
-				is_array($options['selectHostGroups']) ? $options['selectHostGroups'] : []
-			));
-		}
+		$select_groups = $options['selectHostGroups'] === API_OUTPUT_EXTEND
+			? API_OUTPUT_EXTEND
+			: (is_array($options['selectHostGroups']) ? $options['selectHostGroups'] : []);
 
 		$select_groups = $this->outputExtend($select_groups, ['groupid', 'name']);
 
@@ -1540,12 +1530,6 @@ class CScript extends CApiService {
 					: array_intersect_key($host_groups, $hstgrp_branch[$script['groupid']]);
 			}
 
-			if ($is_groups_select) {
-				$script['groups'] = array_values($this->unsetExtraFields($script_groups,
-					['groupid', 'name', 'flags', 'uuid'], $options['selectGroups']
-				));
-			}
-
 			if ($is_hostgroups_select) {
 				$script['hostgroups'] = array_values($this->unsetExtraFields($script_groups,
 					['groupid', 'name', 'flags', 'uuid'], $options['selectHostGroups']
@@ -1580,7 +1564,7 @@ class CScript extends CApiService {
 	 *
 	 * @throws APIException if script names within menu paths are not unique.
 	 */
-	private static function checkUniqueness(array $scripts, array $db_scripts = null): void {
+	private static function checkUniqueness(array $scripts, ?array $db_scripts = null): void {
 		$api_input_rules = ['type' => API_OBJECTS, 'uniq' => [['name', 'menu_path']], 'fields' => [
 			'name' =>		['type' => API_STRING_UTF8],
 			'menu_path' =>	['type' => API_SCRIPT_MENU_PATH]
@@ -1674,7 +1658,7 @@ class CScript extends CApiService {
 	 * @param string     $method
 	 * @param array|null $db_scripts
 	 */
-	private static function updateParams(array &$scripts, string $method, array $db_scripts = null): void {
+	private static function updateParams(array &$scripts, string $method, ?array $db_scripts = null): void {
 		$ins_params = [];
 		$upd_params = [];
 		$del_paramids = [];

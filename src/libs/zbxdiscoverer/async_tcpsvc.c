@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -14,8 +14,7 @@
 
 #include "async_tcpsvc.h"
 
-#include "../../libs/zbxpoller/async_poller.h"
-
+#include "zbxpoller.h"
 #include "zbxtimekeeper.h"
 #include "zbxcomms.h"
 #include "zbxself.h"
@@ -73,7 +72,8 @@ static int	tcpsvc_send_context_init(const unsigned char svc_type, unsigned char 
 	return SUCCEED;
 }
 
-static int	tcpsvc_task_process(short event, void *data, int *fd, const char *addr, char *dnserr)
+static int	tcpsvc_task_process(short event, void *data, int *fd, struct evutil_addrinfo **current_ai,
+			const char *addr, char *dnserr, struct event *timeout_event)
 {
 #	define	SET_RESULT_SUCCEED								\
 		SET_UI64_RESULT(&tcpsvc_context->item.result, 1);				\
@@ -98,6 +98,8 @@ static int	tcpsvc_task_process(short event, void *data, int *fd, const char *add
 	const char		*buf;
 
 	ZBX_UNUSED(dnserr);
+	ZBX_UNUSED(timeout_event);
+	ZBX_UNUSED(current_ai);
 
 	if (NULL != poller_config && ZBX_PROCESS_STATE_IDLE == poller_config->state)
 	{
@@ -295,8 +297,8 @@ static int	async_check_service_validate(zbx_tcpsvc_context_t *context, const cha
 }
 
 int	zbx_async_check_tcpsvc(zbx_dc_item_t *item, unsigned char svc_type, AGENT_RESULT *result,
-		zbx_async_task_clear_cb_t clear_cb, void *arg, void *arg_action, struct event_base *base,
-		struct evdns_base *dnsbase, const char *config_source_ip,
+		zbx_async_task_process_result_cb_t async_task_process_result_cb, void *arg, void *arg_action,
+		struct event_base *base, struct evdns_base *dnsbase, const char *config_source_ip,
 		zbx_async_resolve_reverse_dns_t resolve_reverse_dns)
 {
 	int			ret;
@@ -350,7 +352,7 @@ int	zbx_async_check_tcpsvc(zbx_dc_item_t *item, unsigned char svc_type, AGENT_RE
 			&tcpsvc_context->tcp_send_context, result)))
 	{
 		zbx_async_poller_add_task(base, dnsbase, tcpsvc_context->item.interface.addr, tcpsvc_context,
-				item->timeout + 1, tcpsvc_task_process, clear_cb);
+				item->timeout + 1, tcpsvc_task_process, async_task_process_result_cb);
 	}
 	else
 		zbx_async_check_tcpsvc_free(tcpsvc_context);

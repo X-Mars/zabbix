@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -189,7 +189,7 @@ class CModule extends CApiService {
 	 *
 	 * @throws APIException|JsonException
 	 */
-	private static function validateUpdate(array &$modules, array &$db_modules = null): void {
+	private static function validateUpdate(array &$modules, ?array &$db_modules = null): void {
 		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_NOT_EMPTY | API_NORMALIZE, 'uniq' => [['moduleid']], 'fields' => [
 			'moduleid' =>	['type' => API_ID, 'flags' => API_REQUIRED],
 			'status' =>		['type' => API_INT32, 'in' => implode(',', [MODULE_STATUS_DISABLED, MODULE_STATUS_ENABLED])],

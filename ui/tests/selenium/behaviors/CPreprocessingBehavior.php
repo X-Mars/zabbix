@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -42,7 +42,8 @@ class CPreprocessingBehavior extends CBehavior {
 			],
 			[
 				'name'		=> 'parameter_2',
-				'selector'	=> 'xpath:.//input[contains(@id, "_params_1")]|.//z-select[contains(@name, "[params][1]")]',
+				'selector'	=> 'xpath:.//input[contains(@id, "_params_1")]|.//z-select[contains(@name, "[params][1]")]|'.
+						'.//input[contains(@name, "[params][1]")]',
 				'detect'	=> true,
 				'value'		=> ['getValue']
 			],
@@ -67,6 +68,24 @@ class CPreprocessingBehavior extends CBehavior {
 			[
 				'name'		=> 'error_handler_params',
 				'selector'	=> 'xpath:.//input[contains(@id, "_error_handler_params")]',
+				'value'		=> ['getValue']
+			],
+			[
+				'name' 		=> 'parameter_table_1_1',
+				'selector'	=> 'xpath:.//tr[1]/td[1]/*',
+				'detect'	=> true,
+				'value'		=> ['getValue']
+			],
+			[
+				'name' 		=> 'parameter_table_1_2',
+				'selector'	=> 'xpath:.//tr[1]/td[2]/*',
+				'detect'	=> true,
+				'value'		=> ['getValue']
+			],
+			[
+				'name' 		=> 'parameter_table_1_3',
+				'selector'	=> 'xpath:.//tr[1]/td[3]/*',
+				'detect'	=> true,
 				'value'		=> ['getValue']
 			]
 		];

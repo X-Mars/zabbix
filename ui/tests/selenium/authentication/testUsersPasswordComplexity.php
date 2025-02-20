@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -999,7 +999,7 @@ class testUsersPasswordComplexity extends CWebTest {
 		}
 
 		// Check user password creation accordingly to complexity settings.
-		$user_form = $this->query('name:user_form')->asForm()->waitUntilPresent()->one();
+		$user_form = $this->query('name', $own ? 'userprofile_form' : 'user_form')->asForm()->waitUntilPresent()->one();
 		$username = ($userid === 1)
 			? 'Admin'
 			: ($update ? 'update-user' : 'username'.time());

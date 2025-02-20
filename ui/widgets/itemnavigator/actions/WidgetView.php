@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -128,7 +128,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$search_field = $this->isTemplateDashboard() ? 'name' : 'name_resolved';
 
 		$options = [
-			'output' => ['itemid', 'hostid', 'name_resolved'],
+			'output' => ['itemid', 'hostid', 'name_resolved', 'key_'],
 			'webitems' => true,
 			'evaltype' => $this->fields_values['item_tags_evaltype'],
 			'tags' => $this->fields_values['item_tags'] ?: null,
@@ -252,7 +252,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		];
 	}
 
-	private function getConfig(string $widgetid = null): array {
+	private function getConfig(?string $widgetid = null): array {
 		$open_groups = [];
 
 		if ($widgetid !== null) {

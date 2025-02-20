@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -26,8 +26,8 @@
 #include "zbx_rtc_constants.h"
 #include "zbxalgo.h"
 #include "zbxdb.h"
-#include "zbxdbhigh.h"
 #include "zbxipcservice.h"
+#include "zbxcacheconfig.h"
 
 static void	housekeep_service_problems(const zbx_vector_uint64_t *eventids)
 {
@@ -40,7 +40,8 @@ static void	housekeep_service_problems(const zbx_vector_uint64_t *eventids)
 	if (NULL == data)
 		return;
 
-	zbx_service_flush(ZBX_IPC_SERVICE_SERVICE_PROBLEMS_DELETE, data, (zbx_uint32_t)data_offset);
+	if (0 != zbx_dc_get_itservices_num())
+		zbx_service_flush(ZBX_IPC_SERVICE_SERVICE_PROBLEMS_DELETE, data, (zbx_uint32_t)data_offset);
 	zbx_free(data);
 }
 

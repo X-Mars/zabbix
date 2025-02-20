@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (C) 2001-2024 Zabbix SIA
+# Copyright (C) 2001-2025 Zabbix SIA
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of
 # the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -53,10 +53,37 @@ use Fcntl qw(O_WRONLY O_APPEND O_CREAT);
 use POSIX qw(strftime);
 use NetSNMP::TrapReceiver;
 
+sub get_header_regex
+{
+	my $format = shift;
+	my $regex = $format;
+
+	$regex =~ s/%Y/[0-9]{4}/g;
+	$regex =~ s/%m/[0-9]{2}/g;
+	$regex =~ s/%d/[0-9]{2}/g;
+	$regex =~ s/%T/[0-9]{2}:[0-9]{2}:[0-9]{2}/g;
+	$regex =~ s/%z/[+-][0-9]{4}/g;
+	$regex =~ s/%H/[0-9]{2}/g;
+	$regex =~ s/%M/[0-9]{2}/g;
+	$regex =~ s/%S/[0-9]{2}/g;
+
+	return "$regex ZBXTRAP";
+}
+
 sub zabbix_receiver
 {
 	my (%pdu_info) = %{$_[0]};
 	my (@varbinds) = @{$_[1]};
+	my $r = get_header_regex $DateTimeFormat;
+
+	# fail if received vars clearly contain injection
+	foreach my $x (@varbinds)
+	{
+		if ($x->[1] =~ /$r/)
+		{
+			return NETSNMPTRAPD_HANDLER_FAIL;
+		}
+	}
 
 	# open the output file
 	unless (sysopen(OUTPUT_FILE, $SNMPTrapperFile, O_WRONLY|O_APPEND|O_CREAT, 0666))

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -35,22 +35,28 @@ class testMultiselects extends CWebTest {
 	}
 
 	public function testMultiselects_SuggestCreateNew() {
-		$this->checkSuggest('zabbix.php?action=host.edit', 'host-form', 'Host groups', 'QQQwww',
+		$this->checkSuggest('zabbix.php?action=host.list', 'host-form', 'Host groups', 'QQQwww',
 				'multiselect-suggest'
 		);
 	}
 
 	public function checkSuggest($link, $query, $name, $string, $class) {
 		$this->page->login()->open($link)->waitUntilReady();
-		$this->page->updateViewport();
+
+		if ($query === 'host-form') {
+			$this->query('button:Create host')->one()->waitUntilClickable()->click();
+			COverlayDialogElement::find()->one()->waitUntilReady()->asForm();
+		}
+
 		$field = $this->query('name:'.$query)->asForm()->one()->getField($name);
+		$this->page->updateViewport();
 		$element = $field->query('tag:input')->one();
 		$element->type($string);
 		$this->query('class', $class)->waitUntilVisible();
 
 		// Cover proxy selection field, because it gets changed depending on proxy names' lengths in the dropdown.
 		$covered_region = ($query === 'host-form')
-			? [$element, ['x' => 193, 'y' => 317, 'width' => 452, 'height' => 22]]
+			? [$element, ['x' => 111, 'y' => 317, 'width' => 452, 'height' => 22]]
 			: [$element];
 
 		$this->assertScreenshotExcept($element->parents('class', (($query === 'host-form') ? 'form-grid' : 'table-forms'))
@@ -99,3 +105,4 @@ class testMultiselects extends CWebTest {
 		]);
 	}
 }
+

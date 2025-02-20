@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,7 +21,7 @@ require_once dirname(__FILE__).'/../behaviors/CTableBehavior.php';
 /**
  * @backup items
  *
- * @dataSource ExecuteNowAction, DiscoveredHosts, HostTemplateGroups, AllItemValueTypes
+ * @dataSource ExecuteNowAction, DiscoveredHosts, HostTemplateGroups, AllItemValueTypes, DynamicItemWidgets
  *
  * @onBefore prepareLLDData
  */
@@ -303,7 +303,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 
 	public static function getFilterData() {
 		return [
-			// #0
+			// #0.
 			[
 				[
 					'filter' => [
@@ -313,7 +313,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					'rows' => 100
 				]
 			],
-			// #1
+			// #1.
 			[
 				[
 					'filter' => [
@@ -326,7 +326,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #2
+			// #2.
 			[
 				[
 					'filter' => [
@@ -343,7 +343,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #3
+			// #3.
 			[
 				[
 					'filter' => [
@@ -354,7 +354,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #4
+			// #4.
 			[
 				[
 					'filter' => [
@@ -365,7 +365,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #5
+			// #5.
 			[
 				[
 					'filter' => [
@@ -380,7 +380,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #6
+			// #6.
 			[
 				[
 					'filter' => [
@@ -395,7 +395,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #7
+			// #7.
 			[
 				[
 					'filter' => [
@@ -412,7 +412,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #8
+			// #8.
 			[
 				[
 					'filter' => [
@@ -427,23 +427,21 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #9
+			// #9.
 			[
 				[
 					'filter' => [
-						'Key' => 'array.cache.discovery',
+						'Key' => 'jenkins',
 						'Type' => 'HTTP agent'
 					],
 					'context' => 'template',
 					'expected' => [
-						'Array controller cache discovery',
-						'Array controller cache discovery',
-						'Array controller cache discovery',
-						'Array controller cache discovery'
+						'Computers discovery',
+						'Jobs discovery'
 					]
 				]
 			],
-			// #10
+			// #10.
 			[
 				[
 					'filter' => [
@@ -463,6 +461,8 @@ class testPageLowLevelDiscovery extends CWebTest {
 						'I1-lvl1-agent-num: DR3-I1-dep-agent',
 						'I2-lvl1-trap-num: DR4-I2-dep-trap',
 						'Last error message of scenario "Web scenario for execute now".: DR5-web-dep',
+						'Dynamic widgets H1D1',
+						'Dynamic widgets H2D1',
 						'Eleventh LLD',
 						'fifth LLD',
 						'forth LLD',
@@ -483,11 +483,12 @@ class testPageLowLevelDiscovery extends CWebTest {
 						'Trapper LLD for filter',
 						'Trīspadsmitais LLD',
 						'Zabbix server health: Zabbix proxies stats: Zabbix proxy discovery',
+						'Zabbix server health: Zabbix proxy groups stats: Zabbix proxy groups discovery',
 						'Četrpadsmitais LLD'
 					]
 				]
 			],
-			// #11
+			// #11.
 			[
 				[
 					'filter' => [
@@ -499,7 +500,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #12
+			// #12.
 			[
 				[
 					'filter' => [
@@ -510,7 +511,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					'rows' => 23
 				]
 			],
-			// #13
+			// #13.
 			[
 				[
 					'filter' => [
@@ -524,7 +525,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #14
+			// #14.
 			[
 				[
 					'filter' => [
@@ -536,7 +537,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #15
+			// #15.
 			[
 				[
 					'filter' => [
@@ -548,7 +549,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					]
 				]
 			],
-			// #16
+			// #16.
 			[
 				[
 					'filter' => [
@@ -557,7 +558,7 @@ class testPageLowLevelDiscovery extends CWebTest {
 					'expected' => []
 				]
 			],
-			// #17
+			// #17.
 			[
 				[
 					'filter' => [

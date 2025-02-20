@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,7 +24,6 @@ class CControllerExport extends CController {
 		$fields = [
 			'action' =>			'required|string',
 			'backurl' =>		'required|string',
-			'valuemapids' =>	'not_empty|array_db valuemaps.valuemapid',
 			'hostids' =>		'not_empty|array_db hosts.hostid',
 			'mediatypeids' =>	'not_empty|array_db media_type.mediatypeid',
 			'maps' =>			'not_empty|array_db sysmaps.sysmapid',
@@ -45,9 +44,6 @@ class CControllerExport extends CController {
 		switch ($this->getInput('action')) {
 			case 'export.mediatypes':
 				return $this->checkAccess(CRoleHelper::UI_ADMINISTRATION_MEDIA_TYPES);
-
-			case 'export.valuemaps':
-				return $this->checkAccess(CRoleHelper::UI_ADMINISTRATION_GENERAL);
 
 			case 'export.hosts':
 				return $this->checkAccess(CRoleHelper::UI_CONFIGURATION_HOSTS);
@@ -72,10 +68,6 @@ class CControllerExport extends CController {
 		];
 
 		switch ($action) {
-			case 'export.valuemaps':
-				$params['options']['valueMaps'] = $this->getInput('valuemapids', []);
-				break;
-
 			case 'export.hosts':
 				$params['options']['hosts'] = $this->getInput('hostids', []);
 				break;

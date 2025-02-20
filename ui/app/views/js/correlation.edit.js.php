@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,11 +22,15 @@
 window.correlation_edit_popup = new class {
 
 	init({correlation}) {
-		this.overlay = overlays_stack.getById('correlation-form');
+		this.overlay = overlays_stack.getById('correlation.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 		this.correlation = correlation;
 		this.correlationid = correlation.correlationid;
+
+		const return_url = new URL('zabbix.php', location.href);
+		return_url.searchParams.set('action', 'correlation.list');
+		ZABBIX.PopupManager.setReturnUrl(return_url.href);
 
 		this.dialogue.addEventListener('click', (e) => {
 			if (e.target.classList.contains('js-condition-add')) {
@@ -322,6 +326,7 @@ window.correlation_edit_popup = new class {
 		this.overlay.setProperties({title, buttons});
 		this.overlay.unsetLoading();
 		this.overlay.recoverFocus();
+		this.overlay.containFocus();
 	}
 
 	delete() {
@@ -333,7 +338,7 @@ window.correlation_edit_popup = new class {
 		this.#post(curl.getUrl(), {correlationids: [this.correlationid]}, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 
@@ -349,7 +354,7 @@ window.correlation_edit_popup = new class {
 		this.#post(curl.getUrl(), fields, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 

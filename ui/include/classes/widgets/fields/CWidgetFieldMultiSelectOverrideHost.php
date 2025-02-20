@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -21,8 +21,8 @@ use Zabbix\Widgets\CWidgetField;
 
 class CWidgetFieldMultiSelectOverrideHost extends CWidgetFieldMultiSelectHost {
 
-	public function __construct() {
-		parent::__construct('override_hostid', _('Override host'));
+	public function __construct(string $name = 'override_hostid', ?string $label = null) {
+		parent::__construct($name, $label ?? _('Override host'));
 
 		$this
 			->setMultiple(false)

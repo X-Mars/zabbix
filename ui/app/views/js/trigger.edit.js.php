@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,7 +22,7 @@
 window.trigger_edit_popup = new class {
 
 	init({triggerid, expression_popup_parameters, recovery_popup_parameters, readonly, dependencies, action,
-			context, db_trigger
+			context, db_trigger, return_url, overlayid, parent_discoveryid
 	}) {
 		this.triggerid = triggerid;
 		this.expression_popup_parameters = expression_popup_parameters;
@@ -32,7 +32,8 @@ window.trigger_edit_popup = new class {
 		this.action = action;
 		this.context = context;
 		this.db_trigger = db_trigger;
-		this.overlay = overlays_stack.getById('trigger-edit');
+		this.overlay = overlays_stack.getById(overlayid);
+		this.parent_discoveryid = parent_discoveryid;
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 		this.expression = this.form.querySelector('#expression');
@@ -42,12 +43,18 @@ window.trigger_edit_popup = new class {
 		this.recovery_expr_temp = this.form.querySelector('#recovery_expr_temp');
 		this.expression_constructor_active = false;
 		this.recovery_expression_constructor_active = false;
+		this.selected_dependencies = [];
+
+		ZABBIX.PopupManager.setReturnUrl(return_url);
 
 		window.addPopupValues = (data) => {
 			this.addPopupValues(data.values);
 		}
 
+		this.form.style.display = '';
+
 		this.#initActions();
+		this.#initPopupListeners();
 		this.#initTriggersTab();
 		this.#changeRecoveryMode();
 		this.#changeCorrelationMode();
@@ -56,14 +63,16 @@ window.trigger_edit_popup = new class {
 			this.#loadDependencyTable(this.dependencies);
 		}
 
-		this.form.style.display = '';
 		this.overlay.recoverFocus();
 	}
 
 	#initActions() {
 		['input', 'keydown', 'paste'].forEach((event_type) => {
 			this.name.addEventListener(event_type,
-				(e) => this.form.querySelector('#event_name').placeholder = e.target.value
+				(e) => {
+					this.form.querySelector('#event_name').placeholder = e.target.value;
+					$(this.form.querySelector('#event_name')).textareaFlexible('updateHeight');
+				}
 			);
 			this.name.dispatchEvent(new Event('input'));
 		});
@@ -162,12 +171,6 @@ window.trigger_edit_popup = new class {
 			else if (e.target.classList.contains('js-check-recovery-target')) {
 				check_target(e.target, <?= json_encode(TRIGGER_RECOVERY_EXPRESSION) ?>);
 			}
-			else if (e.target.classList.contains('js-related-trigger-edit')) {
-				this.#openRelatedTrigger(e.target.dataset);
-			}
-			else if (e.target.classList.contains('js-edit-template')) {
-				this.editTemplate(e, e.target.dataset.templateid);
-			}
 		});
 
 		this.expression.addEventListener('change', (e) => {
@@ -185,16 +188,49 @@ window.trigger_edit_popup = new class {
 		})
 	}
 
-	#initTriggersTab() {
-		$('#tabs').one('tabscreate tabsactivate', (event, ui) => {
-			const panel = (event.type === 'tabscreate') ? ui.panel : ui.newPanel;
+	#initPopupListeners() {
+		const subscriptions = [];
 
-			if (panel.attr('id') === 'triggersTab') {
-				$('#triggersTab')
-					.find('.<?= ZBX_STYLE_TEXTAREA_FLEXIBLE ?>')
-					.textareaFlexible();
+		for (const action of ['template.edit', 'trigger.edit', 'trigger.prototype.edit']) {
+			subscriptions.push(
+				ZABBIX.EventHub.subscribe({
+					require: {
+						context: CPopupManager.EVENT_CONTEXT,
+						event: CPopupManagerEvent.EVENT_OPEN,
+						action
+					},
+					callback: ({data, event}) => {
+						if (data.action_parameters.triggerid === this.triggerid || this.triggerid === null) {
+							return;
+						}
+
+						if (!this.#isConfirmed()) {
+							event.preventDefault();
+						}
+					}
+				})
+			);
+		}
+
+		subscriptions.push(
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_END_SCRIPTING,
+					action: this.overlay.dialogueid
+				},
+				callback: () => ZABBIX.EventHub.unsubscribeAll(subscriptions)
+			})
+		);
+	}
+
+	#initTriggersTab() {
+		$('#tabs').on('tabsactivate', (event, ui) => {
+			if (ui.newPanel.is('#triggersTab')) {
+				ui.newPanel.find('.<?= ZBX_STYLE_TEXTAREA_FLEXIBLE ?>').textareaFlexible();
 			}
 		});
+		$('#triggersTab .<?= ZBX_STYLE_TEXTAREA_FLEXIBLE ?>').textareaFlexible();
 	}
 
 	#addDepTrigger(button) {
@@ -203,7 +239,9 @@ window.trigger_edit_popup = new class {
 			srcfld1: 'triggerid',
 			reference: 'deptrigger',
 			multiselect: 1,
-			with_triggers: 1
+			with_triggers: 1,
+			excludeids: [this.triggerid],
+			disableids: this.selected_dependencies
 		};
 
 		if (button.id === 'add-dep-trigger') {
@@ -225,7 +263,9 @@ window.trigger_edit_popup = new class {
 		let popup_parameters = {
 			srcfld1: 'triggerid',
 			reference: 'deptrigger',
-			multiselect: 1
+			multiselect: 1,
+			excludeids: [this.triggerid],
+			disableids: this.selected_dependencies
 		};
 
 		if (button.id === 'add-dep-trigger') {
@@ -312,6 +352,7 @@ window.trigger_edit_popup = new class {
 		const dependency_element = document.querySelector('#dependency_' + triggerid);
 
 		dependency_element.parentNode.removeChild(dependency_element);
+		this.selected_dependencies = this.selected_dependencies.filter((el) => el !== triggerid);
 	}
 
 	#prepareDependencies(data) {
@@ -325,18 +366,20 @@ window.trigger_edit_popup = new class {
 			dependencies.push({
 				name: name,
 				triggerid: dependency.triggerid,
-				prototype: prototype
+				prototype,
+				trigger_url: this.#constructTriggerUrl(dependency.triggerid, prototype === '1')
 			});
-		})
+		});
 
 		return dependencies;
 	}
 
 	#addDependencies(dependencies) {
-		const template = new Template(document.getElementById('dependency-row-tmpl').innerHTML)
+		const template = new Template(document.getElementById('dependency-row-tmpl').innerHTML);
 		const tbody = Object.values(dependencies).map(row => template.evaluate(row)).join('');
 
 		this.form.querySelector('#dependency-table tbody').insertAdjacentHTML('beforeend', tbody);
+		this.selected_dependencies = dependencies.map(({triggerid}) => triggerid);
 	}
 
 	#toggleExpressionConstructor(id) {
@@ -597,18 +640,6 @@ window.trigger_edit_popup = new class {
 		}
 	}
 
-	#openRelatedTrigger(data) {
-		if (this.#isFormModified() && !this.confirmNavigation()) {
-			return;
-		}
-
-		const dialogueid = this.dialogue.dataset.dialogueid;
-		const dialogue_class = this.dialogue.getAttribute('class');
-		const action = data.prototype === '1' ? 'trigger.prototype.edit' : 'trigger.edit';
-
-		PopUp(action, data, {dialogueid, dialogue_class});
-	}
-
 	#toggleInheritedTags() {
 		const form_refresh = document.createElement('input');
 
@@ -636,6 +667,11 @@ window.trigger_edit_popup = new class {
 		}
 
 		return fields;
+	}
+
+	#isConfirmed() {
+		return !this.#isFormModified()
+			|| window.confirm(<?= json_encode(_('Any changes made in the current form will be lost.')) ?>);
 	}
 
 	#isFormModified() {
@@ -803,7 +839,7 @@ window.trigger_edit_popup = new class {
 		this.#post(curl.getUrl(), {triggerids: [this.triggerid]}, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 
@@ -820,14 +856,20 @@ window.trigger_edit_popup = new class {
 				dependencies.push({
 					name: row.textContent,
 					triggerid: row.dataset.triggerid,
-					prototype: row.dataset.prototype
+					prototype: row.dataset.prototype,
+					trigger_url: this.#constructTriggerUrl(row.dataset.triggerid, row.dataset.prototype === '1')
 				});
-		})
+			});
 
 		Object.values(data).forEach((new_dependency) => {
 			if (dependencies.some(dependency => dependency.triggerid === new_dependency.triggerid)) {
 				return;
 			}
+
+			new_dependency.trigger_url = this.#constructTriggerUrl(
+				new_dependency.triggerid,
+				new_dependency.prototype === '1'
+			);
 
 			dependencies.push(new_dependency);
 		})
@@ -837,57 +879,18 @@ window.trigger_edit_popup = new class {
 		this.#addDependencies(dependencies);
 	}
 
-	editTemplate(e, templateid) {
-		if (this.#isFormModified() && !this.confirmNavigation()) {
-			return;
+	#constructTriggerUrl(triggerid, is_prototype) {
+		const url = new Curl('zabbix.php');
+
+		url.setArgument('action', 'popup');
+		url.setArgument('popup', is_prototype ? 'trigger.prototype.edit' : 'trigger.edit');
+		url.setArgument('triggerid', triggerid);
+		url.setArgument('context', this.context);
+
+		if (is_prototype) {
+			url.setArgument('parent_discoveryid', this.parent_discoveryid);
 		}
 
-		e.preventDefault();
-		overlayDialogueDestroy(this.overlay.dialogueid);
-
-		const template_data = {templateid};
-
-		this.openTemplatePopup(template_data);
-	}
-
-	openTemplatePopup(template_data) {
-		const overlay =  PopUp('template.edit', template_data, {
-			dialogueid: 'templates-form',
-			dialogue_class: 'modal-popup-large',
-			prevent_navigation: true
-		});
-
-		overlay.$dialogue[0].addEventListener('dialogue.submit',
-			this.elementSuccess.bind(this, this.context, this.action !== 'trigger.edit'), {once: true}
-		);
-	}
-
-	confirmNavigation() {
-		return window.confirm(<?= json_encode(_('Any changes made in the current form will be lost.')) ?>);
-	}
-
-	elementSuccess(context, discovery, e) {
-		const data = e.detail;
-		let curl = null;
-
-		if ('success' in data) {
-			postMessageOk(data.success.title);
-
-			if ('messages' in data.success) {
-				postMessageDetails('success', data.success.messages);
-			}
-
-			if ('action' in data.success && data.success.action === 'delete') {
-				curl = discovery ? new Curl('host_discovery.php') : new Curl('zabbix.php?action=trigger.list')
-				curl.setArgument('context', context);
-			}
-		}
-
-		if (curl == null) {
-			location.href = location.href;
-		}
-		else {
-			location.href = curl.getUrl();
-		}
+		return url.getUrl();
 	}
 }

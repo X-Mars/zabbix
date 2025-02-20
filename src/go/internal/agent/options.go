@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,13 +18,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"golang.zabbix.com/agent2/pkg/tls"
+	"golang.zabbix.com/sdk/conf"
+	"golang.zabbix.com/sdk/errs"
+	"golang.zabbix.com/sdk/log"
 	"golang.zabbix.com/sdk/plugin"
 )
 
@@ -37,6 +41,77 @@ const (
 	HostInterfaceLen = 255   // UTF-8 characters, not bytes
 	Variant          = 2
 )
+
+var (
+	errInvalidTLSConnect = errors.New("invalid TLSConnect configuration parameter")
+	errInvalidTLSAccept  = errors.New("invalid TLSAccept configuration parameter")
+	errCipherCertAndAll  = errors.New(`TLSCipherCert configuration parameter cannot be used when the combined list` +
+		` of certificate and PSK ciphersuites are used. Use TLSCipherAll to configure certificate ciphers`)
+	errCipherCert13AndAll = errors.New(`TLSCipherCert13 configuration parameter cannot be used when the combined` +
+		` list of certificate and PSK ciphersuites are used. Use TLSCipherAll13 to configure certificate ciphers`)
+	errCipherAllRedundant = errors.New(`parameter "TLSCipherAll" cannot be applied: the combined list of certificate` +
+		` and PSK ciphersuites is not used. Most likely parameters "TLSCipherCert" and/or "TLSCipherPSK"` +
+		` are sufficient`)
+	errCipherAll13Redundant = errors.New(`parameter "TLSCipherAll13" cannot be applied: the combined list of` +
+		` certificate and PSK ciphersuites is not used. Most likely parameters "TLSCipherCert13" and/or` +
+		` "TLSCipherPSK13" are sufficient`)
+	errMissingTLSPskIdentity    = errors.New("missing TLSPSKIdentity configuration parameter")
+	errMissingTLSPskFile        = errors.New("missing TLSPSKFile configuration parameter")
+	errTLSPSKIdentityWithoutPsk = errors.New("TLSPSKIdentity configuration parameter set without PSK being used")
+	errTLSPSKFileWithoutPsk     = errors.New("TLSPSKFile configuration parameter set without PSK being used")
+	errTLSCipherPSKWithoutPsk   = errors.New("TLSCipherPSK configuration parameter set without PSK being used")
+	errTLSCipherPSK13WithoutPsk = errors.New("TLSCipherPSK13 configuration parameter set without PSK being used")
+	errMissingTLSCAFile         = errors.New("missing TLSCAFile configuration parameter")
+	errMissingTLSCertFile       = errors.New("missing TLSCertFile configuration parameter")
+	errMissingTLSKeyFile        = errors.New("missing TLSKeyFile configuration parameter")
+	errTLSCAFileWithoutCert     = errors.New("TLSCAFile configuration parameter set without certificates being" +
+		" used")
+	errTLSCertFileWithoutCert = errors.New("TLSCertFile configuration parameter set without certificates" +
+		" being used")
+	errTLSKeyFileWithoutCert = errors.New("TLSKeyFile configuration parameter set without certificates" +
+		" being used")
+	errTLSServerCertIssuerWithoutCert = errors.New("TLSServerCertIssuer configuration parameter set without" +
+		" certificates being used")
+	errTLSServerCertSubjectWithoutCert = errors.New("TLSServerCertSubject configuration parameter set without" +
+		" certificates being used")
+	errTLSCRLFileWithoutCert   = errors.New("TLSCRLFile configuration parameter set without certificates being used")
+	errCipherCertWithoutCert   = errors.New("TLSCipherCert configuration parameter set without certificates being used")
+	errCipherCert13WithoutCert = errors.New("TLSCipherCert13 configuration parameter set without certificates being" +
+		" used")
+	errInvalidTLSPSKFile = errors.New("invalid TLSPSKFile configuration parameter")
+)
+
+// PluginSystemOptions collection of system options for all plugins, map key are plugin names.
+type PluginSystemOptions map[string]SystemOptions
+
+// SystemOptions holds reserved plugin options.
+type SystemOptions struct {
+	Path                     *string `conf:"optional"`
+	ForceActiveChecksOnStart *int    `conf:"optional,range=0:1"`
+	Capacity                 int     `conf:"optional,range=1:1000"`
+}
+
+type pluginOptions struct {
+	System SystemOptions `conf:"optional"`
+}
+
+// RemovePluginSystemOptions removes system configuration from plugin options and returns them as separate
+// PluginSystemOptions that is a map where map key is the option name and map value is the corresponding value.
+func (a *AgentOptions) RemovePluginSystemOptions() (PluginSystemOptions, error) {
+	out := make(PluginSystemOptions)
+
+	for name, p := range a.Plugins {
+		var o pluginOptions
+		if err := conf.Unmarshal(p, &o); err != nil {
+			return nil, errs.Wrapf(err, "failed to unmarshal options for plugin %s ", name)
+		}
+
+		a.Plugins[name] = removeSystem(p)
+		out[name] = o.System
+	}
+
+	return out, nil
+}
 
 // CutAfterN returns the whole string s, if it is not longer then n runes (not bytes). Otherwise it returns the
 // beginning of the string s, which is cut after the fist n runes.
@@ -106,6 +181,8 @@ func GetTLSConfig(options *AgentOptions) (cfg *tls.Config, err error) {
 		if options.TLSAccept != "" ||
 			options.TLSConnect != "" ||
 			options.TLSPSKFile != "" ||
+			options.TLSKeyFile != "" ||
+			options.TLSCertFile != "" ||
 			options.TLSPSKIdentity != "" {
 			return nil, errors.New(tls.SupportedErrMsg())
 		}
@@ -114,6 +191,7 @@ func GetTLSConfig(options *AgentOptions) (cfg *tls.Config, err error) {
 	}
 
 	c := &tls.Config{}
+
 	switch options.TLSConnect {
 	case "", "unencrypted":
 		c.Connect = tls.ConnUnencrypted
@@ -122,7 +200,7 @@ func GetTLSConfig(options *AgentOptions) (cfg *tls.Config, err error) {
 	case "cert":
 		c.Connect = tls.ConnCert
 	default:
-		return nil, errors.New("invalid TLSConnect configuration parameter")
+		return nil, errInvalidTLSConnect
 	}
 
 	if options.TLSAccept != "" {
@@ -136,81 +214,138 @@ func GetTLSConfig(options *AgentOptions) (cfg *tls.Config, err error) {
 			case "cert":
 				c.Accept |= tls.ConnCert
 			default:
-				return nil, errors.New("invalid TLSAccept configuration parameter")
+				return nil, errInvalidTLSAccept
 			}
 		}
 	} else {
 		c.Accept = tls.ConnUnencrypted
 	}
 
+	if c.Accept&(tls.ConnPSK|tls.ConnCert) == tls.ConnPSK|tls.ConnCert {
+		err = requireNoCipherCert(options)
+		if err != nil {
+			return nil, err
+		}
+
+		c.CipherAll = options.TLSCipherAll
+		c.CipherAll13 = options.TLSCipherAll13
+	} else {
+		err = requireNoCipherAll(options)
+		if err != nil {
+			return nil, err
+		}
+
+		c.CipherAll = options.TLSCipherCert
+		c.CipherAll13 = options.TLSCipherCert13
+	}
+
+	c.CipherPSK = options.TLSCipherPSK
+	c.CipherPSK13 = options.TLSCipherPSK13
+
 	if (c.Accept|c.Connect)&tls.ConnPSK != 0 {
-		if options.TLSPSKIdentity != "" {
-			c.PSKIdentity = options.TLSPSKIdentity
-		} else {
-			return nil, errors.New("missing TLSPSKIdentity configuration parameter")
+		if options.TLSPSKIdentity == "" {
+			return nil, errMissingTLSPskIdentity
 		}
-		if options.TLSPSKFile != "" {
-			var file *os.File
-			if file, err = os.Open(options.TLSPSKFile); err != nil {
-				return nil, fmt.Errorf("invalid TLSPSKFile configuration parameter: %s", err)
-			}
-			defer file.Close()
-			var b []byte
-			if b, err = ioutil.ReadAll(file); err != nil {
-				return nil, fmt.Errorf("invalid TLSPSKFile configuration parameter: %s", err)
-			}
-			c.PSKKey = string(bytes.TrimRight(b, "\r\n \t"))
-		} else {
-			return nil, errors.New("missing TLSPSKFile configuration parameter")
+
+		c.PSKIdentity = options.TLSPSKIdentity
+
+		if options.TLSPSKFile == "" {
+			return nil, errMissingTLSPskFile
 		}
+
+		var file *os.File
+
+		if file, err = os.Open(options.TLSPSKFile); err != nil {
+			return nil, invalidTLSPSKFileError(err)
+		}
+
+		defer func() {
+			closeErr := file.Close()
+			if closeErr != nil {
+				log.Debugf("error closing file: %s\n", err)
+			}
+		}()
+
+		var b []byte
+
+		if b, err = io.ReadAll(file); err != nil {
+			return nil, invalidTLSPSKFileError(err)
+		}
+
+		c.PSKKey = string(bytes.TrimRight(b, "\r\n \t"))
 	} else {
 		if options.TLSPSKIdentity != "" {
-			return nil, errors.New("TLSPSKIdentity configuration parameter set without PSK being used")
+			return nil, errTLSPSKIdentityWithoutPsk
 		}
+
 		if options.TLSPSKFile != "" {
-			return nil, errors.New("TLSPSKFile configuration parameter set without PSK being used")
+			return nil, errTLSPSKFileWithoutPsk
+		}
+
+		if options.TLSCipherPSK != "" {
+			return nil, errTLSCipherPSKWithoutPsk
+		}
+
+		if options.TLSCipherPSK13 != "" {
+			return nil, errTLSCipherPSK13WithoutPsk
 		}
 	}
 
 	if (c.Accept|c.Connect)&tls.ConnCert != 0 {
-		if options.TLSCAFile != "" {
-			c.CAFile = options.TLSCAFile
-		} else {
-			return nil, errors.New("missing TLSCAFile configuration parameter")
+		if options.TLSCAFile == "" {
+			return nil, errMissingTLSCAFile
 		}
-		if options.TLSCertFile != "" {
-			c.CertFile = options.TLSCertFile
-		} else {
-			return nil, errors.New("missing TLSCertFile configuration parameter")
+
+		c.CAFile = options.TLSCAFile
+
+		if options.TLSCertFile == "" {
+			return nil, errMissingTLSCertFile
 		}
-		if options.TLSKeyFile != "" {
-			c.KeyFile = options.TLSKeyFile
-		} else {
-			return nil, errors.New("missing TLSKeyFile configuration parameter")
+
+		c.CertFile = options.TLSCertFile
+
+		if options.TLSKeyFile == "" {
+			return nil, errMissingTLSKeyFile
 		}
+
+		c.KeyFile = options.TLSKeyFile
 		c.ServerCertIssuer = options.TLSServerCertIssuer
 		c.ServerCertSubject = options.TLSServerCertSubject
 		c.CRLFile = options.TLSCRLFile
 	} else {
 		if options.TLSCAFile != "" {
-			return nil, errors.New("TLSCAFile configuration parameter set without certificates being used")
+			return nil, errTLSCAFileWithoutCert
 		}
+
 		if options.TLSCertFile != "" {
-			return nil, errors.New("TLSCertFile configuration parameter set without certificates being used")
+			return nil, errTLSCertFileWithoutCert
 		}
+
 		if options.TLSKeyFile != "" {
-			return nil, errors.New("TLSKeyFile configuration parameter set without certificates being used")
+			return nil, errTLSKeyFileWithoutCert
 		}
+
 		if options.TLSServerCertIssuer != "" {
-			return nil, errors.New("TLSServerCertIssuer configuration parameter set without certificates being used")
+			return nil, errTLSServerCertIssuerWithoutCert
 		}
+
 		if options.TLSServerCertSubject != "" {
-			return nil, errors.New("TLSServerCertSubject configuration parameter set without certificates being used")
+			return nil, errTLSServerCertSubjectWithoutCert
 		}
+
 		if options.TLSCRLFile != "" {
-			return nil, errors.New("TLSCRLFile configuration parameter set without certificates being used")
+			return nil, errTLSCRLFileWithoutCert
+		}
+
+		if options.TLSCipherCert != "" {
+			return nil, errCipherCertWithoutCert
+		}
+
+		if options.TLSCipherCert13 != "" {
+			return nil, errCipherCert13WithoutCert
 		}
 	}
+
 	return c, nil
 }
 
@@ -248,4 +383,54 @@ func ValidateOptions(options *AgentOptions) error {
 	}
 
 	return nil
+}
+
+func invalidTLSPSKFileError(e error) error {
+	return fmt.Errorf("%w: %w", errInvalidTLSPSKFile, e)
+}
+
+func requireNoCipherCert(options *AgentOptions) error {
+	if options.TLSCipherCert != "" {
+		return errCipherCertAndAll
+	}
+
+	if options.TLSCipherCert13 != "" {
+		return errCipherCert13AndAll
+	}
+
+	return nil
+}
+
+func requireNoCipherAll(options *AgentOptions) error {
+	if options.TLSCipherAll != "" {
+		return errCipherAllRedundant
+	}
+
+	if options.TLSCipherAll13 != "" {
+		return errCipherAll13Redundant
+	}
+
+	return nil
+}
+
+func removeSystem(privateOptions any) any {
+	root, ok := privateOptions.(*conf.Node)
+	if !ok {
+		return privateOptions
+	}
+
+	for i, v := range root.Nodes {
+		node, ok := v.(*conf.Node)
+		if !ok {
+			continue
+		}
+
+		if node.Name == "System" {
+			root.Nodes = slices.Delete(root.Nodes, i, i+1)
+
+			return root
+		}
+	}
+
+	return privateOptions
 }

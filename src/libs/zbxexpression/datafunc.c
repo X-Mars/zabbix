@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,46 +18,13 @@
 
 #include "zbxdb.h"
 #include "zbxcacheconfig.h"
-#include "zbxcachevalue.h"
 #include "zbx_expression_constants.h"
 #include "zbxevent.h"
 #include "zbxdbwrap.h"
-#include "zbxvariant.h"
 #include "zbxnum.h"
 #include "zbxstr.h"
 #include "zbxalgo.h"
-#include "zbxhistory.h"
-#include "zbxip.h"
-
-/******************************************************************************
- *                                                                            *
- * Purpose: request proxy field value by proxyid.                               *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_get_proxy_value(zbx_uint64_t proxyid, char **replace_to, const char *field_name)
-{
-	zbx_db_result_t	result;
-	zbx_db_row_t	row;
-	int		ret = FAIL;
-
-	result = zbx_db_select(
-			"select %s"
-			" from proxy"
-			" where proxyid=" ZBX_FS_UI64,
-			field_name, proxyid);
-
-	if (NULL != (row = zbx_db_fetch(result)))
-	{
-		*replace_to = zbx_strdup(*replace_to, row[0]);
-		ret = SUCCEED;
-	}
-	zbx_db_free_result(result);
-
-	return ret;
-}
+#include "zbxtime.h"
 
 /******************************************************************************
  *                                                                            *
@@ -289,91 +256,6 @@ out:
 
 /******************************************************************************
  *                                                                            *
- * Purpose: retrieve a particular value associated with the interface.        *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_dc_get_interface_value(zbx_uint64_t hostid, zbx_uint64_t itemid, char **replace_to, int request)
-{
-	int			res;
-	zbx_dc_interface_t	interface;
-
-	if (SUCCEED != (res = zbx_dc_config_get_interface(&interface, hostid, itemid)))
-	{
-		*replace_to = zbx_strdup(*replace_to, STR_UNKNOWN_VARIABLE);
-		return SUCCEED;
-	}
-
-	switch (request)
-	{
-		case ZBX_REQUEST_HOST_IP:
-			if ('\0' != *interface.ip_orig && FAIL == zbx_is_ip(interface.ip_orig))
-				return FAIL;
-
-			*replace_to = zbx_strdup(*replace_to, interface.ip_orig);
-			break;
-		case ZBX_REQUEST_HOST_DNS:
-			if ('\0' != *interface.dns_orig && FAIL == zbx_is_ip(interface.dns_orig) &&
-					FAIL == zbx_validate_hostname(interface.dns_orig))
-			{
-				return FAIL;
-			}
-
-			*replace_to = zbx_strdup(*replace_to, interface.dns_orig);
-			break;
-		case ZBX_REQUEST_HOST_CONN:
-			if (FAIL == zbx_is_ip(interface.addr) &&
-					FAIL == zbx_validate_hostname(interface.addr))
-			{
-				return FAIL;
-			}
-
-			*replace_to = zbx_strdup(*replace_to, interface.addr);
-			break;
-		case ZBX_REQUEST_HOST_PORT:
-			*replace_to = zbx_strdup(*replace_to, interface.port_orig);
-			break;
-		default:
-			THIS_SHOULD_NEVER_HAPPEN;
-			res = FAIL;
-	}
-
-	return res;
-}
-
-int	expr_dc_get_host_value(zbx_uint64_t itemid, char **replace_to, int request)
-{
-	int		ret;
-	zbx_dc_host_t	host;
-
-	zbx_dc_config_get_hosts_by_itemids(&host, &itemid, &ret, 1);
-
-	if (FAIL == ret)
-		return FAIL;
-
-	switch (request)
-	{
-		case ZBX_REQUEST_HOST_ID:
-			*replace_to = zbx_dsprintf(*replace_to, ZBX_FS_UI64, host.hostid);
-			break;
-		case ZBX_REQUEST_HOST_HOST:
-			*replace_to = zbx_strdup(*replace_to, host.host);
-			break;
-		case ZBX_REQUEST_HOST_NAME:
-			*replace_to = zbx_strdup(*replace_to, host.name);
-			break;
-		default:
-			THIS_SHOULD_NEVER_HAPPEN;
-			ret = FAIL;
-	}
-
-	return ret;
-}
-
-/******************************************************************************
- *                                                                            *
  * Purpose: get item key, replace macros in the key.                          *
  *                                                                            *
  * Parameters: dc_item    - [IN] item information used in substitution        *
@@ -387,147 +269,6 @@ static void	zbx_substitute_macros_in_item_key(zbx_dc_item_t *dc_item, char **rep
 	substitute_key_macros_impl(&key, NULL, dc_item, NULL, NULL, ZBX_MACRO_TYPE_ITEM_KEY, NULL, 0);
 	zbx_free(*replace_to);
 	*replace_to = key;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve a particular value associated with the item.             *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_get_item_value(zbx_uint64_t itemid, char **replace_to, int request)
-{
-	zbx_db_result_t	result;
-	zbx_db_row_t	row;
-	zbx_dc_item_t	dc_item;
-	zbx_uint64_t	proxyid;
-	int		ret = FAIL, errcode;
-
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
-
-	switch (request)
-	{
-		case ZBX_REQUEST_HOST_IP:
-		case ZBX_REQUEST_HOST_DNS:
-		case ZBX_REQUEST_HOST_CONN:
-		case ZBX_REQUEST_HOST_PORT:
-			return expr_dc_get_interface_value(0, itemid, replace_to, request);
-		case ZBX_REQUEST_HOST_ID:
-		case ZBX_REQUEST_HOST_HOST:
-		case ZBX_REQUEST_HOST_NAME:
-			return expr_dc_get_host_value(itemid, replace_to, request);
-		case ZBX_REQUEST_ITEM_KEY:
-			zbx_dc_config_get_items_by_itemids(&dc_item, &itemid, &errcode, 1);
-
-			if (SUCCEED == errcode)
-			{
-				zbx_substitute_macros_in_item_key(&dc_item, replace_to);
-				ret = SUCCEED;
-			}
-
-			zbx_dc_config_clean_items(&dc_item, &errcode, 1);
-
-			return ret;
-	}
-
-	result = zbx_db_select(
-			"select h.proxyid,h.description,i.itemid,i.name,i.key_,i.description,i.value_type,ir.error,"
-					"irn.name_resolved"
-			" from items i"
-				" join hosts h on h.hostid=i.hostid"
-				" left join item_rtdata ir on ir.itemid=i.itemid"
-				" left join item_rtname irn on irn.itemid=i.itemid"
-			" where i.itemid=" ZBX_FS_UI64, itemid);
-
-	if (NULL != (row = zbx_db_fetch(result)))
-	{
-		switch (request)
-		{
-			case ZBX_REQUEST_HOST_DESCRIPTION:
-				*replace_to = zbx_strdup(*replace_to, row[1]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_ITEM_ID:
-				*replace_to = zbx_strdup(*replace_to, row[2]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_ITEM_NAME:
-				if (FAIL == zbx_db_is_null(row[8]))
-					*replace_to = zbx_strdup(*replace_to, row[8]);
-				else
-					*replace_to = zbx_strdup(*replace_to, row[3]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_ITEM_DESCRIPTION:
-				zbx_dc_config_get_items_by_itemids(&dc_item, &itemid, &errcode, 1);
-
-				if (SUCCEED == errcode)
-				{
-					zbx_dc_um_handle_t	*um_handle;
-
-					um_handle = zbx_dc_open_user_macros();
-					*replace_to = zbx_strdup(NULL, row[5]);
-
-					(void)zbx_dc_expand_user_and_func_macros(um_handle, replace_to,
-							&dc_item.host.hostid, 1, NULL);
-
-					zbx_dc_close_user_macros(um_handle);
-					ret = SUCCEED;
-				}
-
-				zbx_dc_config_clean_items(&dc_item, &errcode, 1);
-				break;
-			case ZBX_REQUEST_ITEM_NAME_ORIG:
-				*replace_to = zbx_strdup(*replace_to, row[3]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_ITEM_KEY_ORIG:
-				*replace_to = zbx_strdup(*replace_to, row[4]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_ITEM_DESCRIPTION_ORIG:
-				*replace_to = zbx_strdup(*replace_to, row[5]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_PROXY_NAME:
-				ZBX_DBROW2UINT64(proxyid, row[0]);
-
-				if (0 == proxyid)
-				{
-					*replace_to = zbx_strdup(*replace_to, "");
-					ret = SUCCEED;
-				}
-				else
-					ret = expr_db_get_proxy_value(proxyid, replace_to, "name");
-				break;
-			case ZBX_REQUEST_PROXY_DESCRIPTION:
-				ZBX_DBROW2UINT64(proxyid, row[0]);
-
-				if (0 == proxyid)
-				{
-					*replace_to = zbx_strdup(*replace_to, "");
-					ret = SUCCEED;
-				}
-				else
-					ret = expr_db_get_proxy_value(proxyid, replace_to, "description");
-				break;
-			case ZBX_REQUEST_ITEM_VALUETYPE:
-				*replace_to = zbx_strdup(*replace_to, row[6]);
-				ret = SUCCEED;
-				break;
-			case ZBX_REQUEST_ITEM_ERROR:
-				*replace_to = zbx_strdup(*replace_to, FAIL == zbx_db_is_null(row[7]) ? row[7] : "");
-				ret = SUCCEED;
-				break;
-		}
-	}
-	zbx_db_free_result(result);
-
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
-
-	return ret;
 }
 
 int	expr_db_get_trigger_error(const zbx_db_trigger *trigger, char **replace_to)
@@ -554,200 +295,44 @@ out:
 	return ret;
 }
 
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve a particular value associated with the trigger's         *
- *          N_functionid'th function.                                         *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_get_trigger_value(const zbx_db_trigger *trigger, char **replace_to, int N_functionid, int request)
+int	expr_get_item_key(zbx_uint64_t itemid, char **replace_to)
 {
-	zbx_uint64_t	itemid;
-	int		ret = FAIL;
+	zbx_dc_item_t	dc_item;
+	int		ret = FAIL, errcode;
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
+	zbx_dc_config_get_items_by_itemids(&dc_item, &itemid, &errcode, 1);
 
-	if (SUCCEED == zbx_db_trigger_get_itemid(trigger, N_functionid, &itemid))
-		ret = expr_db_get_item_value(itemid, replace_to, request);
+	if (SUCCEED == errcode)
+	{
+		zbx_substitute_macros_in_item_key(&dc_item, replace_to);
+		ret = SUCCEED;
+	}
 
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
+	zbx_dc_config_clean_items(&dc_item, &errcode, 1);
 
 	return ret;
 }
 
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve a particular attribute of a log value.                   *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_get_history_log_value(zbx_uint64_t itemid, char **replace_to, int request, int clock, int ns,
-		const char *tz)
+int	expr_get_proxy_name_description(zbx_uint64_t itemid, int request, char **replace_to)
 {
-	zbx_dc_item_t		item;
-	int			ret = FAIL, errcode = FAIL;
-	zbx_timespec_t		ts = {clock, ns};
-	zbx_history_record_t	value;
+	int		errcode, ret = FAIL;
+	zbx_dc_host_t	dc_host;
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
+	zbx_dc_config_get_hosts_by_itemids(&dc_host, &itemid, &errcode, 1);
 
-	zbx_dc_config_get_items_by_itemids(&item, &itemid, &errcode, 1);
-
-	if (SUCCEED != errcode || ITEM_VALUE_TYPE_LOG != item.value_type)
-		goto out;
-
-	if (SUCCEED != zbx_vc_get_value(itemid, item.value_type, &ts, &value))
-		goto out;
-
-	zbx_vc_flush_stats();
-
-	switch (request)
+	if (SUCCEED == errcode)
 	{
-		case ZBX_REQUEST_ITEM_LOG_DATE:
-			*replace_to = zbx_strdup(*replace_to, zbx_date2str((time_t)value.value.log->timestamp, tz));
-			goto success;
-		case ZBX_REQUEST_ITEM_LOG_TIME:
-			*replace_to = zbx_strdup(*replace_to, zbx_time2str((time_t)value.value.log->timestamp, tz));
-			goto success;
-		case ZBX_REQUEST_ITEM_LOG_AGE:
-			*replace_to = zbx_strdup(*replace_to, zbx_age2str(time(NULL) - value.value.log->timestamp));
-			goto success;
-	}
-
-	/* the following attributes are set only for windows eventlog items */
-	if (0 != strncmp(item.key_orig, "eventlog[", 9))
-		goto clean;
-
-	switch (request)
-	{
-		case ZBX_REQUEST_ITEM_LOG_SOURCE:
-			*replace_to = zbx_strdup(*replace_to, (NULL == value.value.log->source ? "" :
-					value.value.log->source));
-			break;
-		case ZBX_REQUEST_ITEM_LOG_SEVERITY:
-			*replace_to = zbx_strdup(*replace_to,
-					item_logtype_string((unsigned char)value.value.log->severity));
-			break;
-		case ZBX_REQUEST_ITEM_LOG_NSEVERITY:
-			*replace_to = zbx_dsprintf(*replace_to, "%d", value.value.log->severity);
-			break;
-		case ZBX_REQUEST_ITEM_LOG_EVENTID:
-			*replace_to = zbx_dsprintf(*replace_to, "%d", value.value.log->logeventid);
-			break;
-	}
-success:
-	ret = SUCCEED;
-clean:
-	zbx_history_record_clear(&value, ITEM_VALUE_TYPE_LOG);
-out:
-	zbx_dc_config_clean_items(&item, &errcode, 1);
-
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
-
-	return ret;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve item value by item id.                                   *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_item_get_value(zbx_uint64_t itemid, char **lastvalue, int raw, zbx_timespec_t *ts)
-{
-	zbx_db_result_t	result;
-	zbx_db_row_t	row;
-	int		ret = FAIL;
-
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
-
-	result = zbx_db_select(
-			"select value_type,valuemapid,units"
-			" from items"
-			" where itemid=" ZBX_FS_UI64,
-			itemid);
-
-	if (NULL != (row = zbx_db_fetch(result)))
-	{
-		unsigned char		value_type;
-		zbx_uint64_t		valuemapid;
-		zbx_history_record_t	vc_value;
-
-		value_type = (unsigned char)atoi(row[0]);
-		ZBX_DBROW2UINT64(valuemapid, row[1]);
-
-		if (SUCCEED == zbx_vc_get_value(itemid, value_type, ts, &vc_value))
+		if (0 == dc_host.proxyid)
 		{
-			char	tmp[MAX_BUFFER_LEN];
-
-			zbx_vc_flush_stats();
-			zbx_history_value_print(tmp, sizeof(tmp), &vc_value.value, value_type);
-			zbx_history_record_clear(&vc_value, value_type);
-
-			if (0 == raw)
-				zbx_format_value(tmp, sizeof(tmp), valuemapid, row[2], value_type);
-
-			*lastvalue = zbx_strdup(*lastvalue, tmp);
-
+			*replace_to = zbx_strdup(*replace_to, "");
 			ret = SUCCEED;
 		}
+		else
+		{
+			ret = zbx_db_get_proxy_value(dc_host.proxyid, replace_to,
+					ZBX_DB_REQUEST_PROXY_NAME == request ? "name" : "description");
+		}
 	}
-	zbx_db_free_result(result);
-
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
-
-	return ret;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve item value by trigger expression and number of function. *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_item_value(const zbx_db_trigger *trigger, char **value, int N_functionid, int clock, int ns, int raw)
-{
-	zbx_uint64_t	itemid;
-	zbx_timespec_t	ts = {clock, ns};
-	int		ret;
-
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
-
-	if (SUCCEED == (ret = zbx_db_trigger_get_itemid(trigger, N_functionid, &itemid)))
-		ret = expr_db_item_get_value(itemid, value, raw, &ts);
-
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
-
-	return ret;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve item lastvalue by trigger expression                     *
- *          and number of function.                                           *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_db_item_lastvalue(const zbx_db_trigger *trigger, char **lastvalue, int N_functionid, int raw)
-{
-	int		ret;
-
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
-
-	ret = expr_db_item_value(trigger, lastvalue, N_functionid, (int)time(NULL), 999999999, raw);
-
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
 
 	return ret;
 }
@@ -860,98 +445,6 @@ void	expr_db_get_escalation_history(zbx_uint64_t actionid, const zbx_db_event *e
 	*replace_to = buf;
 }
 
-typedef struct
-{
-	const char	*macro;
-	int		idx;
-} inventory_field_t;
-
-static inventory_field_t	inventory_fields[] =
-{
-	{MVAR_INVENTORY_TYPE, 0},
-	{MVAR_PROFILE_DEVICETYPE, 0},	/* deprecated */
-	{MVAR_INVENTORY_TYPE_FULL, 1},
-	{MVAR_INVENTORY_NAME, 2},
-	{MVAR_PROFILE_NAME, 2},		/* deprecated */
-	{MVAR_INVENTORY_ALIAS, 3},
-	{MVAR_INVENTORY_OS, 4},
-	{MVAR_PROFILE_OS, 4},		/* deprecated */
-	{MVAR_INVENTORY_OS_FULL, 5},
-	{MVAR_INVENTORY_OS_SHORT, 6},
-	{MVAR_INVENTORY_SERIALNO_A, 7},
-	{MVAR_PROFILE_SERIALNO, 7},	/* deprecated */
-	{MVAR_INVENTORY_SERIALNO_B, 8},
-	{MVAR_INVENTORY_TAG, 9},
-	{MVAR_PROFILE_TAG, 9},		/* deprecated */
-	{MVAR_INVENTORY_ASSET_TAG, 10},
-	{MVAR_INVENTORY_MACADDRESS_A, 11},
-	{MVAR_PROFILE_MACADDRESS, 11},	/* deprecated */
-	{MVAR_INVENTORY_MACADDRESS_B, 12},
-	{MVAR_INVENTORY_HARDWARE, 13},
-	{MVAR_PROFILE_HARDWARE, 13},	/* deprecated */
-	{MVAR_INVENTORY_HARDWARE_FULL, 14},
-	{MVAR_INVENTORY_SOFTWARE, 15},
-	{MVAR_PROFILE_SOFTWARE, 15},	/* deprecated */
-	{MVAR_INVENTORY_SOFTWARE_FULL, 16},
-	{MVAR_INVENTORY_SOFTWARE_APP_A, 17},
-	{MVAR_INVENTORY_SOFTWARE_APP_B, 18},
-	{MVAR_INVENTORY_SOFTWARE_APP_C, 19},
-	{MVAR_INVENTORY_SOFTWARE_APP_D, 20},
-	{MVAR_INVENTORY_SOFTWARE_APP_E, 21},
-	{MVAR_INVENTORY_CONTACT, 22},
-	{MVAR_PROFILE_CONTACT, 22},	/* deprecated */
-	{MVAR_INVENTORY_LOCATION, 23},
-	{MVAR_PROFILE_LOCATION, 23},	/* deprecated */
-	{MVAR_INVENTORY_LOCATION_LAT, 24},
-	{MVAR_INVENTORY_LOCATION_LON, 25},
-	{MVAR_INVENTORY_NOTES, 26},
-	{MVAR_PROFILE_NOTES, 26},	/* deprecated */
-	{MVAR_INVENTORY_CHASSIS, 27},
-	{MVAR_INVENTORY_MODEL, 28},
-	{MVAR_INVENTORY_HW_ARCH, 29},
-	{MVAR_INVENTORY_VENDOR, 30},
-	{MVAR_INVENTORY_CONTRACT_NUMBER, 31},
-	{MVAR_INVENTORY_INSTALLER_NAME, 32},
-	{MVAR_INVENTORY_DEPLOYMENT_STATUS, 33},
-	{MVAR_INVENTORY_URL_A, 34},
-	{MVAR_INVENTORY_URL_B, 35},
-	{MVAR_INVENTORY_URL_C, 36},
-	{MVAR_INVENTORY_HOST_NETWORKS, 37},
-	{MVAR_INVENTORY_HOST_NETMASK, 38},
-	{MVAR_INVENTORY_HOST_ROUTER, 39},
-	{MVAR_INVENTORY_OOB_IP, 40},
-	{MVAR_INVENTORY_OOB_NETMASK, 41},
-	{MVAR_INVENTORY_OOB_ROUTER, 42},
-	{MVAR_INVENTORY_HW_DATE_PURCHASE, 43},
-	{MVAR_INVENTORY_HW_DATE_INSTALL, 44},
-	{MVAR_INVENTORY_HW_DATE_EXPIRY, 45},
-	{MVAR_INVENTORY_HW_DATE_DECOMM, 46},
-	{MVAR_INVENTORY_SITE_ADDRESS_A, 47},
-	{MVAR_INVENTORY_SITE_ADDRESS_B, 48},
-	{MVAR_INVENTORY_SITE_ADDRESS_C, 49},
-	{MVAR_INVENTORY_SITE_CITY, 50},
-	{MVAR_INVENTORY_SITE_STATE, 51},
-	{MVAR_INVENTORY_SITE_COUNTRY, 52},
-	{MVAR_INVENTORY_SITE_ZIP, 53},
-	{MVAR_INVENTORY_SITE_RACK, 54},
-	{MVAR_INVENTORY_SITE_NOTES, 55},
-	{MVAR_INVENTORY_POC_PRIMARY_NAME, 56},
-	{MVAR_INVENTORY_POC_PRIMARY_EMAIL, 57},
-	{MVAR_INVENTORY_POC_PRIMARY_PHONE_A, 58},
-	{MVAR_INVENTORY_POC_PRIMARY_PHONE_B, 59},
-	{MVAR_INVENTORY_POC_PRIMARY_CELL, 60},
-	{MVAR_INVENTORY_POC_PRIMARY_SCREEN, 61},
-	{MVAR_INVENTORY_POC_PRIMARY_NOTES, 62},
-	{MVAR_INVENTORY_POC_SECONDARY_NAME, 63},
-	{MVAR_INVENTORY_POC_SECONDARY_EMAIL, 64},
-	{MVAR_INVENTORY_POC_SECONDARY_PHONE_A, 65},
-	{MVAR_INVENTORY_POC_SECONDARY_PHONE_B, 66},
-	{MVAR_INVENTORY_POC_SECONDARY_CELL, 67},
-	{MVAR_INVENTORY_POC_SECONDARY_SCREEN, 68},
-	{MVAR_INVENTORY_POC_SECONDARY_NOTES, 69},
-	{0}
-};
-
 /******************************************************************************
  *                                                                            *
  * Purpose: request action value by macro.                                    *
@@ -988,77 +481,6 @@ int	expr_db_get_action_value(const char *macro, zbx_uint64_t actionid, char **re
 
 /******************************************************************************
  *                                                                            *
- * Purpose: request host inventory value by macro and trigger.                *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_dc_get_host_inventory(const char *macro, const zbx_db_trigger *trigger, char **replace_to,
-		int N_functionid)
-{
-	int	i;
-
-	for (i = 0; NULL != inventory_fields[i].macro; i++)
-	{
-		if (0 == strcmp(macro, inventory_fields[i].macro))
-		{
-			zbx_uint64_t	itemid;
-
-			if (SUCCEED != zbx_db_trigger_get_itemid(trigger, N_functionid, &itemid))
-				return FAIL;
-
-			return zbx_dc_get_host_inventory_value_by_itemid(itemid, replace_to, inventory_fields[i].idx);
-		}
-	}
-
-	return FAIL;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: request host inventory value by macro and itemid.                 *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_dc_get_host_inventory_by_itemid(const char *macro, zbx_uint64_t itemid, char **replace_to)
-{
-	int	i;
-
-	for (i = 0; NULL != inventory_fields[i].macro; i++)
-	{
-		if (0 == strcmp(macro, inventory_fields[i].macro))
-			return zbx_dc_get_host_inventory_value_by_itemid(itemid, replace_to, inventory_fields[i].idx);
-	}
-
-	return FAIL;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: request host inventory value by macro and hostid.                 *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_dc_get_host_inventory_by_hostid(const char *macro, zbx_uint64_t hostid, char **replace_to)
-{
-	int	i;
-
-	for (i = 0; NULL != inventory_fields[i].macro; i++)
-	{
-		if (0 == strcmp(macro, inventory_fields[i].macro))
-			return zbx_dc_get_host_inventory_value_by_hostid(hostid, replace_to, inventory_fields[i].idx);
-	}
-
-	return FAIL;
-}
-
-/******************************************************************************
- *                                                                            *
  * Purpose: compose temporary vector containing event data.                   *
  *                                                                            *
  ******************************************************************************/
@@ -1072,8 +494,8 @@ static void	eventdata_compose(const zbx_vector_db_event_t *events, zbx_vector_ev
 
 		event = events->values[i];
 
-		if (FAIL == (ret = expr_db_get_trigger_value(&event->trigger, &eventdata.host, 1,
-				ZBX_REQUEST_HOST_HOST)))
+		if (FAIL == (ret = zbx_db_with_trigger_itemid(&event->trigger, &eventdata.host, 1,
+				&zbx_dc_get_host_value, ZBX_DC_REQUEST_HOST_HOST)))
 		{
 			goto fail;
 		}
@@ -1158,61 +580,6 @@ int	expr_db_get_event_symptoms(const zbx_db_event *event, char **replace_to)
 	}
 
 	zbx_vector_uint64_destroy(&symptom_eventids);
-
-	return ret;
-}
-
-/******************************************************************************
- *                                                                            *
- * Purpose: retrieve a particular attribute of a log value.                   *
- *                                                                            *
- * Return value: upon successful completion return SUCCEED                    *
- *               otherwise FAIL                                               *
- *                                                                            *
- ******************************************************************************/
-int	expr_get_history_log_value(const char *m, const zbx_db_trigger *trigger, char **replace_to, int N_functionid,
-		int clock, int ns, const char *tz)
-{
-	zbx_uint64_t	itemid;
-	int		ret = FAIL, request;
-
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
-
-	if (0 == strcmp(m, MVAR_ITEM_LOG_AGE))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_AGE;
-	}
-	else if (0 == strcmp(m, MVAR_ITEM_LOG_DATE))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_DATE;
-	}
-	else if (0 == strcmp(m, MVAR_ITEM_LOG_EVENTID))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_EVENTID;
-	}
-	else if (0 == strcmp(m, MVAR_ITEM_LOG_NSEVERITY))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_NSEVERITY;
-	}
-	else if (0 == strcmp(m, MVAR_ITEM_LOG_SEVERITY))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_SEVERITY;
-	}
-	else if (0 == strcmp(m, MVAR_ITEM_LOG_SOURCE))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_SOURCE;
-	}
-	else if (0 == strcmp(m, MVAR_ITEM_LOG_TIME))
-	{
-		request = ZBX_REQUEST_ITEM_LOG_TIME;
-	}
-	else
-		goto out;
-
-	if (SUCCEED == (ret = zbx_db_trigger_get_itemid(trigger, N_functionid, &itemid)))
-		ret = expr_db_get_history_log_value(itemid, replace_to, request, clock, ns, tz);
-out:
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_result_string(ret));
 
 	return ret;
 }

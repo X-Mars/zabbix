@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -143,6 +143,11 @@ $form_grid = (new CFormGrid())
 						'value' => ZBX_CONNECTOR_ITEM_VALUE_TYPE_TEXT,
 						'label' => _('Text'),
 						'checked' => ZBX_CONNECTOR_ITEM_VALUE_TYPE_TEXT & $data['form']['item_value_type']
+					],
+					[
+						'value' => ZBX_CONNECTOR_ITEM_VALUE_TYPE_BIN,
+						'label' => _('Binary'),
+						'checked' => ZBX_CONNECTOR_ITEM_VALUE_TYPE_BIN & $data['form']['item_value_type']
 					]
 				])
 				->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
@@ -385,7 +390,8 @@ $output = [
 	'body' => $form->toString(),
 	'buttons' => $buttons,
 	'script_inline' => getPagePostJs().
-		$this->readJsFile('connector.edit.js.php')
+		$this->readJsFile('connector.edit.js.php'),
+	'dialogue_class' => 'modal-popup-static'
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -218,7 +218,7 @@ $custom_intervals = (new CTable())
 		new CColHeader(_('Type')),
 		new CColHeader(_('Interval')),
 		new CColHeader(_('Period')),
-		(new CColHeader(_('Action')))->setWidth(50)
+		''
 	])
 	->addClass(ZBX_STYLE_TABLE_FORMS_SEPARATOR);
 
@@ -360,7 +360,6 @@ if ($data['single_host_selected'] && ($data['context'] === 'template' || !$data[
 			'object_name' => $data['context'] === 'host' ? 'valuemaps' : 'template_valuemaps',
 			'multiselect_id' => 'valuemapid-field',
 			'multiple' => false,
-			'data' => [],
 			'popup' => [
 				'parameters' => [
 					'srctbl' => $data['context'] === 'host' ? 'valuemaps' : 'template_valuemaps',
@@ -399,7 +398,6 @@ if ($data['single_host_selected']) {
 				'object_name' => 'items',
 				'multiselect_id' => 'master-item-field',
 				'multiple' => false,
-				'data' => [],
 				'popup' => [
 					'parameters' => [
 						'srctbl' => 'items',
@@ -487,7 +485,7 @@ $tags_form_list = (new CFormList('tags-form-list'))
 				->setModern(true)
 				->addStyle('margin-bottom: 10px;'),
 			renderTagTable([['tag' => '', 'value' => '']])
-				->setHeader([_('Name'), _('Value'), _('Action')])
+				->setHeader([_('Name'), _('Value'), ''])
 				->addClass('tags-table')
 		]))->setId('tags-field')
 	);

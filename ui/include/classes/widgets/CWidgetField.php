@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -62,7 +62,7 @@ abstract class CWidgetField {
 	 * @param string      $name   Field name in form.
 	 * @param string|null $label  Label for the field in form.
 	 */
-	public function __construct(string $name, string $label = null) {
+	public function __construct(string $name, ?string $label = null) {
 		$this->name = $name;
 		$this->label = $label;
 		$this->value = null;
@@ -81,7 +81,7 @@ abstract class CWidgetField {
 	 * Prefix field label to enhance clarity in case of error messages. For example:
 	 * Invalid parameter "<LABEL PREFIX>: <LABEL>": too many decimal places.
 	 */
-	public function prefixLabel(string $prefix): self {
+	public function prefixLabel(?string $prefix): self {
 		$this->label_prefix = $prefix;
 
 		return $this;
@@ -282,6 +282,7 @@ abstract class CWidgetField {
 			$this->setValue($value);
 		}
 		else {
+			$this->setValue($this->getDefault());
 			$errors[] = $error;
 		}
 

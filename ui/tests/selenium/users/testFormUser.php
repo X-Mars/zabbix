@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -65,7 +65,7 @@ class testFormUser extends CWebTest {
 		]);
 		$usergrpids = CDataHelper::getIds('name');
 
-		// Create user with frontent access -> LDAP.
+		// Create user with frontend access -> LDAP.
 		CDataHelper::call('user.create', [
 			[
 				'username' => self::ZABBIX_LDAP_USER,
@@ -298,7 +298,7 @@ class testFormUser extends CWebTest {
 		$media_tab = $form->query('id:mediaTab')->one();
 		$media_table = $media_tab->asTable();
 
-		$this->assertEquals(['Type', 'Send to', 'When active', 'Use if severity', 'Status', 'Action'],
+		$this->assertEquals(['Type', 'Send to', 'When active', 'Use if severity', 'Status', 'Actions'],
 				$media_table->getHeadersText()
 		);
 

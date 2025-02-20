@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,18 +23,20 @@ class CWidgetFieldThresholdsView extends CWidgetFieldView {
 	}
 
 	public function getView(): CDiv {
+		$header_row = [
+			'',
+			_('Threshold'),
+			(new CColHeader(''))->setWidth('100%')
+		];
+
 		$thresholds_table = (new CTable())
 			->setId($this->field->getName().'-table')
 			->addClass(ZBX_STYLE_TABLE_FORMS)
-			->setHeader([
-				'',
-				(new CColHeader(_('Threshold')))->setWidth('100%'),
-				_('Action')
-			])
+			->setHeader($header_row)
 			->setFooter(new CRow(
-				new CCol(
+				(new CCol(
 					(new CButtonLink(_('Add')))->addClass('element-table-add')
-				)
+				))->setColSpan(count($header_row))
 			));
 
 		foreach ($this->field->getValue() as $i => $threshold) {

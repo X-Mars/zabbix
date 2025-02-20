@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -160,7 +160,8 @@ function createFontSelect(string $name): CSelect {
 							'name' => 'elementNameHostGroup',
 							'object_name' => 'hostGroup',
 							'multiple' => false
-						]))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
+						]))
+							->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 							->setAriaRequired(),
 						'hostGroupSelectRow'
 					)
@@ -169,7 +170,8 @@ function createFontSelect(string $name): CSelect {
 							'name' => 'elementNameHost',
 							'object_name' => 'hosts',
 							'multiple' => false
-						]))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
+						]))
+							->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 							->setAriaRequired(),
 						'hostSelectRow'
 					)
@@ -301,7 +303,7 @@ function createFontSelect(string $name): CSelect {
 					->addRow(_('URLs'),
 						(new CDiv([
 							(new CTable())
-								->setHeader([_('Name'), _('URL'), _('Action')])
+								->setHeader([_('Name'), _('URL'), ''])
 								->setId('urlContainer')
 								->setAttribute('style', 'width: 100%;'),
 							(new CButtonLink(_('Add')))->setId('newSelementUrl')
@@ -809,7 +811,7 @@ function createFontSelect(string $name): CSelect {
 					->addRow(_('Link indicators'),
 						(new CDiv([
 							(new CTable())
-								->setHeader([_('Trigger'), _('Type'), _('Color'), _('Action')])
+								->setHeader([_('Trigger'), _('Type'), _('Color'), ''])
 								->setAttribute('style', 'width: 100%;')
 								->setId('linkTriggerscontainer'),
 							(new CButtonLink(_('Add')))->onClick(

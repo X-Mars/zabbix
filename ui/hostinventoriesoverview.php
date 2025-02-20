@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -115,7 +115,7 @@ if ($filter['groupby'] !== '') {
 	$allowed_ui_inventory = CWebUser::checkAccess(CRoleHelper::UI_INVENTORY_HOSTS);
 	foreach ($report as $rep) {
 		$table->addRow([
-			zbx_str2links($rep['inventory_field']),
+			(new CCol(zbx_str2links($rep['inventory_field'])))->addClass(ZBX_STYLE_WORDBREAK),
 			$allowed_ui_inventory
 				? new CLink($rep['host_count'],
 					(new CUrl('hostinventories.php'))

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,8 +18,8 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/windows"
+	"golang.zabbix.com/sdk/errs"
 	"golang.zabbix.com/sdk/plugin"
-	"golang.zabbix.com/sdk/zbxerr"
 )
 
 func init() {
@@ -30,7 +30,7 @@ func init() {
 		"vfs.fs.size", "Disk space in bytes or in percentage from total.",
 	)
 	if err != nil {
-		panic(zbxerr.New("failed to register metrics").Wrap(err))
+		panic(errs.Wrap(err, "failed to register metrics"))
 	}
 }
 
@@ -49,6 +49,7 @@ func getMountPaths() (paths []string, err error) {
 		for {
 			if err = windows.GetVolumePathNamesForVolumeName(&volume[0], &buffer[0], uint32(len(buffer)), &size); err != nil {
 				if err.(syscall.Errno) != syscall.ERROR_MORE_DATA {
+					err = errs.Wrapf(err, "Cannot obtain a list of filesystems. Volume: %s Error", windows.UTF16ToString(volume))
 					return
 				}
 				buffer = make([]uint16, size)
@@ -123,18 +124,25 @@ func getFsInfo(path string) (fsname, fstype, drivetype, drivelabel string, err e
 }
 
 func getFsStats(path string) (stats *FsStats, err error) {
-	var totalFree, callerFree, total uint64
-	if err = windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(path), &callerFree, &total, &totalFree); err != nil {
+	var callerFree, total uint64
+
+	err = windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(path), &callerFree, &total, nil)
+	if err != nil {
 		return
 	}
-	totalUsed := total - totalFree
+
+	totalUsed := total - callerFree
 	stats = &FsStats{
 		Total: total,
-		Free:  totalFree,
+		Free:  callerFree,
 		Used:  totalUsed,
-		PFree: float64(totalFree) / float64(total) * 100,
-		PUsed: float64(totalUsed) / float64(total) * 100,
 	}
+
+	if total != 0 {
+		stats.PFree = float64(callerFree) * 100.0 / float64(total)
+		stats.PUsed = float64(totalUsed) * 100.0 / float64(total)
+	}
+
 	return
 }
 

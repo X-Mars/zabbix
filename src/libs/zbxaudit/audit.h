@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -45,5 +45,8 @@ void	zbx_audit_update_json_update_int(const zbx_uint64_t id, const int id_table,
 void	zbx_audit_update_json_update_double(const zbx_uint64_t id, const int id_table, const char *key,
 		double value_old, double value_new);
 void	zbx_audit_update_json_delete(const zbx_uint64_t id, const int id_table, const char *audit_op, const char *key);
+
+int	audit_field_value_matches_db_default(const char *table_name, const char *field_name, const char *value,
+		uint64_t id);
 
 #endif	/* ZABBIX_AUDIT_H */

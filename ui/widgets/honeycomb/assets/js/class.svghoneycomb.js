@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1025,5 +1025,14 @@ class CSVGHoneycomb {
 		const max_columns = Math.max(0, Math.floor((width - (max_rows > 1 ? cell_min_width / 2 : 0)) / cell_min_width));
 
 		return {max_rows, max_columns};
+	}
+
+	/**
+	 * Get cells data.
+	 *
+	 * @returns {Array|null}
+	 */
+	getCellsData () {
+		return this.#cells_data;
 	}
 }

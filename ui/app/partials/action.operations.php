@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,10 +24,10 @@ $operations_table = (new CTable())
 	->setAttribute('style', 'width: 100%;');
 
 if (in_array($data['eventsource'], [EVENT_SOURCE_TRIGGERS, EVENT_SOURCE_INTERNAL, EVENT_SOURCE_SERVICE])) {
-	$operations_table->setHeader([_('Steps'), _('Details'), _('Start in'), _('Duration'), _('Action')]);
+	$operations_table->setHeader([_('Steps'), _('Details'), _('Start in'), _('Duration'), _('Actions')]);
 }
 else {
-	$operations_table->setHeader([_('Details'), _('Action')]);
+	$operations_table->setHeader([_('Details'), _('Actions')]);
 }
 
 if (array_key_exists('descriptions', $data)) {

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,10 +24,14 @@ window.connector_edit_popup = new class {
 	init({connectorid, tags}) {
 		this.connectorid = connectorid;
 
-		this.overlay = overlays_stack.getById('connector_edit');
+		this.overlay = overlays_stack.getById('connector.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 		this.footer = this.overlay.$dialogue.$footer[0];
+
+		const return_url = new URL('zabbix.php', location.href);
+		return_url.searchParams.set('action', 'connector.list');
+		ZABBIX.PopupManager.setReturnUrl(return_url.href);
 
 		jQuery('#tags').dynamicRows({
 			template: '#tag-row-tmpl',
@@ -97,7 +101,7 @@ window.connector_edit_popup = new class {
 		this._post(curl.getUrl(), {connectorids: [this.connectorid]}, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 
@@ -132,7 +136,7 @@ window.connector_edit_popup = new class {
 		this._post(curl.getUrl(), fields, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 

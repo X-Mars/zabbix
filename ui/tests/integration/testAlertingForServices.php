@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -433,7 +433,7 @@ class testAlertingForServices extends CIntegrationTest {
 					'opmessage' => [
 						'default_msg' => 0,
 						'mediatypeid' => 0,
-						'message' => '{SERVICE.NAME}|{SERVICE.TAGS}|{SERVICE.TAGSJSON}|{SERVICE.ROOTCAUSE}',
+						'message' => '{SERVICE.NAME}|{SERVICE.TAGS}|{SERVICE.TAGSJSON}|{SERVICE.ROOTCAUSE}|{SERVICE.ID}',
 						'subject' => 'Problem'
 					],
 					'opmessage_grp' => [['usrgrpid' => 7]]
@@ -468,6 +468,7 @@ class testAlertingForServices extends CIntegrationTest {
 		$this->assertEquals('[]', $service_macros[2]);
 
 		$this->assertEquals(1, preg_match($rootcause, $service_macros[3], $matches));
+		$this->assertEquals(self::$serviceid, $service_macros[4]);
 	}
 
 	/**

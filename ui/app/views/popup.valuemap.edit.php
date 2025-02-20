@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -58,7 +58,7 @@ $form_grid = (new CFormGrid())
 				(new CTable())
 					->setId('mappings-table')
 					->addClass(ZBX_STYLE_TABLE_FORMS)
-					->setHeader(['', _('Type'), _('Value'), '', _('Mapped to'), _('Action'), ''])
+					->setHeader(['', _('Type'), _('Value'), '', _('Mapped to'), ''])
 					->setFooter(
 						(new CCol(
 							(new CButtonLink(_('Add')))->addClass('element-table-add')

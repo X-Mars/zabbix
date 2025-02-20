@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,7 +25,7 @@ class CFormActions extends CTag {
 	 * @param CButtonInterface|null $main_button
 	 * @param CButtonInterface[]    $other_buttons
 	 */
-	public function __construct(CButtonInterface $main_button = null, array $other_buttons = []) {
+	public function __construct(?CButtonInterface $main_button = null, array $other_buttons = []) {
 		parent::__construct('div', true);
 
 		foreach ($other_buttons as $other_button) {

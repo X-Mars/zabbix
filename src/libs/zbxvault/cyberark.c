@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,10 +20,10 @@
 
 #include "zbxjson.h"
 
-int	zbx_cyberark_kvs_get(const char *vault_url, const char *prefix, const char *token, const char *ssl_cert_file,
-		const char *ssl_key_file, const char *config_source_ip, const char *config_ssl_ca_location,
-		const char *config_ssl_cert_location, const char *config_ssl_key_location, const char *path,
-		long timeout, zbx_kvs_t *kvs, char **error)
+int	zbx_vault_get_kvs_cyberark(const char *vault_url, const char *prefix, const char *token,
+		const char *ssl_cert_file, const char *ssl_key_file, const char *config_source_ip,
+		const char *config_ssl_ca_location, const char *config_ssl_cert_location,
+		const char *config_ssl_key_location, const char *path, long timeout, zbx_kvs_t *kvs, char **error)
 {
 #ifndef HAVE_LIBCURL
 	ZBX_UNUSED(vault_url);
@@ -54,9 +54,9 @@ int	zbx_cyberark_kvs_get(const char *vault_url, const char *prefix, const char *
 
 	url = zbx_dsprintf(NULL, "%s%s%s", vault_url, prefix, path);
 
-	if (SUCCEED != zbx_http_get(url, "Content-Type: application/json", timeout, ssl_cert_file, ssl_key_file,
+	if (SUCCEED != zbx_http_req(url, "Content-Type: application/json", timeout, ssl_cert_file, ssl_key_file,
 			config_source_ip, config_ssl_ca_location, config_ssl_cert_location, config_ssl_key_location,
-			&out, &response_code, error))
+			&out, NULL, &response_code, error))
 	{
 		goto fail;
 	}

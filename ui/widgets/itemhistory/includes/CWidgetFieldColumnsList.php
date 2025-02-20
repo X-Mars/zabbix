@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -42,14 +42,7 @@ class CWidgetFieldColumnsList extends CWidgetField {
 	public const SINGLE_LINE_LENGTH_MAX = 500;
 	public const SINGLE_LINE_LENGTH_DEFAULT = 100;
 
-	// Predefined colors for thresholds and highlights. Each next threshold/highlight takes next sequential value
-	// from palette.
-	public const DEFAULT_COLOR_PALETTE = [
-		'FF465C', 'FFD54F', '0EC9AC', '524BBC', 'ED1248', 'D1E754', '2AB5FF', '385CC7', 'EC1594', 'BAE37D',
-		'6AC8FF', 'EE2B29', '3CA20D', '6F4BBC', '00A1FF', 'F3601B', '1CAE59', '45CFDB', '894BBC', '6D6D6D'
-	];
-
-	public function __construct(string $name, string $label = null) {
+	public function __construct(string $name, ?string $label = null) {
 		parent::__construct($name, $label);
 
 		$this->setDefault(self::DEFAULT_VALUE);
@@ -59,7 +52,7 @@ class CWidgetFieldColumnsList extends CWidgetField {
 		$items = $itemids
 			? API::Item()->get([
 				'output' => $this->isTemplateDashboard() ? ['name'] : ['name_resolved'],
-				'itemid' => $itemids,
+				'itemids' => $itemids,
 				'selectHosts' => $this->isTemplateDashboard() ? null : ['name'],
 				'webitems' => true,
 				'preservekeys' => true

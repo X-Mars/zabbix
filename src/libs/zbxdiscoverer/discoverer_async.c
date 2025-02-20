@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -12,33 +12,30 @@
 ** If not, see <https://www.gnu.org/licenses/>.
 **/
 
-#include "discoverer_job.h"
 #include "discoverer_async.h"
-#include "../../libs/zbxpoller/async_agent.h"
+
+#include "discoverer_job.h"
 #include "async_tcpsvc.h"
 #include "async_telnet.h"
 
-#ifdef HAVE_NETSNMP
-#	include "../../libs/zbxpoller/checks_snmp.h"
+#ifdef HAVE_LIBCURL
+#	include "async_http.h"
 #endif
 
 #include "zbxsysinfo.h"
 #include "zbx_discoverer_constants.h"
 #include "zbxasyncpoller.h"
+#include "zbxpoller.h"
+
+#ifdef HAVE_LIBCURL
+#	include "zbxasynchttppoller.h"
+#endif
+
 #include "zbxcacheconfig.h"
 #include "zbxcomms.h"
 #include "zbxdbhigh.h"
 #include "zbxip.h"
 #include "zbxstr.h"
-
-#ifdef HAVE_LIBCURL
-#	include "async_http.h"
-#	include "zbxasynchttppoller.h"
-#endif
-
-#ifdef HAVE_NETSNMP
-#	include "zbxpoller.h"
-#endif
 
 #ifndef EVDNS_BASE_INITIALIZE_NAMESERVERS
 #	define EVDNS_BASE_INITIALIZE_NAMESERVERS	1
@@ -222,7 +219,7 @@ static int	discovery_snmp(discovery_poller_config_t *poller_config, const zbx_dc
 
 	if (SUCCEED != (ret = zbx_async_check_snmp(&item, &result, process_snmp_result, async_result, NULL,
 			poller_config->base, poller_config->dnsbase, poller_config->config_source_ip,
-			ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_YES)))
+			ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_YES, 0)))
 	{
 		if (ZBX_ISSET_MSG(&result))
 			*error = zbx_strdup(*error, *ZBX_GET_MSG_RESULT(&result));
@@ -337,7 +334,7 @@ static int	discovery_agent(discovery_poller_config_t *poller_config, const zbx_d
 	return ret;
 }
 
-static void	process_tcpsvc_result(void *data)
+static void	async_task_process_result_tcpsvc(void *data)
 {
 	zbx_tcpsvc_context_t		*tcpsvc_context = (zbx_tcpsvc_context_t *)data;
 	discovery_async_result_t	*async_result = (discovery_async_result_t *)tcpsvc_context->arg;
@@ -436,9 +433,9 @@ static int	discovery_tcpsvc(discovery_poller_config_t *poller_config, const zbx_
 	item.host.tls_connect = ZBX_TCP_SEC_UNENCRYPTED;
 	item.timeout = dcheck->timeout;
 
-	if (SUCCEED != (ret = zbx_async_check_tcpsvc(&item, dcheck->type, &result, process_tcpsvc_result, async_result,
-			NULL, poller_config->base, poller_config->dnsbase, poller_config->config_source_ip,
-			ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_YES)))
+	if (SUCCEED != (ret = zbx_async_check_tcpsvc(&item, dcheck->type, &result, async_task_process_result_tcpsvc,
+			async_result, NULL, poller_config->base, poller_config->dnsbase,
+			poller_config->config_source_ip, ZABBIX_ASYNC_RESOLVE_REVERSE_DNS_YES)))
 	{
 		if (ZBX_ISSET_MSG(&result))
 			*error = zbx_strdup(*error, *ZBX_GET_MSG_RESULT(&result));
@@ -529,7 +526,7 @@ static int	discovery_telnet(discovery_poller_config_t *poller_config, const zbx_
 }
 
 #ifdef HAVE_LIBCURL
-void	process_http_result(void *data)
+void	process_result_http(void *data)
 {
 	zbx_discovery_async_http_context_t	*http_context = (zbx_discovery_async_http_context_t *)data;
 	discovery_async_result_t		*async_result = (discovery_async_result_t *)http_context->async_result;

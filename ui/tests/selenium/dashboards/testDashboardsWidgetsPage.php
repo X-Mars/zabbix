@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -115,11 +115,11 @@ class testDashboardsWidgetsPage extends CWebTest {
 
 		// Opening edit widget form and change widget type.
 		$change_form = $dashboard->getWidget('System information')->edit();
-		$change_form->fill(['Type' => 'Data overview']);
+		$change_form->fill(['Type' => 'Trigger overview']);
 		$change_form->waitUntilReloaded();
 		$change_form->submit();
 		// Check that widget type inherited from previous widget.
-		$this->checkLastSelectedWidgetType('Data overview', 'dataover');
+		$this->checkLastSelectedWidgetType('Trigger overview', 'trigover');
 
 		$dashboard->cancelEditing();
 	}
@@ -146,7 +146,7 @@ class testDashboardsWidgetsPage extends CWebTest {
 
 		// Expected table values.
 		$expected = [
-			'Zabbix servers'					=> 20,
+			'Zabbix servers'					=> 18,
 			'Inheritance test'					=> 1,
 			'Host group for suppression'		=> 1
 		];

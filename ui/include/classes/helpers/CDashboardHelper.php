@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -493,7 +493,7 @@ class CDashboardHelper {
 	 *
 	 * @return array  Widgets and/or errors.
 	 */
-	public static function validateDashboardPages(array $dashboard_pages, string $templateid = null): array {
+	public static function validateDashboardPages(array $dashboard_pages, ?string $templateid = null): array {
 		$errors = [];
 
 		foreach ($dashboard_pages as $dashboard_page_index => &$dashboard_page) {

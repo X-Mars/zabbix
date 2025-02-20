@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -12,13 +12,13 @@
 ** If not, see <https://www.gnu.org/licenses/>.
 **/
 
-#include "trapper_preproc.h"
-
+#include "zbxtrapper.h"
 #include "zbxpreproc.h"
 #include "zbxjson.h"
 #include "zbxpreprocbase.h"
 #include "zbxtime.h"
 #include "zbxvariant.h"
+#include "zbx_item_constants.h"
 
 /******************************************************************************
  *                                                                            *
@@ -169,7 +169,7 @@ static int	trapper_parse_preproc_test(const struct zbx_json_parse *jp_item,
 			goto out;
 		}
 
-		if (ZBX_PREPROC_VALIDATE_NOT_SUPPORTED != step_type || ZBX_STATE_NOT_SUPPORTED == state)
+		if (ZBX_PREPROC_VALIDATE_NOT_SUPPORTED != step_type || ITEM_STATE_NOTSUPPORTED == state)
 		{
 			step = (zbx_pp_step_t *)zbx_malloc(NULL, sizeof(zbx_pp_step_t));
 			step->type = step_type;
@@ -248,11 +248,12 @@ int	zbx_trapper_preproc_test_run(const struct zbx_json_parse *jp_item, const str
 	zbx_timespec_t			ts[2];
 	zbx_pp_result_t			*result;
 	zbx_vector_pp_result_ptr_t	results;
-	zbx_pp_history_t		history;
+	zbx_pp_history_t		*history = NULL;
 
 	zbx_vector_pp_step_ptr_create(&steps);
 	zbx_vector_pp_result_ptr_create(&results);
-	zbx_pp_history_init(&history);
+
+	history = zbx_pp_history_create(0);
 
 	if (FAIL == trapper_parse_preproc_test(jp_item, jp_options, jp_steps, value, value_size, state, values, ts,
 			&values_num, &value_type, &steps, &single, &bypass_first, error))
@@ -264,7 +265,7 @@ int	zbx_trapper_preproc_test_run(const struct zbx_json_parse *jp_item, const str
 	if (0 != steps.values_num)
 		first_step_type  = steps.values[0]->type;
 
-	if (ZBX_PREPROC_VALIDATE_NOT_SUPPORTED != first_step_type && ZBX_STATE_NOT_SUPPORTED == state)
+	if (ZBX_PREPROC_VALIDATE_NOT_SUPPORTED != first_step_type && ITEM_STATE_NOTSUPPORTED == state)
 	{
 		preproc_error = zbx_strdup(NULL, "This item is not supported. Please, add a preprocessing step"
 				" \"Check for not supported value\" to process it.");
@@ -286,7 +287,7 @@ int	zbx_trapper_preproc_test_run(const struct zbx_json_parse *jp_item, const str
 			zbx_vector_pp_result_ptr_append(&results, result);
 		}
 		else if (FAIL == zbx_preprocessor_test(value_type, values[i], &ts[i], (unsigned char)state, &steps,
-				&results, &history, error))
+				&results, history, error))
 		{
 			goto out;
 		}
@@ -389,7 +390,7 @@ out:
 	for (i = 0; i < values_num; i++)
 		zbx_free(values[i]);
 
-	zbx_pp_history_clear(&history);
+	zbx_pp_history_release(history);
 
 	zbx_vector_pp_result_ptr_clear_ext(&results, zbx_pp_result_free);
 	zbx_vector_pp_result_ptr_destroy(&results);

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -166,6 +166,7 @@ typedef struct
 	gnutls_psk_client_credentials_t	psk_client_creds;
 	gnutls_psk_server_credentials_t	psk_server_creds;
 	unsigned char	psk_buf[HOST_TLS_PSK_LEN / 2];
+	unsigned char	close_notify_received;
 #elif defined(HAVE_OPENSSL)
 	SSL				*ctx;
 #if defined(HAVE_OPENSSL_WITH_PSK)
@@ -306,6 +307,7 @@ ssize_t	zbx_tcp_write(zbx_socket_t *s, const char *buf, size_t len, short *event
 ssize_t		zbx_tcp_recv_ext(zbx_socket_t *s, int timeout, unsigned char flags);
 ssize_t		zbx_tcp_recv_raw_ext(zbx_socket_t *s, int timeout);
 const char	*zbx_tcp_recv_line(zbx_socket_t *s);
+int		zbx_tcp_read_close_notify(zbx_socket_t *s, int timeout, short *events);
 
 void	zbx_tcp_recv_context_init(zbx_socket_t *s, zbx_tcp_recv_context_t *tcp_recv_context, unsigned char flags);
 ssize_t	zbx_tcp_recv_context(zbx_socket_t *s, zbx_tcp_recv_context_t *context, unsigned char flags, short *events);
@@ -366,7 +368,7 @@ int	zbx_telnet_execute(zbx_socket_t *s, const char *command, AGENT_RESULT *resul
 /* TLS BLOCK */
 #if defined(HAVE_GNUTLS) || defined(HAVE_OPENSSL)
 
-#if defined(HAVE_OPENSSL) && OPENSSL_VERSION_NUMBER < 0x1010000fL || defined(LIBRESSL_VERSION_NUMBER)
+#if defined(HAVE_OPENSSL) && OPENSSL_VERSION_NUMBER < 0x1010000fL
 #	if !defined(LIBRESSL_VERSION_NUMBER)
 #		define OPENSSL_INIT_LOAD_SSL_STRINGS			0
 #		define OPENSSL_INIT_LOAD_CRYPTO_STRINGS		0
@@ -447,6 +449,7 @@ typedef struct
 }
 zbx_tls_conn_attr_t;
 
+int		zbx_tls_used(const zbx_socket_t *s);
 int		zbx_tls_get_attr_cert(const zbx_socket_t *s, zbx_tls_conn_attr_t *attr);
 int		zbx_tls_get_attr_psk(const zbx_socket_t *s, zbx_tls_conn_attr_t *attr);
 int		zbx_tls_get_attr(const zbx_socket_t *sock, zbx_tls_conn_attr_t *attr, char **error);

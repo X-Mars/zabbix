@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -148,11 +148,18 @@ func newClient(options *mqtt.ClientOptions) (mqtt.Client, error) {
 	return c, nil
 }
 
-func (ms *mqttSub) handler(client mqtt.Client, msg mqtt.Message) {
-	impl.manager.Lock()
-	impl.Tracef("received publish from [%s] on topic '%s' got: %s", ms.broker.url, msg.Topic(), string(msg.Payload()))
-	impl.manager.Notify(ms, msg)
-	impl.manager.Unlock()
+func (ms *mqttSub) handler(_ mqtt.Client, msg mqtt.Message) {
+	go func(message mqtt.Message, sub *mqttSub) {
+		impl.manager.Lock()
+		defer impl.manager.Unlock()
+
+		impl.Tracef("received publish from [%s] on topic '%s' got: %s",
+			ms.broker.url, msg.Topic(),
+			string(msg.Payload()),
+		)
+
+		impl.manager.Notify(sub, message)
+	}(msg, ms)
 }
 
 func (ms *mqttSub) subscribe(mc *mqttClient) error {

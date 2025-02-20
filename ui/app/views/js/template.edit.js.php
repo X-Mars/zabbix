@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,12 +22,17 @@
 window.template_edit_popup = new class {
 
 	init({templateid, warnings}) {
-		this.overlay = overlays_stack.getById('templates-form');
+		this.overlay = overlays_stack.getById('template.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 		this.templateid = templateid;
 		this.linked_templateids = this.#getLinkedTemplates();
 		this.macros_templateids = null;
+		this.show_inherited_macros = false;
+
+		const return_url = new URL('zabbix.php', location.href);
+		return_url.searchParams.set('action', 'template.list');
+		ZABBIX.PopupManager.setReturnUrl(return_url.href);
 
 		if (warnings.length > 0) {
 			const message_box = warnings.length > 1
@@ -42,16 +47,14 @@ window.template_edit_popup = new class {
 		this.#initActions();
 		this.#initTemplateTab();
 		this.#initMacrosTab();
+		this.#initPopupListeners();
 
 		this.initial_form_fields = getFormFields(this.form);
 	}
 
 	#initActions() {
-		this.form.addEventListener('click', (e) => {
-			if (e.target.classList.contains('js-edit-linked-template')) {
-				this.#editLinkedTemplate(e.target.dataset.templateid);
-			}
-			else if (e.target.classList.contains('js-unlink')) {
+		this.form.addEventListener('click', e => {
+			if (e.target.classList.contains('js-unlink')) {
 				this.#unlink(e);
 			}
 			else if (e.target.classList.contains('js-unlink-and-clear')) {
@@ -88,69 +91,70 @@ window.template_edit_popup = new class {
 		this.macros_manager = new HostMacrosManager({
 			container: $('#template_macros_container .table-forms-td-right')
 		});
-		let macros_initialized = false;
 
-		$('#template-tabs', this.form).on('tabscreate tabsactivate', (event, ui) => {
-			let panel = (event.type === 'tabscreate') ? ui.panel : ui.newPanel;
-			const show_inherited_macros = this.form
-				.querySelector('input[name=show_inherited_template_macros]:checked').value == 1;
+		const show_inherited_macros_element = document.getElementById('show_inherited_template_macros');
+		this.show_inherited_macros = show_inherited_macros_element.querySelector('input:checked').value == 1;
 
-			if (panel.attr('id') === 'template-macro-tab') {
-				// Please note that macro initialization must take place once and only when the tab is visible.
-				if (event.type === 'tabsactivate') {
-					const templateids = this.linked_templateids.concat(this.#getNewTemplates());
+		this.macros_manager.initMacroTable(this.show_inherited_macros);
 
-					if (this.macros_templateids === null) {
-						this.macros_templateids = templateids;
-					}
+		const observer = new IntersectionObserver(entries => {
+			if (entries[0].isIntersecting && this.show_inherited_macros) {
+				const templateids = this.linked_templateids.concat(this.#getNewTemplates());
 
-					// After initialization load inherited macros only if templates changed.
-					if (show_inherited_macros && this.macros_templateids.xor(templateids).length > 0) {
-						this.macros_templateids = templateids;
-						this.macros_manager.load(show_inherited_macros, templateids);
-					}
+				if (this.macros_templateids === null || this.macros_templateids.xor(templateids).length > 0) {
+					this.macros_templateids = templateids;
+
+					this.macros_manager.load(this.show_inherited_macros, templateids);
 				}
-
-				if (macros_initialized) {
-					return;
-				}
-
-				// Initialize macros.
-				this.macros_manager.initMacroTable(show_inherited_macros);
-
-				macros_initialized = true;
 			}
 		});
+		observer.observe(document.getElementById('template-macro-tab'));
 
-		this.form.querySelector('#show_inherited_template_macros').onchange = (e) => {
-			this.macros_manager.load(e.target.value == 1, this.linked_templateids.concat(this.#getNewTemplates()));
-		}
+		show_inherited_macros_element.addEventListener('change', e => {
+			this.show_inherited_macros = e.target.value == 1;
+			this.macros_templateids = this.linked_templateids.concat(this.#getNewTemplates());
+
+			this.macros_manager.load(this.show_inherited_macros, this.macros_templateids);
+		});
 	}
 
-	#editLinkedTemplate(templateid) {
-		const form_fields = getFormFields(this.form);
+	#initPopupListeners() {
+		const subscriptions = [];
 
-		if (JSON.stringify(this.initial_form_fields) !== JSON.stringify(form_fields)) {
-			if (!window.confirm(<?= json_encode(_('Any changes made in the current form will be lost.')) ?>)) {
-				return;
-			}
-		}
+		subscriptions.push(
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_OPEN,
+					action: 'template.edit'
+				},
+				callback: ({data, event}) => {
+					if (data.action_parameters.templateid === this.templateid || this.templateid === null) {
+						return;
+					}
 
-		overlayDialogueDestroy(this.overlay.dialogueid);
+					if (!this.#isConfirmed()) {
+						event.preventDefault();
+					}
+				}
+			})
+		);
 
-		const overlay = PopUp('template.edit', {templateid: templateid}, {
-			dialogueid: 'templates-form',
-			dialogue_class: 'modal-popup-large',
-			prevent_navigation: true
-		});
+		subscriptions.push(
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_END_SCRIPTING,
+					action: this.overlay.dialogueid
+				},
+				callback: () => ZABBIX.EventHub.unsubscribeAll(subscriptions)
+			})
+		);
+	}
 
-		overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => {
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: e.detail}));
-		});
-
-		overlay.$dialogue[0].addEventListener('dialogue.close', () => {
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.close'));
-		});
+	#isConfirmed() {
+		return JSON.stringify(this.initial_form_fields) === JSON.stringify(getFormFields(this.form))
+			|| window.confirm(<?= json_encode(_('Any changes made in the current form will be lost.')) ?>);
 	}
 
 	/**
@@ -217,16 +221,13 @@ window.template_edit_popup = new class {
 	}
 
 	clone() {
-		this.overlay.setLoading();
 		const parameters = this.#trimFields(getFormFields(this.form));
 
 		parameters.clone = 1;
 		parameters.templateid = this.templateid;
 		this.#prepareFields(parameters);
 
-		PopUp('template.edit', parameters, {
-			dialogueid: 'templates-form'
-		});
+		this.overlay = ZABBIX.PopupManager.open('template.edit', parameters);
 	}
 
 	deleteAndClear() {

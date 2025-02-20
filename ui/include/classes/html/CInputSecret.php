@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -40,7 +40,7 @@ class CInputSecret extends CInput {
 	 * @param string $value        Input element value attribute.
 	 * @param bool   $add_post_js  Add initialization javascript, default true.
 	 */
-	public function __construct(string $name, string $value = null, $add_post_js = true) {
+	public function __construct(string $name, ?string $value = null, $add_post_js = true) {
 		parent::__construct('text', $name, $value);
 
 		$this->add_post_js = $add_post_js;

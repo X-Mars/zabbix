@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -26,9 +26,9 @@ class CControllerTriggerCreate extends CController {
 			'event_name' =>				'db triggers.event_name',
 			'opdata' =>					'db triggers.opdata',
 			'priority' =>				'db triggers.priority|in 0,1,2,3,4,5',
-			'expression' =>				'required|db triggers.expression|not_empty',
+			'expression' =>				'required|string|not_empty',
 			'recovery_mode' =>			'db triggers.recovery_mode|in '.implode(',', [ZBX_RECOVERY_MODE_EXPRESSION, ZBX_RECOVERY_MODE_RECOVERY_EXPRESSION, ZBX_RECOVERY_MODE_NONE]),
-			'recovery_expression' =>	'db triggers.recovery_expression',
+			'recovery_expression' =>	'string',
 			'type' =>					'db triggers.type|in 0,1',
 			'correlation_mode' =>		'db triggers.correlation_mode|in '.implode(',', [ZBX_TRIGGER_CORRELATION_NONE, ZBX_TRIGGER_CORRELATION_TAG]),
 			'correlation_tag' =>		'db triggers.correlation_tag',

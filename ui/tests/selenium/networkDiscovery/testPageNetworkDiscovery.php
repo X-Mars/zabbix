@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -566,7 +566,8 @@ class testPageNetworkDiscovery extends CWebTest {
 					],
 					'single' => true,
 					'action' => 'Delete',
-					'error' => 'Discovery rule "Discovery rule for deleting, used in Action" is used in "Action with discovery rule" action.'
+					'error' => 'Cannot delete discovery rule "Discovery rule for deleting, used in Action": '.
+							'action "Action with discovery rule" uses this discovery rule.'
 				]
 			],
 			// Delete action for discovery rule check which is used in action.
@@ -577,7 +578,9 @@ class testPageNetworkDiscovery extends CWebTest {
 					],
 					'single' => true,
 					'action' => 'Delete',
-					'error' => 'Discovery rule "Discovery rule for deleting, check used in Action" is used in "Action with discovery check" action.'
+					'error' => 'Cannot delete discovery check "Telnet (15)" of discovery rule '.
+							'"Discovery rule for deleting, check used in Action"'.
+							': action "Action with discovery check" uses this discovery check.'
 				]
 			]
 		];

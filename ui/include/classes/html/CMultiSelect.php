@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -93,7 +93,7 @@ class CMultiSelect extends CTag {
 		}
 
 		if (array_key_exists('data', $options)) {
-			$this->params['data'] = zbx_cleanHashes($options['data']);
+			$this->params['data'] = array_values($options['data']);
 		}
 
 		foreach (['defaultValue', 'disabled', 'selectedLimit', 'addNew', 'styles', 'placeholder', 'hidden', 'readonly']
@@ -118,18 +118,6 @@ class CMultiSelect extends CTag {
 
 			if (array_key_exists('parameters', $options['popup'])) {
 				$this->params['popup']['parameters'] = $options['popup']['parameters'];
-
-				$excludeids = array_key_exists('excludeids', $options['popup']['parameters'])
-					? $options['popup']['parameters']['excludeids']
-					: [];
-
-				$excludeids = array_merge($excludeids, array_key_exists('disableids', $options['popup']['parameters'])
-					? $options['popup']['parameters']['disableids']
-					: []);
-
-				if ($excludeids) {
-					$this->params['excludeids'] = $excludeids;
-				}
 			}
 		}
 

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -55,7 +55,7 @@ void	zbx_strsplit_last(const char *src, char delimiter, char **left, char **righ
 /* secure string copy */
 #define zbx_strscpy(x, y)	zbx_strlcpy(x, y, sizeof(x))
 #define zbx_strscat(x, y)	zbx_strlcat(x, y, sizeof(x))
-void	zbx_strlcat(char *dst, const char *src, size_t siz);
+void	zbx_strlcat(char *dst, const char *src, size_t size);
 size_t	zbx_strlcpy_utf8(char *dst, const char *src, size_t size);
 
 char	*zbx_strdcat(char *dest, const char *src);
@@ -90,6 +90,7 @@ char	*zbx_strshift_utf8(char *text, size_t num);
 size_t	zbx_strlen_utf8_nchars(const char *text, size_t utf8_maxlen);
 size_t	zbx_charcount_utf8_nbytes(const char *text, size_t maxlen);
 
+int	zbx_is_ascii_printable(const char *text);
 int	zbx_is_utf8(const char *text);
 void	zbx_replace_invalid_utf8(char *text);
 void	zbx_replace_invalid_utf8_and_nonprintable(char *text);

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -36,9 +36,7 @@ class CCookieSession implements SessionHandlerInterface {
 		// Set use standard cookie PHPSESSID to false.
 		ini_set('session.use_cookies', '0');
 
-		session_set_save_handler([$this, 'open'], [$this, 'close'], [$this, 'read'], [$this, 'write'],
-			[$this, 'destroy'], [$this, 'gc']
-		);
+		session_set_save_handler($this, true);
 	}
 
 	/**

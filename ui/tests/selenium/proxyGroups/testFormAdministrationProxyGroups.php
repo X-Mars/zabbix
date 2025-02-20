@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -392,14 +392,14 @@ class testFormAdministrationProxyGroups extends CWebTest {
 
 		/**
 		 * A prefix is added to TEST_GOOD update scenarios in order to avoid name duplication with create TEST_GOOD scenarios.
-		 * In the trimming case the first two symbols are replaced with such prefix with leading spaces.
-		 * In the 255 symbol long name case the first two symbols are replaced with such prefix.
+		 * In the trimming case the first four symbols (spaces) are replaced with such prefix with leading spaces.
+		 * In the 255 symbol long name case the first eight symbols are replaced with such prefix.
 		 */
 		if ($update && $expected === TEST_GOOD) {
 			$data['fields']['Name'] = ($trim)
-				? '   Update:' . substr($data['fields']['Name'], 2)
+				? '   Update: '.substr($data['fields']['Name'], 4)
 				: (($data['fields']['Name'] === STRING_255)
-					? 'Update: ' . substr($data['fields']['Name'], 8)
+					? 'Update: '.substr($data['fields']['Name'], 8)
 					: 'Update: '.$data['fields']['Name']);
 		}
 

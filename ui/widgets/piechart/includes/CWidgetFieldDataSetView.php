@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -32,6 +32,7 @@ use CButton,
 	CListItem,
 	CPatternSelect,
 	CRow,
+	CScriptTag,
 	CSelect,
 	CSimpleButton,
 	CSpan,
@@ -213,11 +214,16 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 				]))->addClass('js-items-multiselect');
 			}
 
-			$dataset_head = array_merge($dataset_head, [
-				(new CColor($field_name.'['.$row_num.'][color]', $value['color']))->appendColorPickerJs(false),
-				$host_pattern_field,
-				$item_pattern_field
-			]);
+			$dataset_head[] = (new CColor($field_name.'['.$row_num.'][color]', $value['color']))
+				->appendColorPickerJs(false);
+
+			if ($host_pattern_field !== null) {
+				$dataset_head[] = $host_pattern_field;
+				$dataset_head[] = new CScriptTag($host_pattern_field->getPostJS());
+			}
+
+			$dataset_head[] = $item_pattern_field;
+			$dataset_head[] = new CScriptTag($item_pattern_field->getPostJS());
 		}
 		else {
 			$item_rows = [];

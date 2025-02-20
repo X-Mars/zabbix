@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -118,8 +118,9 @@ class testFormTabIndicators extends CWebTest {
 			// #1 Host configuration form tab data.
 			[
 				[
-					'url' => 'zabbix.php?action=host.edit',
+					'url' => 'zabbix.php?action=host.list',
 					'form' => 'id:host-form',
+					'create_button' => 'Create host',
 					'tabs' => [
 						[
 							'name' => 'Tags',
@@ -709,8 +710,8 @@ class testFormTabIndicators extends CWebTest {
 			// #16 User profile configuration form tab data.
 			[
 				[
-					'url' => 'zabbix.php?action=userprofile.edit',
-					'form' => 'name:user_form',
+					'url' => 'zabbix.php?action=userprofile.notification.edit',
+					'form' => 'id:userprofile-notification-form',
 					'tabs' => [
 						[
 							'name' => 'Media',

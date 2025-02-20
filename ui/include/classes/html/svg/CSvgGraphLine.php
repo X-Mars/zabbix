@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -72,11 +72,10 @@ class CSvgGraphLine extends CSvgPath {
 	public function toString($destroy = true): string {
 		if ($this->path) {
 			if ($this->add_labels) {
-				$line_values = '';
-
-				foreach ($this->path as $point) {
-					$line_values .= ($line_values === '') ? $point[2] : ','.$point[2];
-				}
+				// Create a label for each point, including stacked graph blank "points".
+				$line_values = implode(',', array_map(static function ($point): string {
+					return $point[2];
+				}, $this->path));
 
 				$this->setAttribute('label', $line_values);
 			}

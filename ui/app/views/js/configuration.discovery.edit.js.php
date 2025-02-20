@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,15 +22,19 @@
 window.drule_edit_popup = new class {
 
 	init({druleid, dchecks, drule}) {
-		this.overlay = overlays_stack.getById('discoveryForm');
+		this.overlay = overlays_stack.getById('discovery.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 
 		this.druleid = druleid;
+		this.dchecks = dchecks;
 		this.drule = drule;
 		this.dcheckid = getUniqueId();
-
 		this.available_device_types = [<?= SVC_AGENT ?>, <?= SVC_SNMPv1 ?>, <?= SVC_SNMPv2c ?>, <?= SVC_SNMPv3 ?>];
+
+		const return_url = new URL('zabbix.php', location.href);
+		return_url.searchParams.set('action', 'discovery.list');
+		ZABBIX.PopupManager.setReturnUrl(return_url.href);
 
 		document.getElementById('discovery_by').addEventListener('change', () => this.#updateForm());
 
@@ -91,9 +95,11 @@ window.drule_edit_popup = new class {
 
 	#updateCheck(row, input) {
 		delete input.dchecks;
+		input.warning = row.querySelector('.btn-icon')?.getAttribute('data-hintbox-contents');
 
 		this.#addCheck(input, row, true);
 		row.remove();
+		this.#updateCheckWarningIcon(input);
 		this.#addInputFields(input);
 	}
 
@@ -215,10 +221,26 @@ window.drule_edit_popup = new class {
 				.querySelector('#dcheckList tbody')
 				.insertAdjacentHTML('beforeend', template.evaluate(input));
 
+			this.#updateCheckWarningIcon(input);
 			this.#addInputFields(input);
 		}
 
 		this.#updateRadioButtonRows(input, update, row);
+	}
+
+	#updateCheckWarningIcon(input) {
+		const row = document.getElementById(`dcheckRow_${input.dcheckid}`);
+		const warning_icon = row.querySelector('.btn-icon');
+
+		if (input.dcheckid.includes('new')) {
+			warning_icon.remove();
+		}
+
+		this.dchecks.forEach(dcheck => {
+			if (dcheck.dcheckid === input.dcheckid) {
+				dcheck.warning === '' ? warning_icon.remove() : row.querySelector('.js-remove').disabled = true;
+			}
+		});
 	}
 
 	#addInputFields(input) {
@@ -334,6 +356,12 @@ window.drule_edit_popup = new class {
 	clone({title, buttons}) {
 		this.druleid = null;
 
+		// Remove all warning icons and enable all Remove buttons in Checks table.
+		const table = document.getElementById('dcheckList');
+
+		table.querySelectorAll('.js-remove').forEach(element => element.disabled = false);
+		table.querySelectorAll('.btn-icon').forEach(element => element.remove());
+
 		this.overlay.setProperties({title, buttons});
 		this.overlay.unsetLoading();
 		this.overlay.recoverFocus();
@@ -348,7 +376,7 @@ window.drule_edit_popup = new class {
 		this.#post(curl.getUrl(), {druleids: [this.druleid]}, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 
@@ -365,7 +393,7 @@ window.drule_edit_popup = new class {
 		this.#post(curl.getUrl(), fields, (response) => {
 			overlayDialogueDestroy(this.overlay.dialogueid);
 
-			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response.success}));
+			this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: response}));
 		});
 	}
 

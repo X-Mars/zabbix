@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -154,6 +154,7 @@ foreach ($data['items'] as $itemid => $item) {
 				->addClass(ZBX_STYLE_CURSOR_POINTER)
 				->setHint(
 					(new CDiv(mb_substr($last_history['value'], 0, ZBX_HINTBOX_CONTENT_LIMIT)))
+						->addClass(ZBX_STYLE_HINTBOX_RAW_DATA)
 						->addClass(ZBX_STYLE_HINTBOX_WRAP),
 					'', true, '', 0
 				);
@@ -330,8 +331,14 @@ foreach ($data['items'] as $itemid => $item) {
 }
 
 $button_list = [
-	GRAPH_TYPE_STACKED => ['name' => _('Display stacked graph'), 'attributes' => ['data-required' => 'graph']],
-	GRAPH_TYPE_NORMAL => ['name' => _('Display graph'), 'attributes' => ['data-required' => 'graph']],
+	GRAPH_TYPE_STACKED => [
+		'name' => _('Display stacked graph'),
+		'attributes' => ['data-required' => 'graph', 'data-required-count' => 2]
+	],
+	GRAPH_TYPE_NORMAL => [
+		'name' => _('Display graph'),
+		'attributes' => ['data-required' => 'graph']
+	],
 	'item.execute' => [
 		'content' => (new CSimpleButton(_('Execute now')))
 			->addClass(ZBX_STYLE_BTN_ALT)

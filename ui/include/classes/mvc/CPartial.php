@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -121,7 +121,7 @@ class CPartial {
 	 *
 	 * @return string
 	 */
-	public function readJsFile(string $file_name, array $data = null): string {
+	public function readJsFile(string $file_name, ?array $data = null): string {
 		$data = ($data === null) ? $this->data : $data;
 
 		$file_path = $this->directory.'/js/'.$file_name;
@@ -148,7 +148,7 @@ class CPartial {
 	 *
 	 * @throws RuntimeException if the file not found, not readable or returned false.
 	 */
-	public function includeJsFile(string $file_name, array $data = null): void {
+	public function includeJsFile(string $file_name, ?array $data = null): void {
 		echo $this->readJsFile($file_name, $data);
 	}
 

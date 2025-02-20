@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -26,6 +26,7 @@
 #include "zbxnum.h"
 #include "zbxstr.h"
 #include "zbxalgo.h"
+#include "zbxcachehistory.h"
 
 #define ZBX_VMWARE_DATASTORE_SIZE_TOTAL		0
 #define ZBX_VMWARE_DATASTORE_SIZE_FREE		1
@@ -395,6 +396,9 @@ static int	vmware_service_get_counter_value_by_id(const zbx_vmware_service_t *se
 		case ZBX_VMWARE_UNIT_MEGABYTESPERSECOND:
 			SET_UI64_RESULT(result, perfvalue->value * ZBX_MEBIBYTE);
 			break;
+		case ZBX_VMWARE_UNIT_GIGABYTES:
+			SET_UI64_RESULT(result, perfvalue->value * ZBX_GIBIBYTE);
+			break;
 		case ZBX_VMWARE_UNIT_TERABYTES:
 			SET_UI64_RESULT(result, perfvalue->value * ZBX_TEBIBYTE);
 			break;
@@ -702,9 +706,9 @@ static int	custquery_read_result(zbx_vmware_cust_query_t *custom_query, AGENT_RE
 		{
 			custom_query->state &= (unsigned char)~ZBX_VMWARE_CQ_SEPARATE;
 		}
-
-		custom_query->last_pooled = time(NULL);
 	}
+
+	custom_query->last_pooled = time(NULL);
 
 	return SYSINFO_RET_OK;
 }
@@ -1060,6 +1064,9 @@ static void	vmware_get_events(const zbx_vector_vmware_event_ptr_t *events,
 		const zbx_vmware_eventlog_state_t *evt_state, const zbx_dc_item_t *item,
 		zbx_vector_agent_result_ptr_t *add_results)
 {
+	zbx_uint64_t	key;
+	time_t		timestamp;
+
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s() last_key:" ZBX_FS_UI64 " last_ts:" ZBX_FS_TIME_T " events:%d top event id:"
 			ZBX_FS_UI64 " top event ts:" ZBX_FS_TIME_T, __func__, evt_state->last_key, evt_state->last_ts,
 			events->values_num, events->values[0]->key, events->values[0]->timestamp);
@@ -1079,7 +1086,8 @@ static void	vmware_get_events(const zbx_vector_vmware_event_ptr_t *events,
 
 		if (SUCCEED == zbx_set_agent_result_type(add_result, item->value_type, event->message))
 		{
-			zbx_set_agent_result_meta(add_result, event->key, 0);
+			key = event->key;
+			timestamp = event->timestamp;
 
 			if (ITEM_VALUE_TYPE_LOG == item->value_type)
 			{
@@ -1092,6 +1100,9 @@ static void	vmware_get_events(const zbx_vector_vmware_event_ptr_t *events,
 		else
 			zbx_free(add_result);
 	}
+
+	if (0 != add_results->values_num)
+		zbx_set_agent_result_meta(add_results->values[add_results->values_num - 1], key, (int)timestamp);
 
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s(): events:%d", __func__, add_results->values_num);
 }
@@ -1170,9 +1181,9 @@ int	check_vcenter_eventlog(AGENT_REQUEST *request, const zbx_dc_item_t *item, AG
 	unsigned char		skip_old, severity = 0;
 	zbx_vmware_service_t	*service;
 	int			ret = SYSINFO_RET_FAIL;
-	time_t			lastaccess;
+	double			hc_pused = 0;
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
+	zabbix_log(LOG_LEVEL_DEBUG, "In %s() lastlogsize:" ZBX_FS_UI64, __func__, request->lastlogsize);
 
 	if (3 < request->nparam || 0 == request->nparam)
 	{
@@ -1213,29 +1224,27 @@ int	check_vcenter_eventlog(AGENT_REQUEST *request, const zbx_dc_item_t *item, AG
 	if (NULL == (service = get_vmware_service(url, item->username, item->password, result, &ret)))
 		goto unlock;
 
-	if (0 == (service->jobs_type & ZBX_VMWARE_UPDATE_EVENTLOG))
+	if (0 != service->eventlog.lastaccess &&
+			service->eventlog.interval != service->lastaccess - service->eventlog.lastaccess)
 	{
-		service->jobs_type |= ZBX_VMWARE_REQ_UPDATE_EVENTLOG;
-		ret = SYSINFO_RET_OK;
-		goto unlock;
+		service->jobs_flag |= ZBX_VMWARE_REQ_UPDATE_EVENTLOG;
+		service->eventlog.interval = service->lastaccess - service->eventlog.lastaccess;
 	}
 
-	lastaccess = time(NULL);
+	service->eventlog.lastaccess = service->lastaccess;
 
-	if (0 != service->eventlog.lastaccess)
-		service->eventlog.interval = lastaccess - service->eventlog.lastaccess;
-
-	service->eventlog.lastaccess = lastaccess;
+	if (0 == (service->jobs_flag & ZBX_VMWARE_UPDATE_EVENTLOG))
+		service->jobs_flag |= ZBX_VMWARE_REQ_UPDATE_EVENTLOG;
 
 	if (severity != service->eventlog.severity)
 		service->eventlog.severity = severity;
 
 	if (ZBX_VMWARE_EVENT_KEY_UNINITIALIZED == service->eventlog.last_key ||
-			(0 != skip_old && 0 != service->eventlog.last_key ))
+			(0 != skip_old && service->eventlog.owner_itemid != item->itemid))
 	{
 		/* this may happen if recreate item vmware.eventlog for same service URL */
 		service->eventlog.last_key = request->lastlogsize;
-		service->eventlog.last_ts = 0;
+		service->eventlog.last_ts = request->mtime;
 		service->eventlog.skip_old = skip_old;
 		service->eventlog.owner_itemid = item->itemid;
 	}
@@ -1259,10 +1268,15 @@ int	check_vcenter_eventlog(AGENT_REQUEST *request, const zbx_dc_item_t *item, AG
 		SET_MSG_RESULT(result, zbx_strdup(NULL, service->eventlog.data->error));
 		goto unlock;
 	}
+	else if (80 < (hc_pused = zbx_hc_mem_pused_lock()))
+	{
+		zabbix_log(LOG_LEVEL_DEBUG,"%s():eventlog data is suspended due to history cache is overloaded:%.2f%%",
+				__func__, hc_pused);
+	}
 	else if (0 < service->eventlog.data->events.values_num)
 	{
 		/* Some times request->lastlogsize value gets stuck due to concurrent update of history cache */
-		/* thereby we can rely to value of the request->lastlogsize and have to return events based on */
+		/* thereby we can't rely to value of the request->lastlogsize and have to return events based on */
 		/* internal state of the service->eventlog */
 		vmware_get_events(&service->eventlog.data->events, &service->eventlog, item, add_results);
 		service->eventlog.last_key = service->eventlog.data->events.values[0]->key;
@@ -1273,7 +1287,9 @@ int	check_vcenter_eventlog(AGENT_REQUEST *request, const zbx_dc_item_t *item, AG
 unlock:
 	zbx_vmware_unlock();
 out:
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_sysinfo_ret_string(ret));
+	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s events:%d hc_pused:%.2f%% last_key:" ZBX_FS_UI64, __func__,
+			zbx_sysinfo_ret_string(ret), add_results->values_num, hc_pused, 0 != add_results->values_num ?
+			add_results->values[add_results->values_num - 1]->lastlogsize : 0);
 
 	return ret;
 }
@@ -2419,7 +2435,7 @@ int	check_vcenter_hv_network_linkspeed(AGENT_REQUEST *request, const char *usern
 	if (FAIL == (i = zbx_vector_vmware_pnic_ptr_bsearch(&hv->pnics, &nic_cmp, zbx_vmware_pnic_compare)))
 	{
 		SET_MSG_RESULT(result, zbx_strdup(NULL, "Unknown physical network interface name"));
-		goto out;
+		goto unlock;
 	}
 
 	SET_UI64_RESULT(result, hv->pnics.values[i]->speed);
@@ -4524,6 +4540,62 @@ out:
 	return ret;
 }
 
+int	check_vcenter_vm_hv_maintenance(AGENT_REQUEST *request, const char *username, const char *password,
+		AGENT_RESULT *result)
+{
+	zbx_vmware_service_t	*service;
+	zbx_vmware_hv_t		*hv;
+	const char		*url, *uuid, *value;
+	int			ret = SYSINFO_RET_FAIL;
+
+	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
+
+	if (2 != request->nparam)
+	{
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid number of parameters."));
+		goto out;
+	}
+
+	url = get_rparam(request, 0);
+	uuid = get_rparam(request, 1);
+
+	if ('\0' == *uuid)
+	{
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Invalid second parameter."));
+		goto out;
+	}
+
+	zbx_vmware_lock();
+
+	if (NULL == (service = get_vmware_service(url, username, password, result, &ret)))
+		goto unlock;
+
+	if (NULL == (hv = service_hv_get_by_vm_uuid(service, uuid)))
+	{
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "Unknown virtual machine uuid."));
+		goto unlock;
+	}
+
+	if (NULL == (value = hv->props[ZBX_VMWARE_HVPROP_MAINTENANCE]))
+	{
+		SET_MSG_RESULT(result, zbx_strdup(NULL, "No hypervisor value found."));
+		goto unlock;
+	}
+
+	if (0 == strcmp(value, "false"))
+		SET_UI64_RESULT(result, 0);
+	else
+		SET_UI64_RESULT(result, 1);
+
+	ret = SYSINFO_RET_OK;
+unlock:
+	zbx_vmware_unlock();
+out:
+	zabbix_log(LOG_LEVEL_DEBUG, "End of %s():%s", __func__, zbx_sysinfo_ret_string(ret));
+
+	return ret;
+}
+
 int	check_vcenter_vm_hv_name(AGENT_REQUEST *request, const char *username, const char *password,
 		AGENT_RESULT *result)
 {
@@ -4809,9 +4881,9 @@ int	check_vcenter_vm_snapshot_get(AGENT_REQUEST *request, const char *username, 
 	return ret;
 }
 
-typedef void	(*vmpropfunc_t)(struct zbx_json *j, zbx_vmware_dev_t *dev);
+typedef void	(*check_vcenter_vm_discovery_props_func_t)(struct zbx_json *j, zbx_vmware_dev_t *dev);
 
-static void	check_vcenter_vm_discovery_nic_props_cb(struct zbx_json *j, zbx_vmware_dev_t *dev)
+static void	check_vcenter_vm_discovery_props_nic_cb(struct zbx_json *j, zbx_vmware_dev_t *dev)
 {
 	zbx_json_addstring(j, "{#IFNAME}", ZBX_NULL2EMPTY_STR(dev->instance), ZBX_JSON_TYPE_STRING);
 	zbx_json_addstring(j, "{#IFDESC}", ZBX_NULL2EMPTY_STR(dev->label), ZBX_JSON_TYPE_STRING);
@@ -4834,14 +4906,15 @@ static void	check_vcenter_vm_discovery_nic_props_cb(struct zbx_json *j, zbx_vmwa
 			dev->props[ZBX_VMWARE_DEV_PROPS_IFIPS]);
 }
 
-static void	check_vcenter_vm_discovery_disk_props_cb(struct zbx_json *j, zbx_vmware_dev_t *dev)
+static void	check_vcenter_vm_discovery_props_disk_cb(struct zbx_json *j, zbx_vmware_dev_t *dev)
 {
 	zbx_json_addstring(j, "{#DISKNAME}", ZBX_NULL2EMPTY_STR(dev->instance), ZBX_JSON_TYPE_STRING);
 	zbx_json_addstring(j, "{#DISKDESC}", ZBX_NULL2EMPTY_STR(dev->label), ZBX_JSON_TYPE_STRING);
 }
 
 static int	check_vcenter_vm_discovery_common(AGENT_REQUEST *request, const char *username, const char *password,
-		AGENT_RESULT *result, int dev_type, const char *func_parent, vmpropfunc_t props_cb)
+		AGENT_RESULT *result, int dev_type, const char *func_parent,
+		check_vcenter_vm_discovery_props_func_t check_vcenter_vm_discovery_props_cb)
 {
 	struct zbx_json		json_data;
 	zbx_vmware_service_t	*service;
@@ -4888,7 +4961,7 @@ static int	check_vcenter_vm_discovery_common(AGENT_REQUEST *request, const char 
 			continue;
 
 		zbx_json_addobject(&json_data, NULL);
-		props_cb(&json_data, dev);
+		check_vcenter_vm_discovery_props_cb(&json_data, dev);
 		zbx_json_close(&json_data);
 	}
 
@@ -4912,7 +4985,7 @@ int	check_vcenter_vm_net_if_discovery(AGENT_REQUEST *request, const char *userna
 		AGENT_RESULT *result)
 {
 	return check_vcenter_vm_discovery_common(request, username, password, result, ZBX_VMWARE_DEV_TYPE_NIC, __func__,
-			check_vcenter_vm_discovery_nic_props_cb);
+			check_vcenter_vm_discovery_props_nic_cb);
 }
 
 static int	check_vcenter_vm_common(AGENT_REQUEST *request, const char *username, const char *password,
@@ -5206,7 +5279,7 @@ int	check_vcenter_vm_vfs_dev_discovery(AGENT_REQUEST *request, const char *usern
 		AGENT_RESULT *result)
 {
 	return check_vcenter_vm_discovery_common(request, username, password, result, ZBX_VMWARE_DEV_TYPE_DISK,
-			__func__, check_vcenter_vm_discovery_disk_props_cb);
+			__func__, check_vcenter_vm_discovery_props_disk_cb);
 }
 
 int	check_vcenter_vm_vfs_dev_read(AGENT_REQUEST *request, const char *username, const char *password,

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,7 +22,7 @@ type serviceOptions struct {
 	LogType             string `conf:"optional,default=file"`
 	LogFile             string `conf:"optional,default=/tmp/zabbix_web_service.log"`
 	LogFileSize         int    `conf:"optional,range=0:1024,default=1"`
-	Timeout             int    `conf:"optional,range=1:30,default=3"`
+	Timeout             int    `conf:"optional,range=1:30,default=10"`
 	DebugLevel          int    `conf:"range=0:5,default=3"`
 	TLSAccept           string `conf:"optional"`
 	TLSCAFile           string `conf:"optional"`

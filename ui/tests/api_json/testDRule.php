@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -141,11 +141,11 @@ class testDRule extends CAPITest {
 			],
 			'DRule used in action' => [
 				'drule' => [':drule:drule.used.in.action.1'],
-				'expected_error' => 'Discovery rule "drule.used.in.action.1" is used in "drule.discovery.action" action.'
+				'expected_error' => 'Cannot delete discovery rule "drule.used.in.action.1": action "drule.discovery.action" uses this discovery rule.'
 			],
 			'DRule used in another action' => [
 				'drule' => [':drule:drule.used.in.action.2'],
-				'expected_error' => 'Discovery rule "drule.used.in.action.2" is used in "drule.discovery.action" action.'
+				'expected_error' => 'Cannot delete discovery rule "drule.used.in.action.2": action "drule.discovery.action" uses this discovery rule.'
 			],
 			'Delete discovery rule without proxy' => [
 				'drule' => [':drule:drule.del.1'],

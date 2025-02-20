@@ -10,7 +10,7 @@ Template `Kubernetes Scheduler by HTTP` - collects metrics by HTTP agent from Sc
 
 ## Requirements
 
-Zabbix version: 7.2 and higher.
+Zabbix version: 7.4 and higher.
 
 ## Tested versions
 
@@ -19,7 +19,7 @@ This template has been tested on:
 
 ## Configuration
 
-> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.2/manual/config/templates_out_of_the_box) section.
+> Zabbix should be configured according to the instructions in the [Templates out of the box](https://www.zabbix.com/documentation/7.4/manual/config/templates_out_of_the_box) section.
 
 ## Setup
 
@@ -71,9 +71,9 @@ For example, for clusters created with `kubeadm` it can be set in the following 
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Too many REST Client errors|<p>"Kubernetes Scheduler REST Client requests is experiencing high error rate (with 5xx HTTP code).</p>|`min(/Kubernetes Scheduler by HTTP/kubernetes.scheduler.client_http_requests_500.rate,5m)>{$KUBE.SCHEDULER.HTTP.CLIENT.ERROR}`|Warning||
-|Too many unschedulable pods|<p>Number of attempts to schedule pods with 'unschedulable' result is too high. 'unschedulable' means a pod could not be scheduled.</p>|`min(/Kubernetes Scheduler by HTTP/kubernetes.scheduler.scheduler_schedule_attempts.unschedulable.rate,5m)>{$KUBE.SCHEDULER.UNSCHEDULABLE}`|Warning||
-|Too many schedule attempts with errors|<p>Number of attempts to schedule pods with 'error' result is too high. 'error' means an internal scheduler problem.</p>|`min(/Kubernetes Scheduler by HTTP/kubernetes.scheduler.scheduler_schedule_attempts.error.rate,5m)>{$KUBE.SCHEDULER.ERROR}`|Warning||
+|Kubernetes Scheduler: Too many REST Client errors|<p>"Kubernetes Scheduler REST Client requests is experiencing high error rate (with 5xx HTTP code).</p>|`min(/Kubernetes Scheduler by HTTP/kubernetes.scheduler.client_http_requests_500.rate,5m)>{$KUBE.SCHEDULER.HTTP.CLIENT.ERROR}`|Warning||
+|Kubernetes Scheduler: Too many unschedulable pods|<p>Number of attempts to schedule pods with 'unschedulable' result is too high. 'unschedulable' means a pod could not be scheduled.</p>|`min(/Kubernetes Scheduler by HTTP/kubernetes.scheduler.scheduler_schedule_attempts.unschedulable.rate,5m)>{$KUBE.SCHEDULER.UNSCHEDULABLE}`|Warning||
+|Kubernetes Scheduler: Too many schedule attempts with errors|<p>Number of attempts to schedule pods with 'error' result is too high. 'error' means an internal scheduler problem.</p>|`min(/Kubernetes Scheduler by HTTP/kubernetes.scheduler.scheduler_schedule_attempts.error.rate,5m)>{$KUBE.SCHEDULER.ERROR}`|Warning||
 
 ### LLD rule Scheduling algorithm histogram
 

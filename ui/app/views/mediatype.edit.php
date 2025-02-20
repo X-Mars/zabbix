@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -149,7 +149,7 @@ $parameters_exec_table = (new CTable())
 	->setId('exec_params_table')
 	->setHeader([
 		(new CColHeader(_('Value')))->setWidth('100%'),
-		_('Action')
+		''
 	])
 	->addStyle('width: 100%;')
 	->addItem(
@@ -202,8 +202,7 @@ $mediatype_form_grid
 		))->setId('gsm_modem_field')
 	]);
 
-// Create password field.
-if ($data['change_passwd']) {
+if (!$data['display_password_input']) {
 	// Disabling 'passwd' field prevents stored passwords autofill by browser.
 	$passwd_field = [
 		(new CButton('chPass_btn', _('Change password'))),
@@ -224,7 +223,7 @@ $parameters_table = (new CTable())
 	->setHeader([
 		(new CColHeader(_('Name')))->setWidth('50%'),
 		(new CColHeader(_('Value')))->setWidth('50%'),
-		_('Action')
+		''
 	])
 	->addStyle('width: 100%;')
 	->addItem(
@@ -541,7 +540,8 @@ $output = [
 	'doc_url' => CDocHelper::getUrl(CDocHelper::ALERTS_MEDIATYPE_EDIT),
 	'body' => $form->toString(),
 	'buttons' => $buttons,
-	'script_inline' => getPagePostJs().$this->readJsFile('mediatype.edit.js.php')
+	'script_inline' => getPagePostJs().$this->readJsFile('mediatype.edit.js.php'),
+	'dialogue_class' => 'modal-popup-static'
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

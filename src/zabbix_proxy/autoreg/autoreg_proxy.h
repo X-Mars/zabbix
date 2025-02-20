@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -17,7 +17,9 @@
 
 #include "zbxdbhigh.h"
 
-void	zbx_autoreg_update_host_proxy(zbx_uint64_t proxyid, const char *host, const char *ip, const char *dns,
+#include "zbxcacheconfig.h"
+
+void	zbx_autoreg_update_host_proxy(const zbx_dc_proxy_t *proxy, const char *host, const char *ip, const char *dns,
 		unsigned short port, unsigned int connection_type, const char *host_metadata, unsigned short flags,
 		int clock, const zbx_events_funcs_t *events_cbs);
 

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -297,6 +297,12 @@ class WidgetForm extends CWidgetForm {
 				(new CWidgetFieldCheckBox('lefty', _('Left Y'), _('Show')))->setDefault(SVG_GRAPH_AXIS_ON)
 			)
 			->addField(
+				(new CWidgetFieldSelect('lefty_scale', _('Scale'), [
+					SVG_GRAPH_AXIS_SCALE_LINEAR => _('Linear'),
+					SVG_GRAPH_AXIS_SCALE_LOGARITHMIC => _('Logarithmic')
+				]))->setDefault(SVG_GRAPH_AXIS_SCALE_LINEAR)
+			)
+			->addField(
 				(new CWidgetFieldNumericBox('lefty_min', _('Min')))
 					->prefixLabel(_('Left Y'))
 					->setFlags(!$this->lefty_on ? CWidgetField::FLAG_DISABLED : 0x00)
@@ -321,6 +327,12 @@ class WidgetForm extends CWidgetForm {
 			)
 			->addField(
 				(new CWidgetFieldCheckBox('righty', _('Right Y'), _('Show')))->setDefault(SVG_GRAPH_AXIS_ON)
+			)
+			->addField(
+				(new CWidgetFieldSelect('righty_scale', _('Scale'), [
+					SVG_GRAPH_AXIS_SCALE_LINEAR => _('Linear'),
+					SVG_GRAPH_AXIS_SCALE_LOGARITHMIC => _('Logarithmic')
+				]))->setDefault(SVG_GRAPH_AXIS_SCALE_LINEAR)
 			)
 			->addField(
 				(new CWidgetFieldNumericBox('righty_min', _('Min')))

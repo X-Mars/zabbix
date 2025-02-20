@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -727,7 +727,7 @@ class CHttpTestManager {
 	 * @param array      $httptests
 	 * @param array|null $db_httptests
 	 */
-	private static function updateFields(array &$httptests, array $db_httptests = null): void {
+	private static function updateFields(array &$httptests, ?array $db_httptests = null): void {
 		$ins_fields = [];
 		$upd_fields = [];
 		$del_fieldids = [];
@@ -815,7 +815,7 @@ class CHttpTestManager {
 	 * @param array      $httptests
 	 * @param array|null $db_httptests
 	 */
-	private static function updateSteps(array &$httptests, array $db_httptests = null): void {
+	private static function updateSteps(array &$httptests, ?array $db_httptests = null): void {
 		$ins_steps = [];
 		$upd_steps = [];
 		$update_step_items = false;
@@ -1268,7 +1268,7 @@ class CHttpTestManager {
 	 * @param array      $httptests
 	 * @param array|null $db_httptests
 	 */
-	private static function updateTags(array &$httptests, array $db_httptests = null): void {
+	private static function updateTags(array &$httptests, ?array $db_httptests = null): void {
 		$ins_tags = [];
 		$del_tagids = [];
 

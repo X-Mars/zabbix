@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -158,7 +158,7 @@ class CControllerScriptEdit extends CController {
 
 		// Get host group.
 		if ($data['groupid'] == 0) {
-			$data['hostgroup'] = null;
+			$data['hostgroup'] = [];
 		}
 		else {
 			$hostgroups = API::HostGroup()->get([

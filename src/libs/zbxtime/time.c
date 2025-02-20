@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -287,7 +287,7 @@ long	zbx_get_timezone_offset(time_t t, struct tm *tm)
  ******************************************************************************/
 struct tm	*zbx_localtime(const time_t *time, const char *tz)
 {
-#if defined(HAVE_GETENV) && defined(HAVE_PUTENV) && defined(HAVE_UNSETENV) && defined(HAVE_TZSET) && \
+#if defined(HAVE_GETENV) && defined(HAVE_UNSETENV) && defined(HAVE_TZSET) && \
 		!defined(_WINDOWS) && !defined(__MINGW32__)
 	char		*old_tz;
 	struct tm	*tm;
@@ -500,6 +500,7 @@ int	zbx_tm_parse_period(const char *period, size_t *len, int *multiplier, zbx_ti
  *                                                                            *
  * Parameter: tm      - [IN/OUT] the time structure                           *
  *            seconds - [IN] the seconds to add (can be negative)             *
+ *            tz      - [IN] time zone                                        *
  *                                                                            *
  ******************************************************************************/
 static void	tm_add_seconds(struct tm *tm, int seconds)
@@ -1114,30 +1115,46 @@ static int zbx_iso8601_timezone(const char *zone, long int *offset)
  *                                                                            *
  * Purpose: parse string from iso8601 datetime (xml base) to UTC              *
  *          without millisecond, supported formats:                           *
- *              yyyy-mm-ddThh:mm:ss                                          *
+ *              yyyy-mm-ddThh:mm:ss                                           *
  *              yyyy-mm-ddThh:mm:ssZ                                          *
  *              yyyy-mm-ddThh:mm:ss+hh:mm                                     *
  *              yyyy-mm-ddThh:mm:ss-hh:mm                                     *
  *              yyyy-mm-ddThh:mm:ss +hh:mm                                    *
  *              yyyy-mm-ddThh:mm:ss -hh:mm                                    *
+ *              yyyy-mm-ddThh:mm:ss+hhmm                                      *
+ *              yyyy-mm-ddThh:mm:ss-hhmm                                      *
+ *              yyyy-mm-ddThh:mm:ss +hhmm                                     *
+ *              yyyy-mm-ddThh:mm:ss -hhmm                                     *
  *              yyyy-mm-ddThh:mm:ss.ccc                                       *
  *              yyyy-mm-ddThh:mm:ss.cccZ                                      *
  *              yyyy-mm-ddThh:mm:ss.ccc+hh:mm                                 *
  *              yyyy-mm-ddThh:mm:ss.ccc-hh:mm                                 *
  *              yyyy-mm-ddThh:mm:ss.ccc +hh:mm                                *
  *              yyyy-mm-ddThh:mm:ss.ccc -hh:mm                                *
- *              yyyy-mm-dd hh:mm:ss                                          *
+ *              yyyy-mm-ddThh:mm:ss.ccc+hhmm                                  *
+ *              yyyy-mm-ddThh:mm:ss.ccc-hhmm                                  *
+ *              yyyy-mm-ddThh:mm:ss.ccc +hhmm                                 *
+ *              yyyy-mm-ddThh:mm:ss.ccc -hhmm                                 *
+ *              yyyy-mm-dd hh:mm:ss                                           *
  *              yyyy-mm-dd hh:mm:ssZ                                          *
  *              yyyy-mm-dd hh:mm:ss+hh:mm                                     *
  *              yyyy-mm-dd hh:mm:ss-hh:mm                                     *
  *              yyyy-mm-dd hh:mm:ss +hh:mm                                    *
  *              yyyy-mm-dd hh:mm:ss -hh:mm                                    *
+ *              yyyy-mm-dd hh:mm:ss+hhmm                                      *
+ *              yyyy-mm-dd hh:mm:ss-hhmm                                      *
+ *              yyyy-mm-dd hh:mm:ss +hhmm                                     *
+ *              yyyy-mm-dd hh:mm:ss -hhmm                                     *
  *              yyyy-mm-dd hh:mm:ss.ccc                                       *
  *              yyyy-mm-dd hh:mm:ss.cccZ                                      *
  *              yyyy-mm-dd hh:mm:ss.ccc+hh:mm                                 *
  *              yyyy-mm-dd hh:mm:ss.ccc-hh:mm                                 *
  *              yyyy-mm-dd hh:mm:ss.ccc +hh:mm                                *
  *              yyyy-mm-dd hh:mm:ss.ccc -hh:mm                                *
+ *              yyyy-mm-dd hh:mm:ss.ccc+hhmm                                  *
+ *              yyyy-mm-dd hh:mm:ss.ccc-hhmm                                  *
+ *              yyyy-mm-dd hh:mm:ss.ccc +hhmm                                 *
+ *              yyyy-mm-dd hh:mm:ss.ccc -hhmm                                 *
  *                                                                            *
  * Parameters: str  - [IN] iso8601 datetime string                            *
  *             time - [OUT] parsed tm value                                   *
@@ -1151,7 +1168,7 @@ int	zbx_iso8601_utc(const char *str, time_t *time)
 	long int	offset;
 	struct tm	tm;
 
-	if ( 0 == isdigit(*str) || ZBX_CONST_STRLEN("1234-12-12T12:12:12") > strlen(str) ||
+	if (0 == isdigit(*str) || ZBX_CONST_STRLEN("1234-12-12T12:12:12") > strlen(str) ||
 			('T' != str[10] && ' ' != str[10]) ||
 			'-' != str[4] || '-' != str[7] || ':' != str[13] || ':' != str[16])
 	{
@@ -1185,7 +1202,7 @@ int	zbx_iso8601_utc(const char *str, time_t *time)
 	{
 		int	t;
 
-		if(FAIL == zbx_utc_time(tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, &t))
+		if (FAIL == zbx_utc_time(tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, &t))
 			return FAIL;
 
 		*time = t - offset;

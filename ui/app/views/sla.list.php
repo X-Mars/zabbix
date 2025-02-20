@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,9 +18,6 @@
  * @var CView $this
  * @var array $data
  */
-
-$this->addJsFile('class.tagfilteritem.js');
-$this->addJsFile('class.calendar.js');
 
 $this->includeJsFile('sla.list.js.php');
 
@@ -127,14 +124,18 @@ foreach ($data['slas'] as $slaid => $sla) {
 		$sla_report_tag = null;
 	}
 
+	$sla_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'sla.edit')
+		->setArgument('slaid', $slaid)
+		->getUrl();
+
 	$row = [
 		$data['has_access'][CRoleHelper::ACTIONS_MANAGE_SLA]
 			? new CCheckBox('slaids['.$slaid.']', $slaid)
 			: null,
 		(new CCol($data['has_access'][CRoleHelper::ACTIONS_MANAGE_SLA]
-			? (new CLink($sla['name']))
-				->addClass('js-edit-sla')
-				->setAttribute('data-slaid', $slaid)
+			? new CLink($sla['name'], $sla_url)
 			: $sla['name']
 		))->addClass(ZBX_STYLE_WORDBREAK),
 		CSlaHelper::getSloTag((float) $sla['slo']),

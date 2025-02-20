@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -61,8 +61,10 @@ foreach ($data['alerts'] as $alert) {
 		$status = ($alert['alerttype'] == ALERT_TYPE_MESSAGE) ? _('Sent') : _('Executed');
 	}
 	elseif ($alert['status'] == ALERT_STATUS_NOT_SENT || $alert['status'] == ALERT_STATUS_NEW) {
-		$status = _('In progress').': '
-			._n('%1$s retry left', '%1$s retries left', $mediatype['maxattempts'] - $alert['retries']);
+		$status = $alert['alerttype'] == ALERT_TYPE_MESSAGE
+			? _('In progress').': '.
+				_n('%1$s retry left', '%1$s retries left', $mediatype['maxattempts'] - $alert['retries'])
+			: _('In progress');
 	}
 	else {
 		$status = _('Failed');

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,7 +24,6 @@ if ($data['uncheck']) {
 }
 
 $this->includeJsFile('administration.token.list.js.php');
-$this->addJsFile('class.calendar.js');
 
 $filter = (new CFilter())
 	->setResetUrl((new CUrl('zabbix.php'))->setArgument('action', 'token.list'))
@@ -154,21 +153,26 @@ $token_table = (new CTableInfo())
 $csrf_token = CCsrfTokenHelper::get('token');
 
 foreach ($data['tokens'] as $token) {
-	$name = (new CLink($token['name'], 'javascript:void(0)'))
-		->addClass('js-edit-token')
-		->setAttribute('data-tokenid', $token['tokenid']);
+	$token_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', 'token.edit')
+		->setArgument('tokenid', $token['tokenid'])
+		->setArgument('admin_mode', 1)
+		->getUrl();
+
+	$name = new CLink($token['name'], $token_url);
 
 	$token_table->addRow([
 		new CCheckBox('tokenids['.$token['tokenid'].']', $token['tokenid']),
 		(new CCol($name))->addClass(ZBX_STYLE_NOWRAP),
-		$token['user'],
+		(new CCol($token['user']))->addClass(ZBX_STYLE_WORDBREAK),
 		(new CSpan(zbx_date2str(DATE_TIME_FORMAT_SECONDS, $token['expires_at'])))->addClass(
 			$token['is_expired'] ? ZBX_STYLE_RED : ZBX_STYLE_GREEN
 		),
 		zbx_date2str(DATE_TIME_FORMAT_SECONDS, $token['created_at']),
 		($token['creator'] === null)
 			? italic(_('Unknown'))
-			: $token['creator'],
+			: (new CCol($token['creator']))->addClass(ZBX_STYLE_WORDBREAK),
 		zbx_date2str(DATE_TIME_FORMAT_SECONDS, $token['lastaccess']),
 		($token['status'] == ZBX_AUTH_TOKEN_ENABLED)
 			? (new CLink(_('Enabled'), (new CUrl('zabbix.php'))

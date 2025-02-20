@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -70,6 +70,7 @@ static zbx_vmware_job_t	*vmware_job_get(zbx_vmware_t *vmw, time_t time_now)
 	zbx_binary_heap_elem_t	*elem;
 	zbx_vmware_job_t	*job = NULL;
 	time_t			lastaccess;
+	int			revision;
 
 	zabbix_log(LOG_LEVEL_DEBUG, "In %s() queue:%d", __func__, vmw->jobs_queue.elems_num);
 
@@ -91,8 +92,9 @@ static zbx_vmware_job_t	*vmware_job_get(zbx_vmware_t *vmw, time_t time_now)
 	job->nextcheck = 0;
 	lastaccess = (ZBX_VMWARE_UPDATE_EVENTLOG == job->type) ? job->service->eventlog.lastaccess :
 			job->service->lastaccess;
+	revision = (ZBX_VMWARE_UPDATE_EVENTLOG == job->type) ? job->service->eventlog.job_revision : 0;
 
-	if (0 != lastaccess && 0 != job->ttl && time_now - lastaccess > job->ttl)
+	if ((0 != lastaccess && 0 != job->ttl && time_now - lastaccess > job->ttl) || job->revision != revision)
 	{
 		job->expired = SUCCEED;
 	}
@@ -119,11 +121,23 @@ unlock:
 static int	vmware_job_exec(zbx_vmware_job_t *job, const char *config_source_ip, int config_vmware_timeout,
 		int config_vmware_frequency)
 {
-	int	ret = FAIL;
+	int	ret = SUCCEED;
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s() type:%s", __func__, vmware_job_type_string(job));
+	zabbix_log(LOG_LEVEL_DEBUG, "In %s() type:%s revision:%d", __func__, vmware_job_type_string(job),
+			job->revision);
+
+	zbx_vmware_lock();
 
 	if (ZBX_VMWARE_UPDATE_CONF != job->type && 0 == (job->service->state & ZBX_VMWARE_STATE_READY))
+		ret = FAIL;
+	else if (0 != (job->service->jobs_flag & (job->type << ZBX_VMWARE_JOB_RUN)))
+		ret = FAIL;
+	else
+		job->service->jobs_flag |= (job->type << ZBX_VMWARE_JOB_RUN);
+
+	zbx_vmware_unlock();
+
+	if (FAIL == ret)
 		goto out;
 
 	switch (job->type)
@@ -144,6 +158,10 @@ static int	vmware_job_exec(zbx_vmware_job_t *job, const char *config_source_ip, 
 		default:
 			ret = FAIL;
 	}
+
+	zbx_vmware_lock();
+	job->service->jobs_flag &= ~(job->type << ZBX_VMWARE_JOB_RUN);
+	zbx_vmware_unlock();
 out:
 	zabbix_log(LOG_LEVEL_DEBUG, "End of %s() type:%s ret:%s", __func__, vmware_job_type_string(job),
 			zbx_result_string(ret));
@@ -196,20 +214,24 @@ static void	vmware_job_schedule(zbx_vmware_t *vmw, zbx_vmware_job_t *job, time_t
 			job->nextcheck = time_now + cache_update_period;
 			break;
 		case ZBX_VMWARE_UPDATE_EVENTLOG:
-			if (0 == job->ttl)
-				job->ttl = cache_update_period * 2;
+			job->ttl = 2 * (0 != job->service->eventlog.interval ?
+					job->service->eventlog.interval : perf_update_period) +
+					ZBX_VMWARE_EVENTLOG_MIN_INTERVAL;
 
 			job->nextcheck = time_now + (0 == job->service->eventlog.interval ? perf_update_period :
 					(ZBX_VMWARE_EVENTLOG_MIN_INTERVAL > job->service->eventlog.interval ?
 					ZBX_VMWARE_EVENTLOG_MIN_INTERVAL : job->service->eventlog.interval));
+
+			if (job->nextcheck > time_now + ZBX_VMWARE_SERVICE_TTL)
+				job->nextcheck = time_now + ZBX_VMWARE_SERVICE_TTL;
 			break;
 	}
 
 	zbx_binary_heap_insert(&vmw->jobs_queue, &elem_new);
 	zbx_vmware_unlock();
 
-	zabbix_log(LOG_LEVEL_DEBUG, "End of %s() type:%s nextcheck:%s", __func__, vmware_job_type_string(job),
-			zbx_time2str(job->nextcheck, NULL));
+	zabbix_log(LOG_LEVEL_DEBUG, "End of %s() type:%s nextcheck:%s ttl:" ZBX_FS_TIME_T, __func__,
+			vmware_job_type_string(job), zbx_time2str(job->nextcheck, NULL), job->ttl);
 
 #undef ZBX_VMWARE_EVENTLOG_MIN_INTERVAL
 #undef ZBX_VMWARE_SERVICE_TTL

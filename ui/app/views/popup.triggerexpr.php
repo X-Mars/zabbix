@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -156,9 +156,9 @@ if (array_key_exists('params', $data['functions'][$data['selectedFunction']])) {
 	$count_functions = [
 		'acos', 'ascii', 'asin', 'atan', 'atan2', 'between', 'bitand', 'bitlength', 'bitlshift', 'bitnot', 'bitor',
 		'bitrshift', 'bitxor', 'bytelength', 'cbrt', 'ceil', 'char', 'concat', 'cos', 'cosh', 'cot', 'degrees', 'exp',
-		'expm1', 'floor', 'in', 'insert', 'jsonpath', 'last', 'left', 'length', 'log', 'log10', 'ltrim', 'mid', 'mod',
-		'power', 'radians', 'rate', 'repeat', 'replace', 'right', 'round', 'rtrim', 'signum', 'sin', 'sinh', 'sqrt',
-		'tan', 'trim', 'truncate', 'xmlxpath'
+		'expm1', 'floor', 'in', 'insert', 'jsonpath', 'last', 'lastclock' ,'left', 'length', 'log', 'log10',
+		'logtimestamp', 'ltrim', 'mid', 'mod', 'power', 'radians', 'rate', 'repeat', 'replace', 'right', 'round',
+		'rtrim', 'signum', 'sin', 'sinh', 'sqrt', 'tan', 'trim', 'truncate', 'xmlxpath'
 	];
 
 	foreach ($data['functions'][$data['selectedFunction']]['params'] as $param_name => $param_function) {

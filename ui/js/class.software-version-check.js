@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -105,7 +105,7 @@ class CSoftwareVersionCheck {
 					console.log('Could not update data', {error: response.error});
 				}
 
-				this.#startUpdating(response.delay);
+				this.#startUpdating(response.delay || CSoftwareVersionCheck.DELAY_ON_ERROR);
 			})
 			.catch(exception => {
 				console.log('Could not update data', exception);

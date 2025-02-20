@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -301,6 +301,8 @@ static int	get_value(const char *source_ip, const char *host, unsigned short por
 		{
 			if (FAIL == (received_len = zbx_tcp_recv_ext(&s, 0, 0)))
 				ret = FAIL;
+			else
+				(void)zbx_tcp_read_close_notify(&s, 0, NULL);
 		}
 
 		if (SUCCEED == ret)

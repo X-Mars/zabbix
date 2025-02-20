@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -247,12 +247,16 @@ foreach ($data['discoveries'] as $discovery) {
 			$description[] = $discovery['master_item']['name'];
 		}
 		else {
-			$description[] = (new CLink($discovery['master_item']['name']))
+			$item_url = (new CUrl('zabbix.php'))
+				->setArgument('action', 'popup')
+				->setArgument('popup', 'item.edit')
+				->setArgument('context', $data['context'])
+				->setArgument('itemid', $discovery['master_item']['itemid'])
+				->getUrl();
+
+			$description[] = (new CLink($discovery['master_item']['name'], $item_url))
 				->addClass(ZBX_STYLE_LINK_ALT)
-				->addClass(ZBX_STYLE_TEAL)
-				->addClass('js-update-item')
-				->setAttribute('data-itemid', $discovery['master_item']['itemid'])
-				->setAttribute('data-context', $data['context']);
+				->addClass(ZBX_STYLE_TEAL);
 		}
 
 		$description[] = NAME_DELIMITER;
@@ -311,10 +315,18 @@ foreach ($data['discoveries'] as $discovery) {
 		$checkbox->setAttribute('data-actions', 'execute');
 	}
 
+	$host_url = (new CUrl('zabbix.php'))
+		->setArgument('action', 'popup')
+		->setArgument('popup', $data['context'] === 'host' ? 'host.edit' : 'template.edit')
+		->setArgument($data['context'] === 'host' ? 'hostid' : 'templateid', $discovery['hosts'][0]['hostid'])
+		->getUrl();
+
+	$host = (new CLink($discovery['hosts'][0]['name'], $host_url))->addClass(ZBX_STYLE_WORDBREAK);
+
 	$discoveryTable->addRow([
 		$checkbox,
-		$discovery['hosts'][0]['name'],
-		$description,
+		$host,
+		(new CCol($description))->addClass(ZBX_STYLE_WORDBREAK),
 		[
 			new CLink(_('Item prototypes'),
 				(new CUrl('zabbix.php'))
@@ -410,8 +422,8 @@ $html_page
 		'context' => $data['context'],
 		'checkbox_hash' => $data['checkbox_hash'],
 		'checkbox_object' => 'g_hostdruleid',
-		'form_name' => $discoveryForm->getName(),
-		'token' => [CSRF_TOKEN_NAME, CCsrfTokenHelper::get('item')]
+		'token' => [CSRF_TOKEN_NAME, CCsrfTokenHelper::get('item')],
+		'form_name' => $discoveryForm->getName()
 	]).');
 '))
 	->setOnDocumentReady()

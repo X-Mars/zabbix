@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -361,7 +361,7 @@ func Exchange(addrpool AddressSet, localAddr *net.Addr, timeout time.Duration, c
 		errs = append(errs, fmt.Errorf("cannot connect to [%s]: %s", addrpool.Get(), err))
 		log.Tracef("%s", errs[len(errs)-1])
 
-		addrpool.next()
+		addrpool.Next()
 	}
 
 	if err != nil {
@@ -377,6 +377,7 @@ func Exchange(addrpool AddressSet, localAddr *net.Addr, timeout time.Duration, c
 		errs = append(errs, fmt.Errorf("cannot send to [%s]: %s", addrpool.Get(), err))
 		log.Tracef("%s", errs[len(errs)-1])
 
+		addrpool.Next()
 		return nil, errs, nil
 	}
 
@@ -386,16 +387,23 @@ func Exchange(addrpool AddressSet, localAddr *net.Addr, timeout time.Duration, c
 	if err != nil {
 		errs = append(errs, fmt.Errorf("cannot receive data from [%s]: %s", addrpool.Get(), err))
 		log.Tracef("%s", errs[len(errs)-1])
-
-		return nil, errs, errs[len(errs)-1]
 	}
 	log.Tracef("received [%s] from [%s]", string(b), addrpool.Get())
 
-	if len(b) == 0 && false == no_response {
-		errs = append(errs, fmt.Errorf("connection closed"))
-		log.Tracef("%s", errs[len(errs)-1])
+	if len(b) == 0 {
+		if !no_response {
+			errs = append(errs, fmt.Errorf("connection closed"))
+			log.Tracef("%s", errs[len(errs)-1])
 
-		return nil, errs, errs[len(errs)-1]
+			addrpool.Next()
+			return nil, errs, errs[len(errs)-1]
+		}
+	} else {
+		if nil != tlsconfig {
+			byte_slice := make([]byte, 1024)
+			c.conn.Read(byte_slice)
+		}
+
 	}
 
 	return b, nil, nil

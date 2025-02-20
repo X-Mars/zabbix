@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -85,11 +85,11 @@ abstract class CItemGeneral extends CApiService {
 	protected const VALUE_TYPE_FIELD_NAMES = [];
 
 	/**
-	 * Maximum number of inheritable items per iteration.
+	 * Maximum number of items per iteration.
 	 *
 	 * @var int
 	 */
-	protected const INHERIT_CHUNK_SIZE = 1000;
+	protected const CHUNK_SIZE = 1000;
 
 	/**
 	 * @abstract
@@ -107,7 +107,7 @@ abstract class CItemGeneral extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	protected static function validateByType(array $field_names, array &$items, array $db_items = null): void {
+	protected static function validateByType(array $field_names, array &$items, ?array $db_items = null): void {
 		$checked_fields = array_fill_keys($field_names, ['type' => API_ANY]);
 
 		foreach ($items as $i => &$item) {
@@ -415,8 +415,8 @@ abstract class CItemGeneral extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	protected static function checkHostsAndTemplates(array $items, array &$db_hosts = null,
-			array &$db_templates = null): void {
+	protected static function checkHostsAndTemplates(array $items, ?array &$db_hosts = null,
+			?array &$db_templates = null): void {
 		$hostids = array_unique(array_column($items, 'hostid'));
 
 		$db_templates = API::Template()->get([
@@ -493,7 +493,7 @@ abstract class CItemGeneral extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	protected static function checkUuidDuplicates(array $items, array $db_items = null): void {
+	protected static function checkUuidDuplicates(array $items, ?array $db_items = null): void {
 		$item_indexes = [];
 
 		foreach ($items as $i => $item) {
@@ -681,8 +681,8 @@ abstract class CItemGeneral extends CApiService {
 
 						case ZBX_FLAG_DISCOVERY_RULE:
 							$error = $target_is_host
-								? _('Cannot inherit LDD rules with key "%1$s" of both "%2$s" and "%3$s" templates, because the key must be unique on host "%4$s".')
-								: _('Cannot inherit LDD rules with key "%1$s" of both "%2$s" and "%3$s" templates, because the key must be unique on template "%4$s".');
+								? _('Cannot inherit LLD rules with key "%1$s" of both "%2$s" and "%3$s" templates, because the key must be unique on host "%4$s".')
+								: _('Cannot inherit LLD rules with key "%1$s" of both "%2$s" and "%3$s" templates, because the key must be unique on template "%4$s".');
 							break;
 					}
 
@@ -716,11 +716,11 @@ abstract class CItemGeneral extends CApiService {
 		$last = 0;
 
 		foreach ($items as $i => $item) {
-			$hosts_chunks = array_chunk($tpl_links[$item['hostid']], self::INHERIT_CHUNK_SIZE, true);
+			$hosts_chunks = array_chunk($tpl_links[$item['hostid']], self::CHUNK_SIZE, true);
 
 			foreach ($hosts_chunks as $hosts) {
-				if ($chunks[$last]['size'] < self::INHERIT_CHUNK_SIZE) {
-					$_hosts = array_slice($hosts, 0, self::INHERIT_CHUNK_SIZE - $chunks[$last]['size'], true);
+				if ($chunks[$last]['size'] < self::CHUNK_SIZE) {
+					$_hosts = array_slice($hosts, 0, self::CHUNK_SIZE - $chunks[$last]['size'], true);
 
 					$can_add_hosts = !array_intersect_key($chunks[$last]['hosts'],
 						array_diff_key($tpl_links[$item['hostid']], $_hosts)
@@ -1270,7 +1270,7 @@ abstract class CItemGeneral extends CApiService {
 	 * @param array|null $hostids
 	 * @param bool       $is_dep_items  Inherit called for dependent items.
 	 */
-	abstract protected static function inherit(array $items, array $db_items = [], array $hostids = null,
+	abstract protected static function inherit(array $items, array $db_items = [], ?array $hostids = null,
 			bool $is_dep_items = false): void;
 
 	/**
@@ -1451,8 +1451,8 @@ abstract class CItemGeneral extends CApiService {
 	 * @param array|null $db_items
 	 * @param array|null $upd_itemids
 	 */
-	protected static function updateParameters(array &$items, array &$db_items = null,
-			array &$upd_itemids = null): void {
+	protected static function updateParameters(array &$items, ?array &$db_items = null,
+			?array &$upd_itemids = null): void {
 		$ins_item_parameters = [];
 		$upd_item_parameters = [];
 		$del_item_parameterids = [];
@@ -1561,8 +1561,8 @@ abstract class CItemGeneral extends CApiService {
 	 * @param array|null $db_items
 	 * @param array|null $upd_itemids
 	 */
-	protected static function updatePreprocessing(array &$items, array &$db_items = null,
-			array &$upd_itemids = null): void {
+	protected static function updatePreprocessing(array &$items, ?array &$db_items = null,
+			?array &$upd_itemids = null): void {
 		$ins_item_preprocs = [];
 		$upd_item_preprocs = [];
 		$del_item_preprocids = [];
@@ -1654,7 +1654,7 @@ abstract class CItemGeneral extends CApiService {
 	 * @param array|null $db_items
 	 * @param array|null $upd_itemids
 	 */
-	protected static function updateTags(array &$items, array &$db_items = null, array &$upd_itemids = null): void {
+	protected static function updateTags(array &$items, ?array &$db_items = null, ?array &$upd_itemids = null): void {
 		$ins_tags = [];
 		$del_itemtagids = [];
 
@@ -1730,7 +1730,7 @@ abstract class CItemGeneral extends CApiService {
 	 *
 	 * @throws APIException if item keys are not unique.
 	 */
-	protected static function checkDuplicates(array $items, array $db_items = null): void {
+	protected static function checkDuplicates(array $items, ?array $db_items = null): void {
 		$host_keys = [];
 
 		foreach ($items as $item) {
@@ -1790,7 +1790,7 @@ abstract class CItemGeneral extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	protected static function checkHostInterfaces(array $items, array $db_items = null): void {
+	protected static function checkHostInterfaces(array $items, ?array $db_items = null): void {
 		foreach ($items as $i => &$item) {
 			$interface_type = itemTypeInterface($item['type']);
 
@@ -2090,40 +2090,6 @@ abstract class CItemGeneral extends CApiService {
 		if (!$inherited && $db_items) {
 			self::checkCircularDependencies($items, $dep_item_links);
 		}
-
-		$root_itemids = [];
-
-		foreach ($dep_item_links as $itemid => $master_itemid) {
-			if ($master_itemid == 0) {
-				$root_itemids[] = $itemid;
-			}
-		}
-
-		$master_item_links = self::getMasterItemLinks($items, $root_itemids, $del_links);
-
-		foreach ($root_itemids as $root_itemid) {
-			if (self::maxDependencyLevelExceeded($master_item_links, $root_itemid, $links_path)) {
-				[$flags, $key, $master_flags, $master_key, $is_template, $host] =
-					self::getProblemCausedItemData($links_path, $items);
-
-				$error = self::getDependentItemError($flags, $master_flags, $is_template);
-
-				self::exception(ZBX_API_ERROR_PARAMETERS, sprintf($error, $key, $master_key, $host,
-					_('allowed count of dependency levels would be exceeded')
-				));
-			}
-
-			if (self::maxDependentItemCountExceeded($master_item_links, $root_itemid, $links_path)) {
-				[$flags, $key, $master_flags, $master_key, $is_template, $host] =
-					self::getProblemCausedItemData($links_path, $items);
-
-				$error = self::getDependentItemError($flags, $master_flags, $is_template);
-
-				self::exception(ZBX_API_ERROR_PARAMETERS, sprintf($error, $key, $master_key, $host,
-					_('allowed count of dependent items would be exceeded')
-				));
-			}
-		}
 	}
 
 	/**
@@ -2264,220 +2230,6 @@ abstract class CItemGeneral extends CApiService {
 	}
 
 	/**
-	 * Get master item links starting from the given master items and till the lowest level master items.
-	 *
-	 * @param  array $items
-	 * @param  array $master_itemids
-	 * @param  array $del_links
-	 *
-	 * @return array  Array of the links where each key contain the ID of master item and value contain the array of
-	 *                appropriate dependent item IDs.
-	 */
-	private static function getMasterItemLinks(array $items, array $master_itemids, array $del_links): array {
-		$ins_links = [];
-		$upd_item_links = [];
-
-		foreach ($items as $item) {
-			if (array_key_exists('itemid', $item)) {
-				$upd_item_links[$item['master_itemid']][] = $item['itemid'];
-			}
-			else {
-				$ins_links[$item['master_itemid']][] = 0;
-			}
-		}
-
-		$links = [];
-
-		do {
-			$options = [
-				'output' => ['master_itemid', 'itemid'],
-				'filter' => [
-					'master_itemid' => $master_itemids
-				]
-			];
-			$db_items = DBselect(DB::makeSql('items', $options));
-
-			$_master_itemids = [];
-
-			while ($db_item = DBfetch($db_items)) {
-				if (array_key_exists($db_item['itemid'], $del_links)
-						&& bccomp($db_item['master_itemid'], $del_links[$db_item['itemid']]) == 0) {
-					continue;
-				}
-
-				$links[$db_item['master_itemid']][] = $db_item['itemid'];
-				$_master_itemids[] = $db_item['itemid'];
-			}
-
-			foreach ($master_itemids as $master_itemid) {
-				if (array_key_exists($master_itemid, $upd_item_links)) {
-					foreach ($upd_item_links[$master_itemid] as $itemid) {
-						$_master_itemids[] = $itemid;
-						$links[$master_itemid][] = $itemid;
-					}
-				}
-			}
-
-			$master_itemids = $_master_itemids;
-		} while ($master_itemids);
-
-		foreach ($ins_links as $master_itemid => $ins_items) {
-			$links[$master_itemid] = array_key_exists($master_itemid, $links)
-				? array_merge($links[$master_itemid], $ins_items)
-				: $ins_items;
-		}
-
-		return $links;
-	}
-
-	/**
-	 * Check whether maximum number of dependency levels is exceeded.
-	 *
-	 * @param array      $master_item_links
-	 * @param string     $master_itemid
-	 * @param array|null $links_path
-	 * @param int        $level
-	 *
-	 * @return bool
-	 */
-	private static function maxDependencyLevelExceeded(array $master_item_links, string $master_itemid,
-			array &$links_path = null, int $level = 0): bool {
-		if (!array_key_exists($master_itemid, $master_item_links)) {
-			return false;
-		}
-
-		if ($links_path === null) {
-			$links_path = [];
-		}
-
-		$links_path[] = $master_itemid;
-		$level++;
-
-		if ($level > ZBX_DEPENDENT_ITEM_MAX_LEVELS) {
-			return true;
-		}
-
-		foreach ($master_item_links[$master_itemid] as $itemid) {
-			$_links_path = $links_path;
-
-			if (self::maxDependencyLevelExceeded($master_item_links, $itemid, $_links_path, $level)) {
-				$links_path = $_links_path;
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-
-	/**
-	 * Check whether maximum count of dependent items is exceeded.
-	 *
-	 * @param array      $master_item_links
-	 * @param string     $master_itemid
-	 * @param array|null $links_path
-	 * @param int        $count
-	 *
-	 * @return bool
-	 */
-	private static function maxDependentItemCountExceeded(array $master_item_links, string $master_itemid,
-			array &$links_path = null, int &$count = 0): bool {
-		if (!array_key_exists($master_itemid, $master_item_links)) {
-			return false;
-		}
-
-		if ($links_path === null) {
-			$links_path = [];
-		}
-
-		$links_path[] = $master_itemid;
-		$count += count($master_item_links[$master_itemid]);
-
-		if ($count > ZBX_DEPENDENT_ITEM_MAX_COUNT) {
-			return true;
-		}
-
-		foreach ($master_item_links[$master_itemid] as $itemid) {
-			$_links_path = $links_path;
-
-			if (self::maxDependentItemCountExceeded($master_item_links, $itemid, $_links_path, $count)) {
-				$links_path = $_links_path;
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Get data for a dependent item that causes a problem, based on the given path where the problem was detected.
-	 *
-	 * @param array $links_path
-	 * @param array $items
-	 *
-	 * @return array
-	 */
-	private static function getProblemCausedItemData(array $links_path, array $items): array {
-		foreach ($items as $item) {
-			if (in_array($item['master_itemid'], $links_path)) {
-				break;
-			}
-		}
-
-		$master_item_data = DBfetch(DBselect(
-			'SELECT i.flags,i.key_,h.host'.
-			' FROM items i,hosts h'.
-			' WHERE i.hostid=h.hostid'.
-				' AND '.dbConditionId('i.itemid', [$item['master_itemid']])
-		));
-
-		$flags = $item['flags'];
-		$key = $item['key_'];
-		$master_flags = $master_item_data['flags'];
-		$master_key = $master_item_data['key_'];
-		$is_template = $item['host_status'] == HOST_STATUS_TEMPLATE;
-		$host = $master_item_data['host'];
-
-		return [$flags, $key, $master_flags, $master_key, $is_template, $host];
-	}
-
-	/**
-	 * Get the error message about problem with dependent item according to given data.
-	 *
-	 * @param int  $flags
-	 * @param int  $master_flags
-	 * @param bool $is_template
-	 *
-	 * @return string
-	 */
-	private static function getDependentItemError(int $flags, int $master_flags, bool $is_template): string {
-		if ($flags == ZBX_FLAG_DISCOVERY_NORMAL) {
-			return $is_template
-				? _('Cannot set dependency for item with key "%1$s" on the master item with key "%2$s" on the template "%3$s": %4$s.')
-				: _('Cannot set dependency for item with key "%1$s" on the master item with key "%2$s" on the host "%3$s": %4$s.');
-		}
-		elseif ($flags == ZBX_FLAG_DISCOVERY_PROTOTYPE) {
-			if ($master_flags == ZBX_FLAG_DISCOVERY_NORMAL) {
-				return $is_template
-					? _('Cannot set dependency for item prototype with key "%1$s" on the master item with key "%2$s" on the template "%3$s": %4$s.')
-					: _('Cannot set dependency for item prototype with key "%1$s" on the master item with key "%2$s" on the host "%3$s": %4$s.');
-			}
-			else {
-				return $is_template
-					? _('Cannot set dependency for item prototype with key "%1$s" on the master item prototype with key "%2$s" on the template "%3$s": %4$s.')
-					: _('Cannot set dependency for item prototype with key "%1$s" on the master item prototype with key "%2$s" on the host "%3$s": %4$s.');
-			}
-		}
-		elseif ($flags == ZBX_FLAG_DISCOVERY_RULE) {
-			return $is_template
-				? _('Cannot set dependency for LLD rule with key "%1$s" on the master item with key "%2$s" on the template "%3$s": %4$s.')
-				: _('Cannot set dependency for LLD rule with key "%1$s" on the master item with key "%2$s" on the host "%3$s": %4$s.');
-		}
-	}
-
-	/**
 	 * Check that valuemap belong to same host as item.
 	 *
 	 * @param array      $items
@@ -2485,7 +2237,7 @@ abstract class CItemGeneral extends CApiService {
 	 *
 	 * @throws APIException
 	 */
-	protected static function checkValueMaps(array $items, array $db_items = null): void {
+	protected static function checkValueMaps(array $items, ?array $db_items = null): void {
 		$item_indexes = [];
 
 		foreach ($items as $i => $item) {
@@ -2599,7 +2351,8 @@ abstract class CItemGeneral extends CApiService {
 			'output' => [
 				'item_preprocid', 'itemid', 'step', 'type', 'params', 'error_handler', 'error_handler_params'
 			],
-			'filter' => ['itemid' => $itemids]
+			'filter' => ['itemid' => $itemids],
+			'sortfield' => ['itemid', 'step']
 		];
 		$db_item_preprocs = DBselect(DB::makeSql('item_preproc', $options));
 

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -224,7 +224,10 @@ class CScreenDiscovery extends CScreenBase {
 					NBSP(),
 					'('._n('%d device', '%d devices', count($discovery_info)).')'
 				]);
-				$col->setColSpan(count($services) + 3);
+
+				$col
+					->addClass(ZBX_STYLE_WORDBREAK)
+					->setColSpan(count($services) + 3);
 
 				$table->addRow($col);
 			}

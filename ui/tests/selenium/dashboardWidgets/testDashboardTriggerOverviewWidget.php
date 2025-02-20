@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -24,6 +24,8 @@ require_once dirname(__FILE__).'/../../include/helpers/CDataHelper.php';
  * @backup widget, profiles, triggers, problem, config
  *
  * @onBefore prepareData
+ *
+ * @dataSource DynamicItemWidgets
  */
 class testDashboardTriggerOverviewWidget extends CWebTest {
 
@@ -135,19 +137,14 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 		$timestamp = time();
 
 		// Resolve one of existing problems to create a recent problem.
-		$triggerids = CDBHelper::getColumn('SELECT triggerid FROM triggers WHERE description IN ('.
-				zbx_dbstr(self::$resolved_trigger).', '.zbx_dbstr(self::$dependency_trigger).')', 'triggerid'
-		);
-		DBexecute('UPDATE triggers SET value=0 WHERE triggerid='.zbx_dbstr($triggerids[0]));
-		DBexecute('UPDATE triggers SET lastchange='.zbx_dbstr($timestamp).' WHERE triggerid='.zbx_dbstr($triggerids[0]));
-		DBexecute('UPDATE problem SET r_eventid=9001 WHERE objectid='.zbx_dbstr($triggerids[0]));
-		DBexecute('UPDATE problem SET r_clock='.zbx_dbstr($timestamp).' WHERE objectid='.zbx_dbstr($triggerids[0]));
+		CDBHelper::setTriggerProblem(self::$resolved_trigger, TRIGGER_VALUE_FALSE, ['clock' => $timestamp]);
+		$triggerid = CDBHelper::getValue('SELECT triggerid FROM triggers WHERE description='.zbx_dbstr(self::$dependency_trigger));
 
 		// Change the resolved triggers blinking period as the default value is too small for this test.
 		CDataHelper::call('settings.update', ['blink_period' => '5m']);
 
 		// Enable the trigger that other triggers depend on.
-		CDataHelper::call('trigger.update', [['triggerid' => $triggerids[1], 'status' => 0]]);
+		CDataHelper::call('trigger.update', [['triggerid' => $triggerid, 'status' => TRIGGER_STATUS_ENABLED]]);
 
 		// Delete some hosts and problems from previous tests and data source, not to interfere this test.
 		$rows = CDBHelper::getAll('SELECT * FROM hosts WHERE host='.zbx_dbstr('Host for tag permissions'));
@@ -161,7 +158,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 		$form = CDashboardElement::find()->one()->edit()->addWidget()->asForm();
 		$form->fill(['Type' => CFormElement::RELOADABLE_FILL('Trigger overview')]);
 		$this->assertEquals(['Type', 'Show header', 'Name', 'Refresh interval', 'Show', 'Host groups', 'Hosts',
-				'Problem tags', 'Show suppressed problems', 'Hosts location'], $form->getLabels()->asText()
+				'Problem tags', 'Show suppressed problems', 'Layout'], $form->getLabels()->asText()
 		);
 
 		$default_values = [
@@ -176,7 +173,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 			'id:tags_0_value' => '',
 			'id:tags_0_operator' => 'Contains',
 			'Show suppressed problems' => false,
-			'Hosts location' => 'Left'
+			'Layout' => 'Horizontal'
 		];
 
 		$form->checkValue($default_values);
@@ -197,7 +194,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 		$radio_buttons = [
 			'Show' => ['Recent problems', 'Problems', 'Any'],
 			'Problem tags' => ['And/Or', 'Or'],
-			'Hosts location' => ['Left', 'Top']
+			'Layout' => ['Horizontal', 'Vertical']
 		];
 
 		foreach ($radio_buttons as $radio_button => $values) {
@@ -375,7 +372,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 					'fields' => [
 						'Name' => 'Show suppressed problems + hosts on top',
 						'Show suppressed problems' => true,
-						'Hosts location' => 'Top'
+						'Layout' => 'Vertical'
 					],
 					'expected' => [
 						'1_Host_to_check_Monitoring_Overview' => [
@@ -643,7 +640,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 			'Hosts' => ['4_Host_to_check_Monitoring_Overview'],
 			'Problem tags' => 'Or',
 			'Show suppressed problems' => 'true',
-			'Hosts location' => 'Top'
+			'Layout' => 'Vertical'
 		]);
 
 		$this->setTags([['name' => 'webhook', 'operator' => 'Equals', 'value' => '1']]);
@@ -796,7 +793,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 
 		$table = $widget->getContent()->asTable();
 
-		if (CTestArrayHelper::get($data, 'fields.Hosts location') === 'Top') {
+		if (CTestArrayHelper::get($data, 'fields.Layout') === 'Vertical') {
 			$expected_headers = ['Triggers'];
 			$expected_rows = [];
 		}
@@ -815,9 +812,9 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 			return;
 		}
 
-		// Check widget content based on the alignment chosen in Hosts location field.
+		// Check widget content based on the alignment chosen in Layout field.
 		foreach ($data['expected'] as $host => $triggers) {
-			if (CTestArrayHelper::get($data, 'fields.Hosts location') === 'Top') {
+			if (CTestArrayHelper::get($data, 'fields.Layout') === 'Vertical') {
 				$expected_headers[] = $host;
 				foreach ($triggers as $trigger) {
 					$expected_rows[] = $trigger;
@@ -859,7 +856,7 @@ class testDashboardTriggerOverviewWidget extends CWebTest {
 			'Hosts' => '',
 			'Problem tags' => 'And/Or',
 			'Show suppressed problems' => false,
-			'Hosts location' => 'Left'
+			'Layout' => 'Horizontal'
 		];
 
 		foreach ($default_values as $field_name => $value) {

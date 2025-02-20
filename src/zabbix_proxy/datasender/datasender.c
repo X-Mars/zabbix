@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -29,6 +29,7 @@
 #include "zbxjson.h"
 #include "zbxproxybuffer.h"
 #include "zbxcacheconfig.h"
+#include "zbxdb.h"
 #include "zbxdbhigh.h"
 
 #define ZBX_DATASENDER_AVAILABILITY		0x0001
@@ -202,6 +203,8 @@ static int	proxy_data_sender(int *more, int now, int *hist_upload_state, const z
 
 		if (SUCCEED != upload_state)
 		{
+			zbx_addrs_failover(args->config_server_addrs);
+
 			*more = ZBX_PROXY_DATA_DONE;
 			if (ZBX_PROXY_UPLOAD_DISABLED != *hist_upload_state)
 			{

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -107,7 +107,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		$search_field = $this->isTemplateDashboard() ? 'name' : 'name_resolved';
 
 		$options = [
-			'output' => ['itemid', 'hostid', 'units', 'value_type', 'name_resolved'],
+			'output' => ['itemid', 'hostid', 'units', 'value_type', 'name_resolved', 'key_'],
 			'selectHosts' => ['name'],
 			'webitems' => true,
 			'hostids' => $hostids,
@@ -184,7 +184,8 @@ class WidgetView extends CControllerDashboardWidgetView {
 					'secondary_label' => $secondary_label,
 					'value' => $last_value,
 					'is_numeric' => in_array($item['value_type'], [ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64]),
-					'is_binary_units' => isBinaryUnits($item['units'])
+					'is_binary_units' => isBinaryUnits($item['units']),
+					'key_' => $item['key_']
 				];
 
 				if (count($cells) == $limit) {

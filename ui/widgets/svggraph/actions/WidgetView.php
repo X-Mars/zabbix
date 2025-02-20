@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -25,8 +25,6 @@ use Widgets\SvgGraph\Includes\{
 	CSvgGraphHelper,
 	WidgetForm
 };
-
-use Widgets\SvgGraph\Widget;
 
 class WidgetView extends CControllerDashboardWidgetView {
 
@@ -98,12 +96,14 @@ class WidgetView extends CControllerDashboardWidgetView {
 			],
 			'axes' => [
 				'show_left_y_axis' => $this->fields_values['lefty'] == SVG_GRAPH_AXIS_ON,
+				'left_y_scale' => $this->fields_values['lefty_scale'],
 				'left_y_min' => $lefty_min,
 				'left_y_max' => $lefty_max,
 				'left_y_units' => $this->fields_values['lefty_units'] == SVG_GRAPH_AXIS_UNITS_STATIC
 					? $this->fields_values['lefty_static_units']
 					: null,
 				'show_right_y_axis' => $this->fields_values['righty'] == SVG_GRAPH_AXIS_ON,
+				'right_y_scale' => $this->fields_values['righty_scale'],
 				'right_y_min' => $righty_min,
 				'right_y_max' => $righty_max,
 				'right_y_units' => $this->fields_values['righty_units'] == SVG_GRAPH_AXIS_UNITS_STATIC

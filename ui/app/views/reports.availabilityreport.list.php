@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,7 +20,6 @@
  */
 
 $this->addJsFile('gtlc.js');
-$this->addJsFile('class.calendar.js');
 
 $this->includeJsFile('reports.availabilityreport.list.js.php');
 
@@ -214,15 +213,17 @@ foreach ($data['triggers'] as $trigger) {
 	);
 
 	$table->addRow([
-		$trigger['host_name'],
+		(new CCol($trigger['host_name']))->addClass(ZBX_STYLE_WORDBREAK),
 		$data['can_monitor_problems']
-			? new CLink($trigger['description'],
+			? (new CCol(
+			new CLink($trigger['description'],
 				(new CUrl('zabbix.php'))
 					->setArgument('action', 'problem.view')
 					->setArgument('filter_set', '1')
 					->setArgument('triggerids', [$trigger['triggerid']])
 			)
-			: $trigger['description'],
+		))->addClass(ZBX_STYLE_WORDBREAK)
+			: (new CCol($trigger['description']))->addClass(ZBX_STYLE_WORDBREAK),
 		$availability['true'] < 0.00005
 			? ''
 			: (new CSpan(sprintf('%.4f%%', $availability['true'])))->addClass(ZBX_STYLE_RED),

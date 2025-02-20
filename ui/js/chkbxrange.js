@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -294,7 +294,13 @@ var chkbxRange = {
 					for (const [action, count] of Object.entries(actions)) {
 						// Checkbox data-actions attribute must match the button attribute.
 						if (button.dataset.required === action) {
-							button.disabled = (count == 0);
+							// Check if there is a minimum amount of checkboxes required to be selected.
+							if (button.dataset.requiredCount) {
+								button.disabled = (count < button.dataset.requiredCount);
+							}
+							else {
+								button.disabled = (count == 0);
+							}
 						}
 					}
 				}

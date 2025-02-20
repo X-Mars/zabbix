@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,6 +20,7 @@
 #include "zbxcomms.h"
 #include "zbxfile.h"
 #include "zbxstr.h"
+#include "zbxtime.h"
 
 #if !defined(HAVE_LIBSSH2_METHOD_KEX) && !defined(HAVE_LIBSSH2_METHOD_HOSTKEY) && \
 		!defined(HAVE_LIBSSH2_METHOD_CRYPT_CS) && !defined(HAVE_LIBSSH2_METHOD_CRYPT_SC) && \
@@ -187,7 +188,7 @@ static void	kbd_callback(const char *name, int name_len, const char *instruction
 	(void)abstract;
 }
 
-static int	ssh_socket_wait(ZBX_SOCKET s, LIBSSH2_SESSION *session)
+static int	ssh_socket_wait(ZBX_SOCKET s, LIBSSH2_SESSION *session, int timeout_ms)
 {
 	zbx_pollfd_t	pd;
 	int		ret;
@@ -195,12 +196,12 @@ static int	ssh_socket_wait(ZBX_SOCKET s, LIBSSH2_SESSION *session)
 
 	pd.fd = s;
 
-	if (LIBSSH2_SESSION_BLOCK_INBOUND == libssh2_session_block_directions(session))
+	if (NULL == session || LIBSSH2_SESSION_BLOCK_INBOUND == libssh2_session_block_directions(session))
 		pd.events = event = POLLIN;
 	else
 		pd.events = event = POLLOUT;
 
-	if (0 > (ret = zbx_socket_poll(&pd, 1, 1000)))
+	if (0 > (ret = zbx_socket_poll(&pd, 1, timeout_ms)))
 	{
 		if (SUCCEED != zbx_socket_had_nonblocking_error())
 			return FAIL;
@@ -228,7 +229,7 @@ static int	ssh_nonblocking_error(zbx_socket_t *s, LIBSSH2_SESSION *session, int 
 		return FAIL;
 	}
 
-	if (SUCCEED != ssh_socket_wait(s->socket, session))
+	if (SUCCEED != ssh_socket_wait(s->socket, session, 1000))
 	{
 		*error = zbx_strdup(NULL, "connection error");
 		return FAIL;
@@ -239,7 +240,7 @@ static int	ssh_nonblocking_error(zbx_socket_t *s, LIBSSH2_SESSION *session, int 
 
 /* example ssh.run["ls /"] */
 int	ssh_run(zbx_dc_item_t *item, AGENT_RESULT *result, const char *encoding, const char *options, int timeout,
-		const char *config_source_ip, const char *config_ssh_key_location)
+		const char *config_source_ip, const char *config_ssh_key_location, const char *subsystem)
 {
 /* the size of temporary buffer used to read from data channel */
 #define DATA_BUFFER_SIZE	4096
@@ -425,13 +426,55 @@ int	ssh_run(zbx_dc_item_t *item, AGENT_RESULT *result, const char *encoding, con
 	}
 
 	zbx_dos2unix(item->params);	/* CR+LF (Windows) => LF (Unix) */
-	/* request a shell on a channel and execute command */
-	while (0 != (rc = libssh2_channel_exec(channel, item->params)))
+
+	/* request a shell or subsystem on a channel and execute command */
+	if (NULL == subsystem || '\0' == *subsystem)
 	{
-		if (SUCCEED != ssh_nonblocking_error(&s, session, rc, &ssherr))
+		while (0 != (rc = libssh2_channel_exec(channel, item->params)))
 		{
-			SET_MSG_RESULT(result, zbx_dsprintf(NULL, "Cannot request a shell: %s", ssherr));
-			zbx_free(ssherr);
+			if (SUCCEED != ssh_nonblocking_error(&s, session, rc, &ssherr))
+			{
+				SET_MSG_RESULT(result, zbx_dsprintf(NULL, "Cannot request a shell: %s", ssherr));
+				zbx_free(ssherr);
+
+				goto channel_close;
+			}
+		}
+	}
+	else
+	{
+		int		timeout_ms;
+		zbx_timespec_t	ts;
+
+		while (0 != (rc = libssh2_channel_subsystem(channel, subsystem)))
+		{
+			if (SUCCEED != ssh_nonblocking_error(&s, session, rc, &ssherr))
+			{
+				SET_MSG_RESULT(result, zbx_dsprintf(NULL, "Cannot request a subsystem: %s", ssherr));
+				zbx_free(ssherr);
+
+				goto channel_close;
+			}
+		}
+
+		zbx_timespec(&ts);
+		timeout_ms = (s.deadline.ns - ts.ns) / 1000000 + (s.deadline.sec - ts.sec) * 1000;
+
+		if (0 >= timeout_ms || SUCCEED != ssh_socket_wait(s.socket, NULL, timeout_ms))
+		{
+			SET_MSG_RESULT(result, zbx_strdup(NULL, "Cannot wait for a subsystem"));
+
+			goto channel_close;
+		}
+
+		if (0 > (rc = libssh2_channel_write(channel, item->params, strlen(item->params))))
+		{
+			char	*err;
+
+			if (LIBSSH2_ERROR_NONE != libssh2_session_last_error(session, &err, NULL, 0))
+				SET_MSG_RESULT(result, zbx_dsprintf(NULL, "Cannot execute request: %s", err));
+			else
+				SET_MSG_RESULT(result, zbx_strdup(NULL, "Cannot execute request"));
 
 			goto channel_close;
 		}

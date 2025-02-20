@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -32,11 +32,11 @@
 #include "zbx_rtc_constants.h"
 #include "zbxalgo.h"
 #include "zbxdb.h"
-#include "zbxdbhigh.h"
 #include "zbxipcservice.h"
 #include "zbxjson.h"
 #include "zbxstr.h"
 #include "zbx_scripts_constants.h"
+#include "zbx_item_constants.h"
 
 #ifdef HAVE_NETSNMP
 #	include "zbxpoller.h"
@@ -232,6 +232,75 @@ static int	tm_process_check_now(zbx_vector_uint64_t *taskids)
 	return processed_num;
 }
 
+static int	tm_execute_test_item(struct zbx_json_parse *jp_data, const zbx_config_comms_args_t *config_comms,
+		int config_startup_time, unsigned char program_type, const char *progname,
+		zbx_get_config_forks_f get_config_forks,  const char *config_java_gateway,
+		int config_java_gateway_port, const char *config_externalscripts, const char *config_ssh_key_location,
+		const char *config_webdriver_url, char **info)
+{
+	int			ret, state;
+	struct zbx_json		json;
+	struct zbx_json_parse	jp_options, jp_steps, jp_item;
+	char			*value = NULL, *error = NULL, buf[32];
+	size_t			value_size;
+
+	ret = zbx_trapper_item_test_run(jp_data, 0, &value, config_comms,
+			config_startup_time, program_type, progname, get_config_forks,
+			config_java_gateway, config_java_gateway_port, config_externalscripts,
+			zbx_get_value_internal_ext_proxy, config_ssh_key_location, config_webdriver_url);
+
+	if (NULL == value)
+	{
+		*info = zbx_strdup(NULL, "No value returned.");
+		return FAIL;
+	}
+
+	if (FAIL == zbx_json_value_by_name(jp_data, ZBX_PROTO_TAG_PREPROC, buf, sizeof(buf), NULL) || 1 != atoi(buf))
+	{
+		*info = value;
+		return ret;
+	}
+
+	if (FAIL == zbx_json_brackets_by_name(jp_data, ZBX_PROTO_TAG_ITEM, &jp_item))
+	{
+		zbx_free(value);
+		*info = zbx_strdup(NULL, "Missing item field.");
+		return FAIL;
+	}
+
+	zbx_json_init(&json, 1024);
+
+	zbx_trapper_item_test_add_value(&json, ret, value);
+	value_size = strlen(value);
+
+	if (FAIL == zbx_json_brackets_by_name(jp_data, ZBX_PROTO_TAG_OPTIONS, &jp_options))
+		zbx_json_open("{}", &jp_options);
+
+	if (FAIL == zbx_json_brackets_by_name(&jp_item, ZBX_PROTO_TAG_STEPS, &jp_steps))
+		jp_steps.end = jp_steps.start = NULL;
+
+	if (FAIL == ret)
+		state = ITEM_STATE_NOTSUPPORTED;
+	else if (SUCCEED == zbx_json_value_by_name(&jp_options, ZBX_PROTO_TAG_STATE, buf, sizeof(buf), NULL))
+		state = atoi(buf);
+	else
+		state = ITEM_STATE_NORMAL;
+
+	zbx_json_addobject(&json, ZBX_PROTO_TAG_PREPROCESSING);
+	if (SUCCEED == (ret = zbx_trapper_preproc_test_run(&jp_item, &jp_options, &jp_steps, value, value_size, state,
+			&json, &error)))
+	{
+		*info = zbx_strdup(NULL, json.buffer);
+	}
+	else
+		*info = error;
+
+	zbx_json_free(&json);
+	zbx_free(value);
+
+	return ret;
+}
+
 /******************************************************************************
  *                                                                            *
  * Purpose: processes data task with json contents                            *
@@ -257,10 +326,9 @@ static int	tm_execute_data_json(int type, const char *data, char **info,
 	switch (type)
 	{
 		case ZBX_TM_DATA_TYPE_TEST_ITEM:
-			return zbx_trapper_item_test_run(&jp_data, 0, info, config_comms,
-					config_startup_time, program_type, progname, get_config_forks,
-					config_java_gateway, config_java_gateway_port, config_externalscripts,
-					zbx_get_value_internal_ext_proxy, config_ssh_key_location, config_webdriver_url);
+			return tm_execute_test_item(&jp_data, config_comms, config_startup_time, program_type, progname,
+					get_config_forks, config_java_gateway, config_java_gateway_port,
+					config_externalscripts, config_ssh_key_location, config_webdriver_url, info);
 		case ZBX_TM_DATA_TYPE_DIAGINFO:
 			return zbx_diag_get_info(&jp_data, info);
 	}

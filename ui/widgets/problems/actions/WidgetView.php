@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -111,7 +111,9 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 						$symptom_events = $this->fields_values['show'] == TRIGGERS_OPTION_ALL
 							? API::Event()->get($options)
-							: API::Problem()->get($options + ['recent' => true]);
+							: API::Problem()->get($options + [
+								'recent' => $this->fields_values['show'] == TRIGGERS_OPTION_RECENT_PROBLEM
+							]);
 
 						if ($symptom_events) {
 							$enabled_triggers = API::Trigger()->get([

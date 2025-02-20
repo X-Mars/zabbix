@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -52,6 +52,7 @@ class CExpressionParser extends CParser {
 	 *   'host_macro_n' => false          Allow {HOST.HOST} and {HOST.HOST<1-9>} macros as host name part in the query.
 	 *   'empty_host' => false            Allow empty hostname in the query string.
 	 *   'escape_backslashes' => true     Disable backslash escaping in history function parameters prior to v7.0.
+	 *   'macros_n' => []                 Array of strings having supported reference macros.
 	 *
 	 * @var array
 	 */
@@ -63,7 +64,8 @@ class CExpressionParser extends CParser {
 		'host_macro' => false,
 		'host_macro_n' => false,
 		'empty_host' => false,
-		'escape_backslashes' => true
+		'escape_backslashes' => true,
+		'macros_n' => []
 	];
 
 	/**
@@ -152,7 +154,7 @@ class CExpressionParser extends CParser {
 	 * @return bool  Returns true if parsed successfully, false otherwise.
 	 */
 	private static function parseExpression(string $source, int &$pos, array &$tokens, array $options,
-			int &$parsed_pos = null, int $depth = 0): bool {
+			?int &$parsed_pos = null, int $depth = 0): bool {
 		$binary_operator_parser = new CSetParser(['<', '>', '<=', '>=', '+', '-', '/', '*', '=', '<>']);
 		$logical_operator_parser = new CSetParser(['and', 'or']);
 
@@ -530,6 +532,7 @@ class CExpressionParser extends CParser {
 	 *  - macros like {TRIGGER.VALUE} and {{TRIGGER.VALUE}.func()}
 	 *  - user macros like {$MACRO} and {{$MACRO}.func()}
 	 *  - LLD macros like {#LLD} and {{#LLD}.func()}
+	 *  - macros like {FUNCTION.VALUE}, {FUNCTION.RECOVERY.VALUE9}
 	 *
 	 * @param string  $source
 	 * @param int     $pos
@@ -551,6 +554,23 @@ class CExpressionParser extends CParser {
 			}
 
 			if (self::parseUsing(new CMacroFunctionParser(['macros' => ['{TRIGGER.VALUE}']]), $source, $pos, $tokens,
+					CExpressionParserResult::TOKEN_TYPE_MACRO)) {
+				return true;
+			}
+		}
+
+		if ($options['macros_n']) {
+			$_options = [
+				'macros' => $options['macros_n'],
+				'ref_type' => CMacroParser::REFERENCE_NUMERIC
+			];
+
+			if (self::parseUsing(new CMacroParser($_options), $source, $pos, $tokens,
+					CExpressionParserResult::TOKEN_TYPE_MACRO)) {
+				return true;
+			}
+
+			if (self::parseUsing(new CMacroFunctionParser($_options), $source, $pos, $tokens,
 					CExpressionParserResult::TOKEN_TYPE_MACRO)) {
 				return true;
 			}

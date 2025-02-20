@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -180,10 +180,14 @@ class CItemHelper extends CItemGeneralHelper {
 							foreach ($src_dep_items[$src_item['itemid']] as $src_dep_item) {
 								$dst_master_itemids[$src_dep_item['itemid']][$dst_hostid] = $dst_itemid;
 							}
-
-							$_src_items = array_merge($_src_items, $src_dep_items[$src_item['itemid']]);
-							unset($src_dep_items[$src_item['itemid']]);
 						}
+					}
+				}
+
+				foreach ($src_items as $src_item) {
+					if (array_key_exists($src_item['itemid'], $src_dep_items)) {
+						$_src_items = array_merge($_src_items, $src_dep_items[$src_item['itemid']]);
+						unset($src_dep_items[$src_item['itemid']]);
 					}
 				}
 			}

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -56,7 +56,7 @@ $table = (new CTable())
 	->setAttribute('style', 'width: 100%;')
 	->setId('iconMapTable')
 	->addClass(ZBX_STYLE_LIST_NUMBERED)
-	->setHeader(['', '', _('Inventory field'), _('Expression'), _('Icon'), '', _('Action')]);
+	->setHeader(['', '', _('Inventory field'), _('Expression'), _('Icon'), '', '']);
 
 $i = 0;
 foreach ($data['iconmap']['mappings'] as $mapping) {

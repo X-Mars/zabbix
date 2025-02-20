@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -33,9 +33,9 @@
 
 #define ZBX_MODBUS_32BE(t_int16)						\
 		(((uint32_t)t_int16[0]) << 16) | t_int16[1]
-#define ZBX_MODBUS_32MLE(t_int16)						\
-		(((uint32_t)t_int16[1]) << 16) | t_int16[0]
 #define ZBX_MODBUS_32MBE(t_int16)						\
+		(((uint32_t)t_int16[1]) << 16) | t_int16[0]
+#define ZBX_MODBUS_32MLE(t_int16)						\
 		(((uint32_t)ZBX_MODBUS_BYTE_SWAP_16(t_int16[0])) << 16) |	\
 		ZBX_MODBUS_BYTE_SWAP_16(t_int16[1])
 #define ZBX_MODBUS_32LE(t_int16)						\
@@ -45,11 +45,11 @@
 		(((uint64_t)t_int16[0]) << 48) |				\
 		(((uint64_t)t_int16[1]) << 32) | 				\
 		(((uint64_t)t_int16[2]) << 16) | t_int16[3]
-#define ZBX_MODBUS_64MLE(t_int16)						\
+#define ZBX_MODBUS_64MBE(t_int16)						\
 		(((uint64_t)t_int16[3]) << 48) |				\
 		(((uint64_t)t_int16[2]) << 32) |				\
 		(((uint64_t)t_int16[1]) << 16) | t_int16[0]
-#define ZBX_MODBUS_64MBE(t_int16)						\
+#define ZBX_MODBUS_64MLE(t_int16)						\
 		(((uint64_t)ZBX_MODBUS_BYTE_SWAP_16(t_int16[0])) << 48) |	\
 		(((uint64_t)ZBX_MODBUS_BYTE_SWAP_16(t_int16[1])) << 32) |	\
 		(((uint64_t)ZBX_MODBUS_BYTE_SWAP_16(t_int16[2])) << 16) |	\

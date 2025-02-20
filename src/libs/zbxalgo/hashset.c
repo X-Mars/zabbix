@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -444,6 +444,41 @@ void	zbx_hashset_iter_remove(zbx_hashset_iter_t *iter)
 		iter->hashset->num_data--;
 
 		iter->entry = prev_entry;
+	}
+}
+
+void	zbx_hashset_const_iter_reset(const zbx_hashset_t *hs, zbx_hashset_const_iter_t *iter)
+{
+	iter->hashset = hs;
+	iter->slot = ITER_START;
+}
+
+const void	*zbx_hashset_const_iter_next(zbx_hashset_const_iter_t *iter)
+{
+	if (ITER_FINISH == iter->slot)
+		return NULL;
+
+	if (ITER_START != iter->slot && NULL != iter->entry && NULL != iter->entry->next)
+	{
+		iter->entry = iter->entry->next;
+		return iter->entry->data;
+	}
+
+	while (1)
+	{
+		iter->slot++;
+
+		if (iter->slot == iter->hashset->num_slots)
+		{
+			iter->slot = ITER_FINISH;
+			return NULL;
+		}
+
+		if (NULL != iter->hashset->slots[iter->slot])
+		{
+			iter->entry = iter->hashset->slots[iter->slot];
+			return iter->entry->data;
+		}
 	}
 }
 

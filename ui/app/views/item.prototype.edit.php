@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2024 Zabbix SIA
+** Copyright (C) 2001-2025 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -162,6 +162,12 @@ $tabs = (new CTabView(['id' => $tabsid]))
 		TAB_INDICATOR_PREPROCESSING
 	);
 
+$return_url = (new CUrl('zabbix.php'))
+	->setArgument('action', 'item.prototype.list')
+	->setArgument('parent_discoveryid', $item['parent_discoveryid'])
+	->setArgument('context', $item['context'])
+	->getUrl();
+
 $form
 	->addItem($tabs)
 	->addItem((new CScriptTag('item_edit_form.init('.json_encode([
@@ -180,7 +186,8 @@ $form
 			'source' => 'itemprototype',
 			'testable_item_types' => $data['testable_item_types'],
 			'type_with_key_select' => $type_with_key_select,
-			'value_type_keys' => $data['value_type_keys']
+			'value_type_keys' => $data['value_type_keys'],
+			'return_url' => $return_url
 		]).');'))->setOnDocumentReady()
 	);
 $output = [
@@ -188,7 +195,8 @@ $output = [
 	'doc_url' => CDocHelper::getUrl(CDocHelper::DATA_COLLECTION_ITEM_PROTOTYPE_EDIT),
 	'body' => $form->toString().implode('', $scripts),
 	'buttons' => $buttons,
-	'script_inline' => getPagePostJs().$this->readJsFile('item.edit.js.php')
+	'script_inline' => getPagePostJs().$this->readJsFile('item.edit.js.php'),
+	'dialogue_class' => 'modal-popup-large'
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

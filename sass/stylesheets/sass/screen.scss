@@ -27,6 +27,7 @@ $browser-sprite: '../img/browser-sprite.png?20220722';
 @import "base/common";
 
 @import "utils/indicator";
+@import "utils/locale";
 @import "utils/resizable";
 @import "utils/scrollable";
 @import "utils/sortable";
@@ -71,6 +72,9 @@ $browser-sprite: '../img/browser-sprite.png?20220722';
 @import "components/toc";
 @import "components/z-bar-gauge";
 @import "components/z-select";
+@import "components/z-sparkline";
+
+@import "components/dashboard/widget-field-sparkline";
 
 @import "components/dashboard/widget-clock";
 @import "components/dashboard/widget-gauge";
@@ -78,6 +82,7 @@ $browser-sprite: '../img/browser-sprite.png?20220722';
 @import "components/dashboard/widget-honeycomb";
 @import "components/dashboard/widget-hostavail";
 @import "components/dashboard/widget-hostnavigator";
+@import "components/dashboard/widget-hostcard";
 @import "components/dashboard/widget-inaccessible";
 @import "components/dashboard/widget-item";
 @import "components/dashboard/widget-itemhistory";
@@ -90,6 +95,7 @@ $browser-sprite: '../img/browser-sprite.png?20220722';
 @import "components/dashboard/widget-problemsbysv";
 @import "components/dashboard/widget-svggraph";
 @import "components/dashboard/widget-tophosts";
+@import "components/dashboard/widget-topitems";
 @import "components/dashboard/widget-url";
 @import "components/dashboard/widget-web";
 
@@ -161,7 +167,7 @@ $browser-sprite: '../img/browser-sprite.png?20220722';
 
 		content: $zi-link-external-small;
 		position: absolute;
-		top: 0;
+		bottom: 1px;
 		right: calc(-#{$icon-small-size} - 2px);
 		font-size: $icon-small-size;
 	}
@@ -619,6 +625,10 @@ form {
 			margin: 0;
 		}
 
+		.btn-icon {
+			margin-left: 5px;
+		}
+
 		table {
 			width: auto;
 		}
@@ -842,6 +852,10 @@ form {
 	display: inline-block;
 	padding: 5px;
 	position: relative;
+
+	.wordbreak {
+		white-space: normal;
+	}
 }
 
 .border-left {
@@ -1044,6 +1058,12 @@ select {
 		color: $font-color !important;
 		pointer-events: none;
 		@extend %form-disabled;
+	}
+}
+
+div {
+	.overlay-dialogue.wordbreak {
+		white-space: normal;
 	}
 }
 
@@ -1777,6 +1797,10 @@ select {
 	border-bottom-color: darken($overlay-border-color, 1%);
 	box-shadow: 0 4px 20px 0 $action-shadow-color;
 
+	.wordbreak {
+		white-space: normal;
+	}
+
 	.overlay-dialogue-header {
 		margin: -8px -10px 6px -10px;
 		padding: 8px 10px;
@@ -1917,6 +1941,10 @@ select {
 			width: calc(100vw - 40px);
 			max-width: calc(100vw - 40px);
 		}
+	}
+
+	.hintbox-raw-data {
+		white-space: pre-wrap;
 	}
 
 	.hintbox-wrap,
@@ -2097,6 +2125,7 @@ select {
 	.multilineinput-textarea {
 		flex: 1;
 		line-height: $line-height;
+		tab-size: 4;
 		resize: none;
 		white-space: pre;
 		padding: 0 5px;
@@ -3604,11 +3633,11 @@ svg {
 
 .btn-split {
 	position: relative;
-	display: inline-block;
+	display: inline-flex;
 	margin-right: 10px;
 
 	li {
-		display: inline-block;
+		display: inline-flex;
 
 		&:first-child {
 			button {
