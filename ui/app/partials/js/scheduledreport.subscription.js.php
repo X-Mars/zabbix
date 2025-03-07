@@ -223,6 +223,7 @@
 
 			input.type = 'hidden';
 			input.name = `subscriptions[${row_num}]${name}`;
+			input.setAttribute('data-field-type', 'hidden');
 			input.value = value;
 
 			return input;

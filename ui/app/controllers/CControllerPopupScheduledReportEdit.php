@@ -120,6 +120,10 @@ class CControllerPopupScheduledReportEdit extends CController {
 			$data['ms_dashboard'] = [['id' => $data['dashboardid'], 'name' => $dashboard_name]];
 		}
 
+		$data['js_validation_rules'] = (new CFormValidator(
+			CControllerScheduledReportCreate::getValidationRules()
+		))->getRules();
+
 		$this->setResponse(new CControllerResponseData([
 			'title' => _('Add scheduled report'),
 			'user' => ['debug_mode' => $this->getDebugMode()]

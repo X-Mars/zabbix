@@ -16,35 +16,26 @@
 
 class CControllerPopupScheduledReportCreate extends CController {
 
-	protected function checkInput() {
-		$fields = [
-			'userid' =>			'required|db report.userid',
-			'name' =>			'required|db report.name|not_empty',
-			'dashboardid' =>	'required|db report.dashboardid',
-			'period' =>			'db report.period|in '.implode(',', [ZBX_REPORT_PERIOD_DAY, ZBX_REPORT_PERIOD_WEEK, ZBX_REPORT_PERIOD_MONTH, ZBX_REPORT_PERIOD_YEAR]),
-			'cycle' =>			'db report.cycle|in '.implode(',', [ZBX_REPORT_CYCLE_DAILY, ZBX_REPORT_CYCLE_WEEKLY, ZBX_REPORT_CYCLE_MONTHLY, ZBX_REPORT_CYCLE_YEARLY]),
-			'weekdays' =>		'array',
-			'hours' =>			'int32|ge 0|le 23',
-			'minutes' =>		'int32|ge 0|le 59',
-			'active_since' =>	'string',
-			'active_till' =>	'string',
-			'subject' =>		'string',
-			'message' =>		'string',
-			'subscriptions' =>	'array',
-			'description' =>	'db report.description',
-			'status' =>			'db report.status|in '.ZBX_REPORT_STATUS_DISABLED.','.ZBX_REPORT_STATUS_ENABLED,
-			'form_refresh' =>	'int32'
-		];
+	protected function init(): void {
+		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
+		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
+	}
 
-		$ret = $this->validateInput($fields) && $this->validateWeekdays();
+	protected function checkInput() {
+		$ret = $this->validateInput(CControllerScheduledReportCreate::getValidationRules())
+			&& $this->validateWeekdays() && $this->validateTimePeriods();
 
 		if (!$ret) {
+			$form_errors = $this->getValidationError();
+			$response = $form_errors
+				? ['form_errors' => $form_errors]
+				: ['error' => [
+					'title' => _('Cannot create scheduled report'),
+					'messages' => array_column(get_and_clear_messages(), 'message')
+				]];
+
 			$this->setResponse(
-				new CControllerResponseData(['main_block' => json_encode([
-					'error' => [
-						'messages' => array_column(get_and_clear_messages(), 'message')
-					]
-				])])
+				new CControllerResponseData(['main_block' => json_encode($response)])
 			);
 		}
 
@@ -134,5 +125,31 @@ class CControllerPopupScheduledReportCreate extends CController {
 		}
 
 		$this->setResponse((new CControllerResponseData(['main_block' => json_encode($output)]))->disableView());
+	}
+
+	protected function validateTimePeriods(): bool {
+		$active_since = $this->getInput('active_since', '');
+		$active_till = $this->getInput('active_till', '');
+
+		if ($active_since === '' || $active_till === '') {
+			return true;
+		}
+
+		$absolute_time_parser = new CAbsoluteTimeParser();
+
+		$absolute_time_parser->parse($active_since);
+		$active_since_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		$absolute_time_parser->parse($active_till);
+		$active_till_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		if ($active_since_ts >= $active_till_ts) {
+			$message = _s('"%1$s" must be an empty string or greater than "%2$s".', _('End date'), _('Start date'));
+			$this->addFormError('/active_till', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
+
+			return false;
+		}
+
+		return true;
 	}
 }

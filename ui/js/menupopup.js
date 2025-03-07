@@ -695,6 +695,7 @@ function getMenuPopupDashboard(options, trigger_element) {
 
 					PopUp('popup.scheduledreport.edit', parameters, {
 						dialogue_class: 'modal-popup-generic',
+						dialogueid: 'scheduledreport-edit',
 						trigger_element
 					});
 				}

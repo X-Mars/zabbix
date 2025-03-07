@@ -139,10 +139,18 @@ $form_grid
 				->setColumns(3)
 				->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 				->setReadonly(!$data['allowed_edit'])
+				->setAttribute('data-field-type', 'array')
+				->setAttribute('data-field-name', 'weekdays')
+				->setAttribute('data-error-container', 'weekdays-error-container')
 		))
 			->setId('weekdays')
 			->addClass($show_weekdays ? null : ZBX_STYLE_DISPLAY_NONE)
 	])
+	->addItem(
+		(new CFormField())
+			->addClass(ZBX_STYLE_ERROR_CONTAINER)
+			->setId('weekdays-error-container')
+	)
 	->addItem([
 		new CLabel(_('Start date'), 'active_since'),
 		new CFormField(

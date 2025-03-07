@@ -21,8 +21,7 @@
 $form = (new CForm())
 	->addItem((new CVar(CSRF_TOKEN_NAME, CCsrfTokenHelper::get('scheduledreport')))->removeId())
 	->setId('scheduledreport-form')
-	->setName('scheduledreport-form')
-	->addVar('action', 'popup.scheduledreport.create');
+	->setName('scheduledreport-form');
 
 // Enable form submitting on Enter.
 $form->addItem((new CSubmitButton())->addClass(ZBX_STYLE_FORM_SUBMIT_HIDDEN));
@@ -31,6 +30,10 @@ $form->addItem(new CPartial('scheduledreport.formgrid.html', [
 	'source' => 'popup',
 	'form' => $form->getName()
 ] + $data));
+
+$form->addItem((new CScriptTag('popup_scheduledreport_edit.init('.json_encode([
+	'rules' => $data['js_validation_rules']
+]).');'))->setOnDocumentReady());
 
 $output = [
 	'header' => $data['title'],
@@ -42,7 +45,7 @@ $output = [
 			'title' => _('Add'),
 			'keepOpen' => true,
 			'isSubmit' => true,
-			'action' => 'return submitScheduledReport(overlay);'
+			'action' => 'return popup_scheduledreport_edit.submit();'
 		]
 	]
 ];

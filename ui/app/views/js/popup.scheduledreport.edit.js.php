@@ -19,50 +19,76 @@
  */
 ?>
 
-function submitScheduledReport(overlay) {
-	const $form = overlay.$dialogue.find('form');
-	const url = new Curl($form.attr('action'));
+window.popup_scheduledreport_edit = new class {
+	init({rules}) {
+		this.overlay = overlays_stack.getById('scheduledreport-edit');
+		this.form_element = document.getElementById('scheduledreport-form');
+		this.form = new CForm(this.form_element, rules);
+	}
 
-	$form.trimValues(['#name', '#subject', '#message', '#description']);
+	submit() {
+		const fields = this.form.getAllValues();
 
-	fetch(url.getUrl(), {
-		method: 'POST',
-		body: new URLSearchParams(new FormData($form.get(0)))
-	})
-		.then(response => response.json())
-		.then(response => {
-			if ('error' in response) {
-				throw {error: response.error};
-			}
+		this.overlay.setLoading();
+		this.form
+			.validateSubmit(fields)
+			.then((result) => {
+				if (!result) {
+					this.overlay.unsetLoading();
+					return;
+				}
 
-			postMessageOk(response.success.title);
+				this.#post(fields);
+			});
+	}
 
-			if ('messages' in response.success) {
-				postMessageDetails('success', response.success.messages);
-			}
+	#post(data) {
+		const url = new Curl(this.form_element.getAttribute('action'));
+		url.setArgument('action', 'popup.scheduledreport.create');
 
-			overlayDialogueDestroy(overlay.dialogueid);
-
-			location.href = location.href;
+		fetch(url.getUrl(), {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify(data)
 		})
-		.catch((exception) => {
-			overlay.$dialogue.find('.<?= ZBX_STYLE_MSG_BAD ?>').remove();
+			.then((response) => response.json())
+			.then((response) => {
+				if ('form_errors' in response) {
+					this.form.setErrors(response.form_errors, true, true);
+					this.form.renderErrors();
+					return;
+				}
+				else if ('error' in response) {
+					throw {error: response.error};
+				}
 
-			let title, messages;
+				postMessageOk(response.success.title);
 
-			if (typeof exception === 'object' && 'error' in exception) {
-				title = exception.error.title;
-				messages = exception.error.messages;
-			}
-			else {
-				messages = [<?= json_encode(_('Unexpected server error.')) ?>];
-			}
+				if ('messages' in response.success) {
+					postMessageDetails('success', response.success.messages);
+				}
 
-			const message_box = makeMessageBox('bad', messages, title);
+				overlayDialogueDestroy(this.overlay.dialogueid);
 
-			message_box.insertBefore($form);
-		})
-		.finally(() => {
-			overlay.unsetLoading();
-		});
+				location.href = location.href;
+			})
+			.catch((exception) => {
+				this.overlay.$dialogue.find('.<?= ZBX_STYLE_MSG_BAD ?>').remove();
+
+				let title, messages;
+
+				if (typeof exception === 'object' && 'error' in exception) {
+					title = exception.error.title;
+					messages = exception.error.messages;
+				}
+				else {
+					messages = [<?= json_encode(_('Unexpected server error.')) ?>];
+				}
+
+				const message_box = makeMessageBox('bad', messages, title);
+
+				message_box.insertBefore(this.form_element);
+			})
+			.finally(() => this.overlay.unsetLoading());
+	}
 }

@@ -16,6 +16,51 @@
 
 class CControllerScheduledReportCreate extends CController {
 
+	public static function getValidationRules(): array {
+		$api_uniq = [
+			['report.get', ['name' => '{name}']]
+		];
+
+		return ['object', 'api_uniq' => $api_uniq, 'fields' => [
+			'userid' => ['db report.userid', 'required', 'messages' => ['required' => _('This value should not be blank.')]],
+			'name' => ['db report.name', 'required', 'not_empty'],
+			'dashboardid' => ['db report.dashboardid', 'required', 'messages' => ['required' => _('This value should not be blank.')]],
+			'period' => ['db report.period', 'required', 'in' => [ZBX_REPORT_PERIOD_DAY, ZBX_REPORT_PERIOD_WEEK, ZBX_REPORT_PERIOD_MONTH, ZBX_REPORT_PERIOD_YEAR]],
+			'cycle' => ['db report.cycle', 'required', 'in' => [ZBX_REPORT_CYCLE_DAILY, ZBX_REPORT_CYCLE_WEEKLY, ZBX_REPORT_CYCLE_MONTHLY, ZBX_REPORT_CYCLE_YEARLY]],
+			'weekdays' => ['array', 'required', 'not_empty', 'field' => ['integer'],
+				'when' => ['cycle', 'in' => [ZBX_REPORT_CYCLE_WEEKLY]],
+				'messages' => [
+					'type' => _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'), _('at least one day of the week must be selected')),
+					'not_empty' => _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'), _('at least one day of the week must be selected'))
+				]
+			],
+			'hours' => ['integer', 'required', 'min' => 0, 'max' => 23],
+			'minutes' => ['integer', 'required', 'min' => 0, 'max' => 59],
+			'active_since' => ['string', 'required', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+				'messages' => ['use' => _('Invalid date.')]
+			],
+			'active_till' => ['string', 'required', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+				'messages' => ['use' => _('Invalid date.')]
+			],
+			'subject' => ['string'],
+			'message' => ['string'],
+			'subscriptions' => ['objects', 'required', 'not_empty', 'fields' => [
+				'recipient_type' => ['integer', 'required', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER, ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]],
+				'recipientid' => [
+					['db users.userid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]],
+					['db usrgrp.usrgrpid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]]
+				],
+				'creatorid' => ['db users.userid', 'required'],
+				'exclude' => ['integer', 'required',
+					'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE, ZBX_REPORT_EXCLUDE_USER_TRUE],
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
+				]
+			]],
+			'description' => ['db report.description'],
+			'status' => ['db report.status', 'in' => [ZBX_REPORT_STATUS_DISABLED, ZBX_REPORT_STATUS_ENABLED]]
+		]];
+	}
+
 	protected function checkInput() {
 		$fields = [
 			'userid' =>			'required|db report.userid',
@@ -148,5 +193,31 @@ class CControllerScheduledReportCreate extends CController {
 		}
 
 		$this->setResponse($response);
+	}
+
+	protected function validateTimePeriods(): bool {
+		$active_since = $this->getInput('active_since', '');
+		$active_till = $this->getInput('active_till', '');
+
+		if ($active_since === '' || $active_till === '') {
+			return true;
+		}
+
+		$absolute_time_parser = new CAbsoluteTimeParser();
+
+		$absolute_time_parser->parse($active_since);
+		$active_since_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		$absolute_time_parser->parse($active_till);
+		$active_till_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		if ($active_since_ts >= $active_till_ts) {
+			$message = _s('"%1$s" must be an empty string or greater than "%2$s".', _('End date'), _('Start date'));
+			$this->addFormError('/active_till', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
+
+			return false;
+		}
+
+		return true;
 	}
 }

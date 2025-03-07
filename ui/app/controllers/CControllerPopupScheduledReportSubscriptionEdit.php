@@ -94,44 +94,6 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 	}
 
 	protected function doAction() {
-		$this->setResponse($this->hasInput('update') ? $this->prepareJsonResponse() : $this->prepareViewResponse());
-	}
-
-	/**
-	 * Prepare response data for the report editing form in JSON format.
-	 *
-	 * @return CControllerResponse
-	 */
-	protected function prepareJsonResponse(): CControllerResponse {
-		$data = [];
-		$this->getInputs($data, ['recipientid', 'old_recipientid', 'recipient_type', 'recipient_name',
-			'recipient_inaccessible', 'creator_type', 'edit'
-		]);
-
-		if ($data['recipient_type'] == ZBX_REPORT_RECIPIENT_TYPE_USER) {
-			$data['exclude'] = $this->getInput('exclude');
-		}
-
-		if ($data['creator_type'] == ZBX_REPORT_CREATOR_TYPE_USER) {
-			$data['creatorid'] = CWebUser::$data['userid'];
-			$data['creator_name'] = getUserFullname(CWebUser::$data);
-			$data['creator_inaccessible'] = 0;
-		}
-		else {
-			$data['creatorid'] = 0;
-			$data['creator_name'] = _('Recipient');
-			$data['creator_inaccessible'] = $data['recipient_inaccessible'];
-		}
-
-		return (new CControllerResponseData(['main_block' => json_encode($data)]))->disableView();
-	}
-
-	/**
-	 * Prepare response data to render the subscription editing form.
-	 *
-	 * @return CControllerResponse
-	 */
-	protected function prepareViewResponse(): CControllerResponse {
 		$data = [
 			'action' => $this->getAction(),
 			'edit' => 0,
@@ -162,9 +124,12 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 			'title' => _('Subscription'),
 			'user' => [
 				'debug_mode' => $this->getDebugMode()
-			]
+			],
+			'js_validation_rules' => (new CFormValidator(
+				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules()
+			))->getRules()
 		];
 
-		return new CControllerResponseData($data);
+		$this->setResponse(new CControllerResponseData($data));
 	}
 }
