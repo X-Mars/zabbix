@@ -692,12 +692,7 @@ function getMenuPopupDashboard(options, trigger_element) {
 				label: t('Create new report'),
 				clickCallback: function () {
 					jQuery(this).closest('.menu-popup').menuPopup('close', null);
-
-					PopUp('popup.scheduledreport.edit', parameters, {
-						dialogue_class: 'modal-popup-generic',
-						dialogueid: 'scheduledreport-edit',
-						trigger_element
-					});
+					ZABBIX.PopupManager.open('scheduledreport.edit', parameters);
 				}
 			});
 		}

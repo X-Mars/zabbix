@@ -53,6 +53,7 @@ class CControllerPopup extends CController {
 			'proxy.edit' => _('Proxy edit'),
 			'proxygroup.edit' => _('Proxy group edit'),
 			'templategroup.edit' => _('Template group edit'),
+			'scheduledreport.edit' => _('Scheduled report edit'),
 			'script.edit' => _('Script edit'),
 			'service.edit' => _('Service edit'),
 			'sla.edit' => _('SLA edit'),

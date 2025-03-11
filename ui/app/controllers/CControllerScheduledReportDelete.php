@@ -16,6 +16,10 @@
 
 class CControllerScheduledReportDelete extends CController {
 
+	protected function init(): void {
+		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
+	}
+
 	protected function checkInput() {
 		$fields = [
 			'reportids' => 'required|array_db report.reportid'
@@ -49,24 +53,28 @@ class CControllerScheduledReportDelete extends CController {
 
 		$result = API::Report()->delete($reportids);
 
-		$response = new CControllerResponseRedirect(
-			(new CUrl('zabbix.php'))
-				->setArgument('action', 'scheduledreport.list')
-				->setArgument('page', CPagerHelper::loadPage('scheduledreport.list', null))
-		);
-
-		$deleted = count($reportids);
-
 		if ($result) {
-			$response->setFormData(['uncheck' => '1']);
-			CMessageHelper::setSuccessTitle(_n('Scheduled report deleted', 'Scheduled reports deleted', $deleted));
+			$output['success']['title'] = _n('Scheduled report deleted', 'Scheduled reports deleted', count($reportids));
+
+			if ($messages = get_and_clear_messages()) {
+				$output['success']['messages'] = array_column($messages, 'message');
+			}
 		}
 		else {
-			CMessageHelper::setErrorTitle(
-				_n('Cannot delete scheduled report', 'Cannot delete scheduled reports', $deleted)
-			);
+			$output['error'] = [
+				'title' => _n('Cannot delete scheduled report', 'Cannot delete scheduled reports', count($reportids)),
+				'messages' => array_column(get_and_clear_messages(), 'message')
+			];
+
+			$reports = API::Report()->get([
+				'output' => [],
+				'reportids' => $reportids,
+				'preservekeys' => true
+			]);
+
+			$output['keepids'] = array_keys($reports);
 		}
 
-		$this->setResponse($response);
+		$this->setResponse(new CControllerResponseData(['main_block' => json_encode($output)]));
 	}
 }

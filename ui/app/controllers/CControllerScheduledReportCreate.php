@@ -16,6 +16,32 @@
 
 class CControllerScheduledReportCreate extends CController {
 
+	protected function init(): void {
+		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
+		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
+	}
+
+	protected function checkInput() {
+		$ret = $this->validateInput(self::getValidationRules())
+			&& $this->validateWeekdays() && $this->validateTimePeriods() && $this->validateSubscriptions();
+
+		if (!$ret) {
+			$form_errors = $this->getValidationError();
+			$response = $form_errors
+				? ['form_errors' => $form_errors]
+				: ['error' => [
+					'title' => _('Cannot create scheduled report'),
+					'messages' => array_column(get_and_clear_messages(), 'message')
+				]];
+
+			$this->setResponse(
+				new CControllerResponseData(['main_block' => json_encode($response)])
+			);
+		}
+
+		return $ret;
+	}
+
 	public static function getValidationRules(): array {
 		$api_uniq = [
 			['report.get', ['name' => '{name}']]
@@ -36,11 +62,13 @@ class CControllerScheduledReportCreate extends CController {
 			],
 			'hours' => ['integer', 'required', 'min' => 0, 'max' => 23],
 			'minutes' => ['integer', 'required', 'min' => 0, 'max' => 59],
-			'active_since' => ['string', 'required', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
-				'messages' => ['use' => _('Invalid date.')]
+			'active_since' => ['string', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+				'regex' => '/^(\\d\\d\\d\\d-\\d\\d-\\d\\d)?$/',
+				'messages' => ['use' => _('Invalid date.'), 'regex' => _('Invalid date.')]
 			],
-			'active_till' => ['string', 'required', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
-				'messages' => ['use' => _('Invalid date.')]
+			'active_till' => ['string', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+				'regex' => '/^(\\d\\d\\d\\d-\\d\\d-\\d\\d)?$/',
+				'messages' => ['use' => _('Invalid date.'), 'regex' => _('Invalid date.')]
 			],
 			'subject' => ['string'],
 			'message' => ['string'],
@@ -61,67 +89,15 @@ class CControllerScheduledReportCreate extends CController {
 		]];
 	}
 
-	protected function checkInput() {
-		$fields = [
-			'userid' =>			'required|db report.userid',
-			'name' =>			'required|db report.name|not_empty',
-			'dashboardid' =>	'required|db report.dashboardid',
-			'period' =>			'db report.period|in '.implode(',', [ZBX_REPORT_PERIOD_DAY, ZBX_REPORT_PERIOD_WEEK, ZBX_REPORT_PERIOD_MONTH, ZBX_REPORT_PERIOD_YEAR]),
-			'cycle' =>			'db report.cycle|in '.implode(',', [ZBX_REPORT_CYCLE_DAILY, ZBX_REPORT_CYCLE_WEEKLY, ZBX_REPORT_CYCLE_MONTHLY, ZBX_REPORT_CYCLE_YEARLY]),
-			'weekdays' =>		'array',
-			'hours' =>			'int32|ge 0|le 23',
-			'minutes' =>		'int32|ge 0|le 59',
-			'active_since' =>	'string',
-			'active_till' =>	'string',
-			'subject' =>		'string',
-			'message' =>		'string',
-			'subscriptions' =>	'array',
-			'description' =>	'db report.description',
-			'status' =>			'db report.status|in '.ZBX_REPORT_STATUS_DISABLED.','.ZBX_REPORT_STATUS_ENABLED,
-			'form_refresh' =>	'int32'
-		];
-
-		$ret = $this->validateInput($fields);
-		$result = $this->getValidationResult();
-
-		if ($ret && !$this->validateWeekdays()) {
-			$result = self::VALIDATION_ERROR;
-			$ret = false;
-		}
-
-		if (!$ret) {
-			switch ($result) {
-				case self::VALIDATION_ERROR:
-					$response = new CControllerResponseRedirect(
-						(new CUrl('zabbix.php'))->setArgument('action', 'scheduledreport.edit')
-					);
-					$response->setFormData($this->getInputAll());
-					CMessageHelper::setErrorTitle(_('Cannot create scheduled report'));
-					$this->setResponse($response);
-					break;
-
-				case self::VALIDATION_FATAL_ERROR:
-					$this->setResponse(new CControllerResponseFatal());
-					break;
-			}
-		}
-
-		return $ret;
-	}
-
-	/**
-	 * Validate days of the week.
-	 *
-	 * @return bool
-	 */
 	private function validateWeekdays(): bool {
 		$cycle = $this->getInput('cycle', ZBX_REPORT_CYCLE_DAILY);
 		$weekdays = array_sum($this->getInput('weekdays', []));
 
 		if ($cycle == ZBX_REPORT_CYCLE_WEEKLY && $weekdays == 0) {
-			error(_s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'),
-				_('at least one day of the week must be selected'))
-			);
+			$message = _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'),
+				_('at least one day of the week must be selected'));
+
+			$this->addFormError('/weekdays', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
 
 			return false;
 		}
@@ -129,12 +105,55 @@ class CControllerScheduledReportCreate extends CController {
 		return true;
 	}
 
-	protected function checkPermissions() {
+	private function validateSubscriptions(): bool {
+		foreach ($this->getInput('subscriptions', []) as $subscription) {
+			if ($subscription['recipient_type'] == ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP) {
+				return true;
+			}
+
+			if ($subscription['exclude'] == ZBX_REPORT_EXCLUDE_USER_FALSE) {
+				return true;
+			}
+		}
+
+		$message = _('If no user groups are specified, at least one user must be included in the mailing list.');
+		$this->addFormError('/subscriptions', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
+
+		return false;
+	}
+
+	protected function validateTimePeriods(): bool {
+		$active_since = $this->getInput('active_since', '');
+		$active_till = $this->getInput('active_till', '');
+
+		if ($active_since === '' || $active_till === '') {
+			return true;
+		}
+
+		$absolute_time_parser = new CAbsoluteTimeParser();
+
+		$absolute_time_parser->parse($active_since);
+		$active_since_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		$absolute_time_parser->parse($active_till);
+		$active_till_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		if ($active_since_ts >= $active_till_ts) {
+			$message = _s('"%1$s" must be an empty string or greater than "%2$s".', _('End date'), _('Start date'));
+			$this->addFormError('/active_till', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
+
+			return false;
+		}
+
+		return true;
+	}
+
+	protected function checkPermissions(): bool {
 		return $this->checkAccess(CRoleHelper::UI_REPORTS_SCHEDULED_REPORTS)
 			&& $this->checkAccess(CRoleHelper::ACTIONS_MANAGE_SCHEDULED_REPORTS);
 	}
 
-	protected function doAction() {
+	protected function doAction(): void {
 		$report = [];
 
 		$this->getInputs($report, ['userid', 'name', 'dashboardid', 'period', 'cycle', 'subject', 'message',
@@ -175,49 +194,22 @@ class CControllerScheduledReportCreate extends CController {
 
 		$result = API::Report()->create($report);
 
+		$output = [];
+
 		if ($result) {
-			$response = new CControllerResponseRedirect(
-				(new CUrl('zabbix.php'))
-					->setArgument('action', 'scheduledreport.list')
-					->setArgument('page', CPagerHelper::loadPage('scheduledreport.list', null))
-			);
-			$response->setFormData(['uncheck' => '1']);
-			CMessageHelper::setSuccessTitle(_('Scheduled report added'));
+			$output['success']['title'] = _('Scheduled report added');
+
+			if ($messages = get_and_clear_messages()) {
+				$output['success']['messages'] = array_column($messages, 'message');
+			}
 		}
 		else {
-			$response = new CControllerResponseRedirect(
-				(new CUrl('zabbix.php'))->setArgument('action', 'scheduledreport.edit')
-			);
-			$response->setFormData($this->getInputAll());
-			CMessageHelper::setErrorTitle(_('Cannot add scheduled report'));
+			$output['error'] = [
+				'title' => _('Cannot add scheduled report'),
+				'messages' => array_column(get_and_clear_messages(), 'message')
+			];
 		}
 
-		$this->setResponse($response);
-	}
-
-	protected function validateTimePeriods(): bool {
-		$active_since = $this->getInput('active_since', '');
-		$active_till = $this->getInput('active_till', '');
-
-		if ($active_since === '' || $active_till === '') {
-			return true;
-		}
-
-		$absolute_time_parser = new CAbsoluteTimeParser();
-
-		$absolute_time_parser->parse($active_since);
-		$active_since_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
-
-		$absolute_time_parser->parse($active_till);
-		$active_till_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
-
-		if ($active_since_ts >= $active_till_ts) {
-			$message = _s('"%1$s" must be an empty string or greater than "%2$s".', _('End date'), _('Start date'));
-			$this->addFormError('/active_till', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
-
-			return false;
-		}
-
-		return true;
+		$this->setResponse(new CControllerResponseData(['main_block' => json_encode($output)]));
 	}
 }

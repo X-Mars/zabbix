@@ -16,71 +16,132 @@
 
 class CControllerScheduledReportUpdate extends CController {
 
-	protected function checkInput() {
-		$fields = [
-			'reportid' =>			'fatal|required|db report.reportid',
-			'userid' =>				'required|db report.userid',
-			'name' =>				'required|db report.name|not_empty',
-			'dashboardid' =>		'required|db report.dashboardid',
-			'old_dashboardid' =>	'required|db report.dashboardid',
-			'period' =>				'db report.period|in '.implode(',', [ZBX_REPORT_PERIOD_DAY, ZBX_REPORT_PERIOD_WEEK, ZBX_REPORT_PERIOD_MONTH, ZBX_REPORT_PERIOD_YEAR]),
-			'cycle' =>				'db report.cycle|in '.implode(',', [ZBX_REPORT_CYCLE_DAILY, ZBX_REPORT_CYCLE_WEEKLY, ZBX_REPORT_CYCLE_MONTHLY, ZBX_REPORT_CYCLE_YEARLY]),
-			'weekdays' =>			'array',
-			'hours' =>				'int32|ge 0|le 23',
-			'minutes' =>			'int32|ge 0|le 59',
-			'active_since' =>		'string',
-			'active_till' =>		'string',
-			'subject' =>			'string',
-			'message' =>			'string',
-			'subscriptions' =>		'array',
-			'description' =>		'db report.description',
-			'status' =>				'db report.status|in '.ZBX_REPORT_STATUS_DISABLED.','.ZBX_REPORT_STATUS_ENABLED,
-			'form_refresh' =>		'int32'
+	protected function init(): void {
+		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
+		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
+	}
+
+	public static function getValidationRules(): array {
+		$api_uniq = [
+			['report.get', ['name' => '{name}'], 'reportid']
 		];
 
-		$ret = $this->validateInput($fields);
-		$result = $this->getValidationResult();
+		return ['object', 'api_uniq' => $api_uniq, 'fields' => [
+			'reportid' => ['db report.reportid', 'required'],
+			'userid' => ['db report.userid', 'required', 'messages' => ['required' => _('This value should not be blank.')]],
+			'name' => ['db report.name', 'required', 'not_empty'],
+			'dashboardid' => ['db report.dashboardid', 'required', 'messages' => ['required' => _('This value should not be blank.')]],
+			'period' => ['db report.period', 'required', 'in' => [ZBX_REPORT_PERIOD_DAY, ZBX_REPORT_PERIOD_WEEK, ZBX_REPORT_PERIOD_MONTH, ZBX_REPORT_PERIOD_YEAR]],
+			'cycle' => ['db report.cycle', 'required', 'in' => [ZBX_REPORT_CYCLE_DAILY, ZBX_REPORT_CYCLE_WEEKLY, ZBX_REPORT_CYCLE_MONTHLY, ZBX_REPORT_CYCLE_YEARLY]],
+			'weekdays' => ['array', 'required', 'not_empty', 'field' => ['integer'],
+				'when' => ['cycle', 'in' => [ZBX_REPORT_CYCLE_WEEKLY]],
+				'messages' => [
+					'type' => _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'), _('at least one day of the week must be selected')),
+					'not_empty' => _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'), _('at least one day of the week must be selected'))
+				]
+			],
+			'hours' => ['integer', 'required', 'min' => 0, 'max' => 23],
+			'minutes' => ['integer', 'required', 'min' => 0, 'max' => 59],
+			'active_since' => ['string', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+				'regex' => '/^(\\d\\d\\d\\d-\\d\\d-\\d\\d)?$/',
+				'messages' => ['use' => _('Invalid date.'), 'regex' => _('Invalid date.')]
+			],
+			'active_till' => ['string', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+				'regex' => '/^(\\d\\d\\d\\d-\\d\\d-\\d\\d)?$/',
+				'messages' => ['use' => _('Invalid date.'), 'regex' => _('Invalid date.')]
+			],
+			'subject' => ['string'],
+			'message' => ['string'],
+			'subscriptions' => ['objects', 'required', 'not_empty', 'fields' => [
+				'recipient_type' => ['integer', 'required', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER, ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]],
+				'recipientid' => [
+					['db users.userid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]],
+					['db usrgrp.usrgrpid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]]
+				],
+				'creatorid' => ['db users.userid', 'required'],
+				'exclude' => ['integer', 'required',
+					'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE, ZBX_REPORT_EXCLUDE_USER_TRUE],
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
+				]
+			]],
+			'description' => ['db report.description'],
+			'status' => ['db report.status', 'in' => [ZBX_REPORT_STATUS_DISABLED, ZBX_REPORT_STATUS_ENABLED]]
+		]];
+	}
 
-		if ($ret && !$this->validateWeekdays()) {
-			$result = self::VALIDATION_ERROR;
-			$ret = false;
-		}
+	protected function checkInput() {
+		$ret = $this->validateInput(self::getValidationRules())
+			&& $this->validateWeekdays() && $this->validateTimePeriods() && $this->validateSubscriptions();
 
 		if (!$ret) {
-			switch ($result) {
-				case self::VALIDATION_ERROR:
-					$response = new CControllerResponseRedirect(
-						(new CUrl('zabbix.php'))
-							->setArgument('action', 'scheduledreport.edit')
-							->setArgument('reportid', $this->getInput('reportid'))
-					);
-					$response->setFormData($this->getInputAll());
-					CMessageHelper::setErrorTitle(_('Cannot update scheduled report'));
-					$this->setResponse($response);
-					break;
+			$form_errors = $this->getValidationError();
+			$response = $form_errors
+				? ['form_errors' => $form_errors]
+				: ['error' => [
+					'title' => _('Cannot update scheduled report'),
+					'messages' => array_column(get_and_clear_messages(), 'message')
+				]];
 
-				case self::VALIDATION_FATAL_ERROR:
-					$this->setResponse(new CControllerResponseFatal());
-					break;
-			}
+			$this->setResponse(
+				new CControllerResponseData(['main_block' => json_encode($response)])
+			);
 		}
 
 		return $ret;
 	}
 
-	/**
-	 * Validate days of the week.
-	 *
-	 * @return bool
-	 */
 	private function validateWeekdays(): bool {
 		$cycle = $this->getInput('cycle', ZBX_REPORT_CYCLE_DAILY);
 		$weekdays = array_sum($this->getInput('weekdays', []));
 
 		if ($cycle == ZBX_REPORT_CYCLE_WEEKLY && $weekdays == 0) {
-			error(_s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'),
-				_('at least one day of the week must be selected'))
-			);
+			$message = _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'),
+				_('at least one day of the week must be selected'));
+
+			$this->addFormError('/weekdays', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private function validateSubscriptions(): bool {
+		foreach ($this->getInput('subscriptions', []) as $subscription) {
+			if ($subscription['recipient_type'] == ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP) {
+				return true;
+			}
+
+			if ($subscription['exclude'] == ZBX_REPORT_EXCLUDE_USER_FALSE) {
+				return true;
+			}
+		}
+
+		$message = _('If no user groups are specified, at least one user must be included in the mailing list.');
+		$this->addFormError('/subscriptions', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
+
+		return false;
+	}
+
+	protected function validateTimePeriods(): bool {
+		$active_since = $this->getInput('active_since', '');
+		$active_till = $this->getInput('active_till', '');
+
+		if ($active_since === '' || $active_till === '') {
+			return true;
+		}
+
+		$absolute_time_parser = new CAbsoluteTimeParser();
+
+		$absolute_time_parser->parse($active_since);
+		$active_since_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		$absolute_time_parser->parse($active_till);
+		$active_till_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
+
+		if ($active_since_ts >= $active_till_ts) {
+			$message = _s('"%1$s" must be an empty string or greater than "%2$s".', _('End date'), _('Start date'));
+			$this->addFormError('/active_till', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
 
 			return false;
 		}
@@ -132,25 +193,22 @@ class CControllerScheduledReportUpdate extends CController {
 
 		$result = API::Report()->update($report);
 
+		$output = [];
+
 		if ($result) {
-			$response = new CControllerResponseRedirect(
-				(new CUrl('zabbix.php'))
-					->setArgument('action', 'scheduledreport.list')
-					->setArgument('page', CPagerHelper::loadPage('scheduledreport.list', null))
-			);
-			$response->setFormData(['uncheck' => '1']);
-			CMessageHelper::setSuccessTitle(_('Scheduled report updated'));
+			$output['success']['title'] = _('Scheduled report updated');
+
+			if ($messages = get_and_clear_messages()) {
+				$output['success']['messages'] = array_column($messages, 'message');
+			}
 		}
 		else {
-			$response = new CControllerResponseRedirect(
-				(new CUrl('zabbix.php'))
-					->setArgument('action', 'scheduledreport.edit')
-					->setArgument('reportid', $this->getInput('reportid'))
-			);
-			$response->setFormData($this->getInputAll());
-			CMessageHelper::setErrorTitle(_('Cannot update scheduled report'));
+			$output['error'] = [
+				'title' => _('Cannot update scheduled report'),
+				'messages' => array_column(get_and_clear_messages(), 'message')
+			];
 		}
 
-		$this->setResponse($response);
+		$this->setResponse(new CControllerResponseData(['main_block' => json_encode($output)]));
 	}
 }

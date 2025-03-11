@@ -16,6 +16,10 @@
 
 class CControllerScheduledReportEnable extends CController {
 
+	protected function init(): void {
+		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
+	}
+
 	protected function checkInput() {
 		$fields = [
 			'reportids' => 'required|array_db report.reportid'
@@ -56,24 +60,28 @@ class CControllerScheduledReportEnable extends CController {
 
 		$result = API::Report()->update($reports);
 
-		$response = new CControllerResponseRedirect(
-			(new CUrl('zabbix.php'))
-				->setArgument('action', 'scheduledreport.list')
-				->setArgument('page', CPagerHelper::loadPage('scheduledreport.list', null))
-		);
-
-		$updated = count($reports);
-
 		if ($result) {
-			$response->setFormData(['uncheck' => '1']);
-			CMessageHelper::setSuccessTitle(_n('Scheduled report enabled', 'Scheduled reports enabled', $updated));
+			$output['success']['title'] = _n('Scheduled report enabled', 'Scheduled reports enabled', count($reports));
+
+			if ($messages = get_and_clear_messages()) {
+				$output['success']['messages'] = array_column($messages, 'message');
+			}
 		}
 		else {
-			CMessageHelper::setErrorTitle(
-				_n('Cannot enable scheduled report', 'Cannot enable scheduled reports', $updated)
-			);
+			$output['error'] = [
+				'title' => _n('Cannot enable scheduled report', 'Cannot enable scheduled reports', count($reports)),
+				'messages' => array_column(get_and_clear_messages(), 'message')
+			];
+
+			$reports = API::Report()->get([
+				'output' => [],
+				'reportid' => $this->getInput('reportids'),
+				'preservekeys' => true
+			]);
+
+			$output['keepids'] = array_keys($reports);
 		}
 
-		$this->setResponse($response);
+		$this->setResponse(new CControllerResponseData(['main_block' => json_encode($output)]));
 	}
 }
