@@ -245,7 +245,7 @@ if ($data['reportid']) {
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'action' => 'scheduledreport_edit.clone('.json_encode([
-				'title' => _('New scheduled reoprt'),
+				'title' => _('New scheduled report'),
 				'buttons' => [
 					[
 						'title' => _('Add'),
@@ -274,7 +274,7 @@ if ($data['reportid']) {
 		],
 		[
 			'title' => _('Delete'),
-			'confirmation' => _('Delete scheduled reoprt?'),
+			'confirmation' => _('Delete scheduled report?'),
 			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-delete']),
 			'keepOpen' => true,
 			'isSubmit' => false,
