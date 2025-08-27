@@ -31,7 +31,7 @@ window.scheduledreport_edit = new class {
 		this.form_element = document.getElementById('scheduledreport-form');
 		this.form = new CForm(this.form_element, rules);
 
-		this.old_dashboardid = this.form_element.querySelector('input[name="dashboardid"]').value;
+		this.old_dashboardid = this.form_element.querySelector('input[name="dashboardid"]')?.value ?? null;
 		this.dashboard_inaccessible = dashboard_inaccessible;
 
 		const return_url = new URL('zabbix.php', location.href);
