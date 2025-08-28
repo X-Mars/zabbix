@@ -298,7 +298,7 @@ class CRouter {
 		'scheduledreport.disable'					=> [CControllerScheduledReportDisable::class,						'layout.json',			null],
 		'scheduledreport.edit'						=> [CControllerScheduledReportEdit::class,							'layout.json',			'reports.scheduledreport.edit'],
 		'scheduledreport.enable'					=> [CControllerScheduledReportEnable::class,						'layout.json',			null],
-		'scheduledreport.list'						=> [CControllerScheduledReportList::class,							'layout.json',			'reports.scheduledreport.list'],
+		'scheduledreport.list'						=> [CControllerScheduledReportList::class,							'layout.htmlpage',		'reports.scheduledreport.list'],
 		'scheduledreport.update'					=> [CControllerScheduledReportUpdate::class,						'layout.json',			null],
 		'script.create'								=> [CControllerScriptCreate::class,									'layout.json',			null],
 		'script.delete'								=> [CControllerScriptDelete::class,									'layout.json',			null],

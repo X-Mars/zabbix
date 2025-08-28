@@ -79,6 +79,7 @@ window.scheduledreport_edit = new class {
 	}
 
 	test() {
+		this.form.findFieldByName('dashboardid').setChanged();
 		this.form
 			.validateFieldsForAction(['name', 'dashboardid'])
 			.then((result) => {
