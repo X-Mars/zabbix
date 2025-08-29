@@ -96,6 +96,7 @@ window.scheduledreport_edit = new class {
 				}, {
 					dialogue_class: 'modal-popup-medium'
 				});
+				overlay.$dialogue[0].addEventListener('dialogue.close', () => this.overlay.unsetLoading());
 			});
 	}
 
