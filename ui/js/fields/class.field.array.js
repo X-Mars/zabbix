@@ -70,7 +70,7 @@ class CFieldArray extends CField {
 	}
 
 	_toggleError() {
-		this._field.parentNode.classList.toggle('has-error', this.hasErrorHint());
+		this._field.classList.toggle('has-error', this.hasErrorHint());
 	}
 
 	#detectFieldChanges = () => {
