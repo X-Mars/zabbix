@@ -257,7 +257,7 @@ if ($data['reportid']) {
 						'action' => ''
 					]
 				],
-				'rules' => (new CFormValidator(CControllerScheduledReportCreate::getValidationRules()))->getRules(),
+				'rules' => (new CFormValidator(CControllerScheduledReportCreate::getValidationRules()))->getRules()
 			]).');'
 		],
 		[
