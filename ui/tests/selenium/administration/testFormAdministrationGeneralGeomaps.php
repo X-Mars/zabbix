@@ -217,7 +217,7 @@ class testFormAdministrationGeneralGeomaps extends CWebTest {
 						'Max zoom level' => 31
 					],
 					'errors' => [
-						'Max zoom level' => 'This value must be no greater than "30".'
+						'Max zoom level' => 'This value cannot be greater than "30".'
 					]
 				]
 			],

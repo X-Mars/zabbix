@@ -1051,7 +1051,7 @@ class CFormValidator {
 			return {
 				result: CFormValidator.ERROR,
 				error: this.#getMessage(rules, 'max',
-					sprintf(t('This value must be no greater than "%1$s".'), rules['max'])
+					sprintf(t('This value cannot be greater than "%1$s".'), rules['max'])
 				)
 			};
 		}
@@ -1140,7 +1140,7 @@ class CFormValidator {
 			return {
 				result: CFormValidator.ERROR,
 				error: this.#getMessage(rules, 'max',
-					sprintf(t('This value must be no greater than "%1$s".'),  rules['max'])
+					sprintf(t('This value cannot be greater than "%1$s".'), rules['max'])
 				)
 			};
 		}
@@ -1430,6 +1430,10 @@ class CFormValidator {
 	 * @returns {boolean}
 	 */
 	#isTypeInt32(value) {
+		if (String(value).match(/^[-]?\d+$/) === null) {
+			return false;
+		}
+
 		value = parseInt(value);
 
 		return !isNaN(value) && value >= -2147483648 && value <= 2147483647;
