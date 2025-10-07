@@ -866,7 +866,7 @@ class CFormValidator {
 		}
 
 		if (array_key_exists('min', $rules) && bccomp($value, $rules['min']) == -1) {
-			$error = self::getMessage($rules, 'min', _s('This value must be no less than "%1$s".', $rules['min']));
+			$error = self::getMessage($rules, 'min', _s('This value cannot be less than "%1$s".', $rules['min']));
 
 			return false;
 		}
@@ -917,7 +917,7 @@ class CFormValidator {
 		}
 
 		if (array_key_exists('min', $rules) && bccomp($value, $rules['min']) == -1) {
-			$error = self::getMessage($rules, 'min', _s('This value must be no less than "%1$s".', $rules['min']));
+			$error = self::getMessage($rules, 'min', _s('This value cannot be less than "%1$s".', $rules['min']));
 
 			return false;
 		}

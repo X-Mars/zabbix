@@ -2106,7 +2106,7 @@ window.host_wizard_edit = new class {
 				}
 
 				if (rule.min > value) {
-					return sprintf(<?= json_encode(_('This value must be no less than "%1$s".')) ?>, rule.min);
+					return sprintf(<?= json_encode(_('This value cannot be less than "%1$s".')) ?>, rule.min);
 				}
 
 				if (rule.max < value) {
