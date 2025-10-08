@@ -872,7 +872,7 @@ class CFormValidator {
 		}
 
 		if (array_key_exists('max', $rules) && bccomp($value, $rules['max']) == 1) {
-			$error = self::getMessage($rules, 'max', _s('This value cannot greater than "%1$s".', $rules['max']));
+			$error = self::getMessage($rules, 'max', _s('This value cannot be greater than "%1$s".', $rules['max']));
 
 			return false;
 		}
