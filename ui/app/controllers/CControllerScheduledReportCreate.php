@@ -48,9 +48,9 @@ class CControllerScheduledReportCreate extends CController {
 		];
 
 		return ['object', 'api_uniq' => $api_uniq, 'fields' => [
-			'userid' => ['db report.userid', 'required', 'messages' => ['required' => _('This value should not be blank.')]],
+			'userid' => ['db report.userid', 'required'],
 			'name' => ['db report.name', 'required', 'not_empty'],
-			'dashboardid' => ['db report.dashboardid', 'required', 'messages' => ['required' => _('This value should not be blank.')]],
+			'dashboardid' => ['db report.dashboardid', 'required'],
 			'period' => ['db report.period', 'required', 'in' => [ZBX_REPORT_PERIOD_DAY, ZBX_REPORT_PERIOD_WEEK, ZBX_REPORT_PERIOD_MONTH, ZBX_REPORT_PERIOD_YEAR]],
 			'cycle' => ['db report.cycle', 'required', 'in' => [ZBX_REPORT_CYCLE_DAILY, ZBX_REPORT_CYCLE_WEEKLY, ZBX_REPORT_CYCLE_MONTHLY, ZBX_REPORT_CYCLE_YEARLY]],
 			'weekdays' => ['array', 'required', 'not_empty', 'field' => ['integer'],
