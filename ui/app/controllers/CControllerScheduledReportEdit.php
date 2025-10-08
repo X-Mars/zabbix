@@ -182,6 +182,7 @@ class CControllerScheduledReportEdit extends CController {
 			}
 
 			if ($data['userid'] != CWebUser::$data['userid']) {
+				$data['owner_inaccessible'] = true;
 				$data['ms_user'] = [[
 					'id' => $data['userid'],
 					'name' => array_key_exists($data['userid'], $db_users)

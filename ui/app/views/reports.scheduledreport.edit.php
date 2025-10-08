@@ -241,6 +241,11 @@ if ($data['reportid']) {
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'action' => 'scheduledreport_edit.clone('.json_encode([
+				'owner_inaccessible' => array_key_exists('owner_inaccessible', $data),
+				'current_user' => [
+					'id' => CWebUser::getId(),
+					'name' => CWebUser::getFullName()
+				],
 				'title' => _('New scheduled report'),
 				'buttons' => [
 					[

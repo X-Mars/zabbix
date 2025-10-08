@@ -65,13 +65,37 @@ window.scheduledreport_edit = new class {
 		});
 	}
 
-	clone({rules, title, buttons}) {
+	clone({rules, title, buttons, current_user, owner_inaccessible}) {
 		this.reportid = null;
 		this.form.reload(rules);
 		this.overlay.unsetLoading();
 		this.overlay.setProperties({title, buttons});
 		this.overlay.recoverFocus();
 		this.overlay.containFocus();
+
+		const {rows} = document.getElementById('subscriptions-table');
+		[...rows].filter(n => n.parentNode.nodeName === 'TBODY').map(n => n.remove());
+
+		const {subscriptions} = this.form.getAllValues();
+
+		[...Object.values(subscriptions)]
+			.filter(subscription => subscription.recipient_inaccessible === "0")
+			.map(subscription => {
+				if (subscription.recipient_type == <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>
+						&& subscription.creator_inaccessible !== "0") {
+					subscription.creator_inaccessible = 0;
+					subscription.creator_name = current_user.name;
+					subscription.creatorid = current_user.id;
+				}
+
+				return subscription;
+			})
+			.forEach((subscription) => new ReportSubscription(subscription));
+
+		if (owner_inaccessible) {
+			jQuery('#userid').multiSelect('clean');
+			jQuery('#userid').multiSelect('addData', [current_user]);
+		}
 
 		if (this.dashboard_inaccessible) {
 			jQuery('#dashboardid').multiSelect('clean');
