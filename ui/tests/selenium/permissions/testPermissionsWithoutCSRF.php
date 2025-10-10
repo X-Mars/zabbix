@@ -581,16 +581,19 @@ class testPermissionsWithoutCSRF extends CWebTest {
 			[
 				[
 					'db' => 'SELECT * FROM report',
-					'link' => 'zabbix.php?action=scheduledreport.edit',
-					'return_button' => true
+					'link' => 'zabbix.php?action=scheduledreport.list',
+					'overlay' => 'create',
+					'fields' => [
+						'id:name' => 'CSRF scheduled report create',
+						'xpath://div[@id="dashboardid"]/..' => 'Global view'
+					]
 				]
 			],
 			// #59 Scheduled report update.
 			[
 				[
 					'db' => 'SELECT * FROM report',
-					'link' => 'zabbix.php?action=scheduledreport.edit&reportid=3',
-					'return_button' => true
+					'link' => 'zabbix.php?action=popup&popup=scheduledreport.edit&reportid=3'
 				]
 			],
 			// #60 Connector create.

@@ -281,7 +281,7 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'Report for delete'
 					],
 //					'error_message_part' => 'add',
-//					'unique' => false,
+					'unique' => false,
 					'inline_errors' => [
 						'Name' => 'This object already exists.'
 					]
@@ -734,7 +734,8 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
-					]
+					],
+					'submit' => true
 				]
 			],
 			[
@@ -745,7 +746,8 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
-					]
+					],
+					'submit' => true
 				]
 			]
 		]);
@@ -789,7 +791,8 @@ class testFormScheduledReport extends CWebTest {
 						'Owner' => 'This field cannot be empty.',
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
-					]
+					],
+					'submit' => true
 				]
 			],
 			[
@@ -800,7 +803,8 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
-					]
+					],
+					'submit' => true
 				]
 			]
 		]);
@@ -849,7 +853,8 @@ class testFormScheduledReport extends CWebTest {
 						'Owner' => 'This field cannot be empty.',
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
-					]
+					],
+					'submit' => true
 				]
 			],
 			[
@@ -871,7 +876,8 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
-					]
+					],
+					'submit' => true
 				]
 			],
 			// Remove all subscriptions.
@@ -954,6 +960,7 @@ class testFormScheduledReport extends CWebTest {
 							]
 						]
 					],
+					'submit' => true,
 					'inline_errors' => [
 						'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 					]
@@ -1292,7 +1299,7 @@ class testFormScheduledReport extends CWebTest {
 		$this->fillSubscriptions($subscriptions);
 
 		if ($data['action'] === 'Delete') {
-			$this->query('button', $data['action'])->one()->click();
+			COverlayDialogElement::find()->one()->query('button:Delete')->waitUntilClickable()->one()->click();
 			$this->page->dismissAlert();
 		}
 
@@ -1406,9 +1413,14 @@ class testFormScheduledReport extends CWebTest {
 	}
 
 	public function testFormScheduledReport_Delete() {
+		$reportid = CDataHelper::call('report.get', [
+			'output' => ['reportid'],
+			'filter' => ['name' => 'Report for delete']
+		])[0]['reportid'];
+
 		$this->page->login()->open('zabbix.php?action=scheduledreport.list')->waitUntilReady();
 		$this->query('link:Report for delete')->waitUntilClickable()->one()->click();
-		$this->query('button:Delete')->waitUntilClickable()->one()->click();
+		COverlayDialogElement::find()->one()->query('button:Delete')->waitUntilClickable()->one()->click();
 		$this->page->acceptAlert();
 
 		$this->assertMessage(TEST_GOOD, 'Scheduled report deleted');
