@@ -327,8 +327,9 @@ class testUserRolesPermissions extends CWebTest {
 				$this->assertTrue($this->query('button', $button)->one()->isEnabled($action_status));
 			}
 
-			$this->page->open(array_key_exists('report', $data) ? 'zabbix.php?action=scheduledreport.edit&reportid='.
-					self::$reportid : $data['action_link'])->waitUntilReady();
+			$this->page->open(array_key_exists('report', $data) ? 'zabbix.php?action=popup&popup=scheduledreport.edit&reportid='.
+					self::$reportid : $data['action_link']
+			)->waitUntilReady();
 
 			foreach ($data['form_button'] as $text) {
 				$this->assertTrue($this->query('button', $text)->one()->isEnabled(($text === 'Cancel') ? true : $action_status));

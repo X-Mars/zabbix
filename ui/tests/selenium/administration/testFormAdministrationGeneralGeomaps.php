@@ -203,7 +203,7 @@ class testFormAdministrationGeneralGeomaps extends CWebTest {
 						'Max zoom level' => 0
 					],
 					'errors' => [
-						'Max zoom level' => 'This value must be no less than "1".'
+						'Max zoom level' => 'This value cannot be less than "1".'
 					]
 				]
 			],
@@ -231,7 +231,7 @@ class testFormAdministrationGeneralGeomaps extends CWebTest {
 						'Max zoom level' => 'aa'
 					],
 					'errors' => [
-						'Max zoom level' => 'This value must be no less than "1".'
+						'Max zoom level' => 'This value cannot be less than "1".'
 					]
 				]
 			],
@@ -245,7 +245,7 @@ class testFormAdministrationGeneralGeomaps extends CWebTest {
 						'Max zoom level' => '!%:'
 					],
 					'errors' => [
-						'Max zoom level' => 'This value must be no less than "1".'
+						'Max zoom level' => 'This value cannot be less than "1".'
 					]
 				]
 			],
@@ -259,7 +259,7 @@ class testFormAdministrationGeneralGeomaps extends CWebTest {
 						'Max zoom level' => -1
 					],
 					'errors' => [
-						'Max zoom level' => 'This value must be no less than "1".'
+						'Max zoom level' => 'This value cannot be less than "1".'
 					]
 				]
 			],

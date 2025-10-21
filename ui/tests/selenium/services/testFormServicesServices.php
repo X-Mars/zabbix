@@ -400,7 +400,7 @@ class testFormServicesServices extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'name:limit_value' => 'This value must be no less than "1".'
+						'name:limit_value' => 'This value cannot be less than "1".'
 					]
 				]
 			],
@@ -600,7 +600,7 @@ class testFormServicesServices extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'name:limit_value' => 'This value must be no less than "1".'
+						'name:limit_value' => 'This value cannot be less than "1".'
 					]
 				]
 			],
