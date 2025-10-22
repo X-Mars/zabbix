@@ -731,28 +731,25 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 	 */
 	public function testFormAdministrationGeneralIconMapping_CloneValidation($data) {
 		$name = 'Icon mapping to check clone functionality';
-		$sql_hash = 'SELECT icon_map.name, icon_mapping.expression FROM icon_map LEFT JOIN icon_mapping'
-				.' ON icon_map.iconmapid = icon_mapping.iconmapid WHERE icon_map.name = '.zbx_dbstr($name);
+		$sql_hash = 'SELECT icon_map.name, icon_mapping.expression FROM icon_map LEFT JOIN icon_mapping'.
+				' ON icon_map.iconmapid = icon_mapping.iconmapid WHERE icon_map.name = '.zbx_dbstr($name);
 		$old_hash = CDBHelper::getHash($sql_hash);
 
-		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
-		$this->zbxTestClickLinkTextWait($name);
-		$this->zbxTestClickWait('clone');
-		$this->zbxTestWaitForPageToLoad();
+		$this->page->login()->open('zabbix.php?action=iconmap.list')->waitUntilReady();
+		$this->query('link', $name)->waitUntilClickable()->one()->click();
+		$this->query('button:Clone')->waitUntilClickable()->one()->click();
+		$this->page->waitUntilReady();
 
-		$this->zbxTestInputType('name', $data['new_name']);
+		$this->query('id:name')->one()->fill($data['new_name']);
+
 		if (array_key_exists('mappings', $data)) {
 			$this->processExpressionRows($data['mappings']);
 		}
 
-		$this->zbxTestClickXpath('//button[@value="Add"]');
-		$this->zbxTestWaitForPageToLoad();
-		$form = $this->query('id:iconmap')->asForm()->one();
-		$form->query('xpath:.//tr[@id="iconmap-list-footer"]//button')->one()->waitUntilClassesNotPresent('is-loading');
+		$this->page->removeFocus();
 
 		// Check the results in frontend.
-		$this->assertInlineError($form, $data['error']);
-
+		$this->assertInlineError($this->query('id:iconmap')->asForm()->one(), $data['error']);
 		$this->assertEquals($old_hash, CDBHelper::getHash($sql_hash));
 	}
 

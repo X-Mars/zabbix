@@ -27,8 +27,9 @@ class testFormScheduledReport extends CWebTest {
 
 	const USER = 'user';
 	const USER_GROUP = 'user group';
-	const UPDATE_REPORT_NAME = 'Report for update';
 	const TEST_REPORT_NAME = 'Report for testFormScheduledReport';
+
+	protected static $update_report_name = 'Report for update';
 
 	/**
 	 * Attach MessageBehavior to the test.
@@ -193,6 +194,7 @@ class testFormScheduledReport extends CWebTest {
 						'Owner' => '',
 						'Name' => 'empty owner'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true,
 					'inline_errors' => [
 						'Owner' => 'This field cannot be empty.'
@@ -368,7 +370,7 @@ class testFormScheduledReport extends CWebTest {
 						'Start date' => '2021-07-02',
 						'End date' => '2021-07-01'
 					],
-//					'error_message_part' => 'add',
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true,
 					'inline_errors' => [
 						'id:active_till' => '"End date" must be an empty string or greater than "Start date".'
@@ -537,7 +539,6 @@ class testFormScheduledReport extends CWebTest {
 						]
 					],
 					'submit' => true,
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 					]
@@ -735,6 +736,7 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true
 				]
 			],
@@ -747,6 +749,7 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true
 				]
 			]
@@ -792,6 +795,7 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true
 				]
 			],
@@ -804,6 +808,7 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true
 				]
 			]
@@ -854,6 +859,7 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true
 				]
 			],
@@ -877,6 +883,7 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
 					],
+					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true
 				]
 			],
@@ -935,7 +942,8 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
-					]
+					],
+					'submit' => true
 				]
 			],
 			[
@@ -1108,7 +1116,8 @@ class testFormScheduledReport extends CWebTest {
 	 */
 	public function testFormScheduledReport_Update($data) {
 		$this->page->login()->open('zabbix.php?action=scheduledreport.list')->waitUntilReady();
-		$this->query('link', self::UPDATE_REPORT_NAME)->waitUntilClickable()->one()->click();
+		$report_name = (array_key_exists('report', $data)) ? $data['report'] : self::$update_report_name;
+		$this->query('link', $report_name)->waitUntilClickable()->one()->click();
 		COverlayDialogElement::find()->waitUntilReady();
 
 		$this->executeAction($data, 'update', 'Scheduled report updated');
@@ -1307,8 +1316,11 @@ class testFormScheduledReport extends CWebTest {
 		if ($data['action'] === 'Clone') {
 			$this->query('button', $data['action'])->one()->click();
 			$this->page->waitUntilReady();
-			$this->assertFalse($this->query('button', ['Update', 'Delete'])->one(false)->isValid());
-			$this->assertTrue($this->query('button', ['Add', 'Cancel'])->one(false)->isValid());
+			$dialog = COverlayDialogElement::find()->one();
+
+			foreach (['Update' => false, 'Delete' => false, 'Add' => true, 'Cancel' => true] as $button => $valid) {
+				$this->assertEquals($valid, $dialog->query('button', $button)->one(false)->isValid());
+			}
 		}
 
 		$this->query('button:Cancel')->waitUntilClickable()->one()->click();
@@ -1495,9 +1507,13 @@ class testFormScheduledReport extends CWebTest {
 			if (CTestArrayHelper::get($data, 'trim', false)) {
 				$data['fields'] = CTestArrayHelper::trim($data['fields']);
 			}
-			$name = CTestArrayHelper::get($data, 'fields.Name', self::UPDATE_REPORT_NAME);
+			$name = CTestArrayHelper::get($data, 'fields.Name', self::$update_report_name);
 			$this->assertMessage(TEST_GOOD, $success_message);
 			$this->assertEquals(1, CDBHelper::getCount('SELECT null FROM report WHERE name='.zbx_dbstr($name)));
+
+			if ($action === 'update' && CTestArrayHelper::get($data, 'fields.Name') && !array_key_exists('report', $data)) {
+				self::$update_report_name = $data['fields']['Name'];
+			}
 
 			// Trim spaces in the middle of a name after DB check; spaces in links are trimmed.
 			$name = CTestArrayHelper::get($data, 'trim', false) ? preg_replace('/\s+/', ' ', $name) : $name;
@@ -1578,7 +1594,6 @@ class testFormScheduledReport extends CWebTest {
 					// Check error in subscription overlay for last subscriber.
 					$this->page->removeFocus();
 $form->submit(); // Temporary workaround.
-
 					$this->assertInlineError($form, $data['subscription_inline_errors']);
 				}
 				else {
