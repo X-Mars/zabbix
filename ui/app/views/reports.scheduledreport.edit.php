@@ -233,6 +233,7 @@ if ($data['reportid']) {
 			'class' => 'js-update',
 			'keepOpen' => true,
 			'isSubmit' => true,
+			'enabled' => $data['allowed_edit'],
 			'action' => 'scheduledreport_edit.submit();'
 		],
 		[
@@ -240,6 +241,7 @@ if ($data['reportid']) {
 			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-clone']),
 			'keepOpen' => true,
 			'isSubmit' => false,
+			'enabled' => $data['allowed_edit'],
 			'action' => 'scheduledreport_edit.clone('.json_encode([
 				'owner_inaccessible' => array_key_exists('owner_inaccessible', $data),
 				'current_user' => [
@@ -279,6 +281,7 @@ if ($data['reportid']) {
 			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-delete']),
 			'keepOpen' => true,
 			'isSubmit' => false,
+			'enabled' => $data['allowed_edit'],
 			'action' => 'scheduledreport_edit.delete();'
 		]
 	];
