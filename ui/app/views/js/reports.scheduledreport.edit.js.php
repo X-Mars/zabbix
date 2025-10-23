@@ -81,7 +81,8 @@ window.scheduledreport_edit = new class {
 		[...Object.values(subscriptions)]
 			.filter(subscription => subscription.recipient_inaccessible === "0")
 			.map(subscription => {
-				if (subscription.recipient_type == <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>) {
+				if (subscription.recipient_type == <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>
+						&& subscription.creator_type != <?= ZBX_REPORT_CREATOR_TYPE_RECIPIENT ?>) {
 					subscription.creator_inaccessible = 0;
 					subscription.creator_name = current_user.name;
 					subscription.creatorid = current_user.id;
