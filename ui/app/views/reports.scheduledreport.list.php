@@ -86,6 +86,7 @@ $form->addItem([
 					->addClass(ZBX_STYLE_BTN_ALT)
 					->addClass('js-massenable-scheduledreport')
 					->addClass('js-no-chkbxrange')
+					->setAttribute('data-disabled', !$data['allowed_edit'])
 					->setEnabled($data['allowed_edit'])
 			],
 			'scheduledreport.massdisable' => [
@@ -93,6 +94,7 @@ $form->addItem([
 					->addClass(ZBX_STYLE_BTN_ALT)
 					->addClass('js-massdisable-scheduledreport')
 					->addClass('js-no-chkbxrange')
+					->setAttribute('data-disabled', !$data['allowed_edit'])
 					->setEnabled($data['allowed_edit'])
 			],
 			'scheduledreport.massdelete' => [
@@ -100,6 +102,7 @@ $form->addItem([
 					->addClass(ZBX_STYLE_BTN_ALT)
 					->addClass('js-massdelete-scheduledreport')
 					->addClass('js-no-chkbxrange')
+					->setAttribute('data-disabled', !$data['allowed_edit'])
 					->setEnabled($data['allowed_edit'])
 			]
 		], 'scheduledreport')
