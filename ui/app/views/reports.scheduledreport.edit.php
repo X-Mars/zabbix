@@ -24,11 +24,6 @@ $form = (new CForm())
 	->addItem((new CVar(CSRF_TOKEN_NAME, CCsrfTokenHelper::get('scheduledreport')))->removeId())
 	->setId('scheduledreport-form')
 	->setName('scheduledreport-form')
-	->setAction(
-		(new CUrl('zabbix.php'))
-			->setArgument('action', ($data['reportid'] == 0) ? 'scheduledreport.create' : 'scheduledreport.update')
-			->getUrl()
-	)
 	->setAttribute('aria-labelledby', CHtmlPage::PAGE_TITLE_ID);
 
 if ($data['reportid'] != 0) {
