@@ -69,7 +69,7 @@ class CControllerScheduledReportUpdate extends CController {
 		]];
 	}
 
-	protected function checkInput() {
+	protected function checkInput(): bool {
 		$ret = $this->validateInput(self::getValidationRules())
 			&& $this->validateWeekdays() && $this->validateTimePeriods() && $this->validateSubscriptions();
 
@@ -149,7 +149,7 @@ class CControllerScheduledReportUpdate extends CController {
 		return true;
 	}
 
-	protected function checkPermissions() {
+	protected function checkPermissions(): bool {
 		if (!$this->checkAccess(CRoleHelper::UI_REPORTS_SCHEDULED_REPORTS)
 				|| !$this->checkAccess(CRoleHelper::ACTIONS_MANAGE_SCHEDULED_REPORTS)) {
 			return false;
@@ -161,7 +161,7 @@ class CControllerScheduledReportUpdate extends CController {
 		]);
 	}
 
-	protected function doAction() {
+	protected function doAction(): void {
 		$report = [];
 
 		$this->getInputs($report, ['reportid', 'userid', 'name', 'dashboardid', 'period', 'cycle', 'active_since',

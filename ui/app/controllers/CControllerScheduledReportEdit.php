@@ -18,12 +18,12 @@ class CControllerScheduledReportEdit extends CController {
 
 	protected array $report = [];
 
-	protected function init() {
+	protected function init(): void {
 		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
 		$this->disableCsrfValidation();
 	}
 
-	protected function checkInput() {
+	protected function checkInput(): bool {
 		$ret = $this->validateInput(['object', 'fields' => [
 			'reportid' => ['db report.reportid'],
 			'dashboardid' => ['db report.dashboardid']
@@ -36,7 +36,7 @@ class CControllerScheduledReportEdit extends CController {
 		return $ret;
 	}
 
-	protected function checkPermissions() {
+	protected function checkPermissions(): bool {
 		if (!$this->checkAccess(CRoleHelper::UI_REPORTS_SCHEDULED_REPORTS)) {
 			return false;
 		}
@@ -65,7 +65,7 @@ class CControllerScheduledReportEdit extends CController {
 		return true;
 	}
 
-	protected function doAction() {
+	protected function doAction(): void {
 		$db_defaults = DB::getDefaults('report');
 		$current_user_name = getUserFullname(CWebUser::$data);
 		$data = [

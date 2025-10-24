@@ -20,7 +20,7 @@ class CControllerScheduledReportEnable extends CController {
 		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
 	}
 
-	protected function checkInput() {
+	protected function checkInput(): bool {
 		$fields = [
 			'reportids' => 'required|array_db report.reportid'
 		];
@@ -34,7 +34,7 @@ class CControllerScheduledReportEnable extends CController {
 		return $ret;
 	}
 
-	protected function checkPermissions() {
+	protected function checkPermissions(): bool {
 		if (!$this->checkAccess(CRoleHelper::UI_REPORTS_SCHEDULED_REPORTS)
 				|| !$this->checkAccess(CRoleHelper::ACTIONS_MANAGE_SCHEDULED_REPORTS)) {
 			return false;
@@ -48,7 +48,7 @@ class CControllerScheduledReportEnable extends CController {
 		return ($report_count == count($this->getInput('reportids')));
 	}
 
-	protected function doAction() {
+	protected function doAction(): void {
 		$reports = [];
 
 		foreach ($this->getInput('reportids') as $reportid) {

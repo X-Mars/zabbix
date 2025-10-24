@@ -15,7 +15,7 @@
 
 class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 
-	protected function init() {
+	protected function init(): void {
 		$this->disableCsrfValidation();
 		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
 		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
@@ -39,7 +39,7 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 		]];
 	}
 
-	protected function checkInput() {
+	protected function checkInput(): bool {
 		$ret = $this->validateInput(self::getValidationRules()) && $this->validateSubscription();
 
 		if (!$ret) {
@@ -59,11 +59,6 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 		return $ret;
 	}
 
-	/**
-	 * Validate subscription to add or update.
-	 *
-	 * @return bool
-	 */
 	protected function validateSubscription(): bool {
 		$recipient_type = $this->getInput('recipient_type', ZBX_REPORT_RECIPIENT_TYPE_USER);
 		$recipientid = $this->getInput('recipientid');
@@ -84,12 +79,12 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 		return true;
 	}
 
-	protected function checkPermissions() {
+	protected function checkPermissions(): bool {
 		return $this->checkAccess(CRoleHelper::UI_REPORTS_SCHEDULED_REPORTS)
 			&& $this->checkAccess(CRoleHelper::ACTIONS_MANAGE_SCHEDULED_REPORTS);
 	}
 
-	protected function doAction() {
+	protected function doAction(): void {
 		$data = [];
 		$this->getInputs($data, ['recipientid', 'old_recipientid', 'recipient_type', 'recipient_name',
 			'recipient_inaccessible', 'creator_type', 'edit'

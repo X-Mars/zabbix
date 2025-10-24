@@ -21,7 +21,7 @@ class CControllerScheduledReportCreate extends CController {
 		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
 	}
 
-	protected function checkInput() {
+	protected function checkInput(): bool {
 		$ret = $this->validateInput(self::getValidationRules())
 			&& $this->validateWeekdays() && $this->validateTimePeriods() && $this->validateSubscriptions();
 

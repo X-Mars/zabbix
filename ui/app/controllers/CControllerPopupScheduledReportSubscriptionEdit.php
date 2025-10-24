@@ -16,11 +16,11 @@
 
 class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 
-	protected function init() {
+	protected function init(): void {
 		$this->disableCsrfValidation();
 	}
 
-	protected function checkInput() {
+	protected function checkInput(): bool {
 		$fields = [
 			'recipientid' =>			'id',
 			'old_recipientid' =>		'id',
@@ -52,11 +52,6 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 		return $ret;
 	}
 
-	/**
-	 * Validate subscription to add or update.
-	 *
-	 * @return bool
-	 */
 	protected function validateSubscription(): bool {
 		if (!$this->hasInput('update')) {
 			return true;
@@ -88,12 +83,12 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 		return true;
 	}
 
-	protected function checkPermissions() {
+	protected function checkPermissions(): bool {
 		return $this->checkAccess(CRoleHelper::UI_REPORTS_SCHEDULED_REPORTS)
 			&& $this->checkAccess(CRoleHelper::ACTIONS_MANAGE_SCHEDULED_REPORTS);
 	}
 
-	protected function doAction() {
+	protected function doAction(): void {
 		$data = [
 			'action' => $this->getAction(),
 			'edit' => 0,
