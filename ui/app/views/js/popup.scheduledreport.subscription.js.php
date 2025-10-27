@@ -56,6 +56,17 @@ window.scheduled_report_subscription_edit = new class {
 		})
 			.then((response) => response.json())
 			.then((response) => {
+				if (!overlays_stack.getById(overlay.dialogueid)) {
+					return false;
+				}
+
+				return response;
+			})
+			.then((response) => {
+				if (response === false) {
+					return;
+				}
+
 				if ('form_errors' in response) {
 					this.form.setErrors(response.form_errors, true, true);
 					this.form.renderErrors();
