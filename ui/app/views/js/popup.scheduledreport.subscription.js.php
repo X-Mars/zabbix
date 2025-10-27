@@ -91,7 +91,7 @@ window.scheduled_report_subscription_edit = new class {
 					messages = exception.error.messages;
 				}
 				else {
-					messages = [<?= json_encode(_('Unexpected server error.')) ?>];
+					messages = [t('Unexpected server error.')];
 				}
 
 				const message_box = makeMessageBox('bad', messages, title);
