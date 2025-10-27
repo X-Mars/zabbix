@@ -69,7 +69,7 @@ class CControllerScheduledReportEdit extends CController {
 		$db_defaults = DB::getDefaults('report');
 		$current_user_name = getUserFullname(CWebUser::$data);
 		$data = [
-			'reportid' => 0,
+			'reportid' => null,
 			'userid' => CWebUser::$data['userid'],
 			'name' => $db_defaults['name'],
 			'dashboardid' => 0,

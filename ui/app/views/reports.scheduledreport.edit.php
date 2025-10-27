@@ -24,11 +24,8 @@ $form = (new CForm())
 	->addItem((new CVar(CSRF_TOKEN_NAME, CCsrfTokenHelper::get('scheduledreport')))->removeId())
 	->setId('scheduledreport-form')
 	->setName('scheduledreport-form')
+	->addVar('reportid', $data['reportid'])
 	->setAttribute('aria-labelledby', CHtmlPage::PAGE_TITLE_ID);
-
-if ($data['reportid'] != 0) {
-	$form->addVar('reportid', $data['reportid']);
-}
 
 $form_grid = new CFormGrid();
 

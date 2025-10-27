@@ -24,8 +24,7 @@ window.scheduledreport_edit = new class {
 
 	old_dashboardid;
 
-	init({rules, reportid, dashboard_inaccessible}) {
-		this.reportid = reportid;
+	init({rules, dashboard_inaccessible}) {
 		this.overlay = overlays_stack.getById('scheduledreport.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form_element = document.getElementById('scheduledreport-form');
@@ -44,8 +43,9 @@ window.scheduledreport_edit = new class {
 	submit() {
 		const fields = this.form.getAllValues();
 		const curl = new Curl('zabbix.php');
+		const reportid = this.form.findFieldByName('reportid')?.getValue()
 
-		curl.setArgument('action', this.reportid ? 'scheduledreport.update' : 'scheduledreport.create');
+		curl.setArgument('action', reportid ? 'scheduledreport.update' : 'scheduledreport.create');
 
 		this.overlay.setLoading();
 		this.form.validateSubmit(fields).then((result) => {
@@ -54,7 +54,7 @@ window.scheduledreport_edit = new class {
 				return;
 			}
 
-			if (this.reportid && fields.dashboardid != this.old_dashboardid) {
+			if (reportid && fields.dashboardid != this.old_dashboardid) {
 				this.#confirmWithSanitizedSubscriptionFields(fields)
 					.then((fields_sanitized) => this.#post(curl.getUrl(), fields_sanitized))
 					.catch(() => this.overlay.unsetLoading());
@@ -66,7 +66,7 @@ window.scheduledreport_edit = new class {
 	}
 
 	clone({rules, title, buttons, current_user, owner_inaccessible}) {
-		this.reportid = null;
+		document.getElementById('reportid').remove();
 		this.form.reload(rules);
 		this.overlay.unsetLoading();
 		this.overlay.setProperties({title, buttons});
@@ -127,10 +127,12 @@ window.scheduledreport_edit = new class {
 
 	delete() {
 		const curl = new Curl('zabbix.php');
+		const reportid = this.form.findFieldByName('reportid').getValue()
+
 		curl.setArgument('action', 'scheduledreport.delete');
 		curl.setArgument(CSRF_TOKEN_NAME, <?= json_encode(CCsrfTokenHelper::get('scheduledreport')) ?>);
 
-		this.#post(curl.getUrl(), {reportids: [this.reportid]});
+		this.#post(curl.getUrl(), {reportids: [reportid]});
 	}
 
 	#post(url, data) {
