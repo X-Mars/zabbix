@@ -27,12 +27,12 @@ window.scheduled_report_subscription_edit = new class {
 
 	submit(overlay) {
 		const recipient = $('#recipientid').multiSelect('getData');
+
 		if (recipient.length) {
 			document.getElementById('recipient_name').value = recipient[0]['name'];
 		}
-		const fields = this.form.getAllValues();
 
-		fields.recipientid = fields.recipientid === undefined ? null : fields.recipientid;
+		const fields = this.form.getAllValues();
 
 		overlay.setLoading();
 		this.form
