@@ -25,7 +25,10 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 		return ['object', 'fields' => [
 			'old_recipientid' => ['id'],
 			'recipient_type' => ['integer', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER, ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]],
-			'recipientid' => ['id', 'required'],
+			'recipientid' => [
+				['db users.userid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]],
+				['db usrgrp.usrgrpid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]]
+			],
 			'recipient_name' => ['string'],
 			'recipient_inaccessible' => ['boolean'],
 			'creator_type' => ['integer', 'required', 'in' => [ZBX_REPORT_CREATOR_TYPE_USER, ZBX_REPORT_CREATOR_TYPE_RECIPIENT]],
