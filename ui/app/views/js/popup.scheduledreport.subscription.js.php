@@ -32,6 +32,8 @@ window.scheduled_report_subscription_edit = new class {
 		}
 		const fields = this.form.getAllValues();
 
+		fields.recipientid = fields.recipientid === undefined ? null : fields.recipientid;
+
 		overlay.setLoading();
 		this.form
 			.validateSubmit(fields)
