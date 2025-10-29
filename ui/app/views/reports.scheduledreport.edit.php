@@ -222,7 +222,6 @@ if ($data['reportid']) {
 	$buttons = [
 		[
 			'title' => _('Update'),
-			'class' => 'js-update',
 			'keepOpen' => true,
 			'isSubmit' => true,
 			'enabled' => $data['allowed_edit'],
@@ -230,7 +229,7 @@ if ($data['reportid']) {
 		],
 		[
 			'title' => _('Clone'),
-			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-clone']),
+			'class' => ZBX_STYLE_BTN_ALT,
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'enabled' => $data['allowed_edit'],
@@ -244,24 +243,23 @@ if ($data['reportid']) {
 				'buttons' => [
 					[
 						'title' => _('Add'),
-						'class' => 'js-add',
 						'keepOpen' => true,
 						'isSubmit' => true,
 						'action' => 'scheduledreport_edit.submit();'
 					],
 					[
 						'title' => _('Cancel'),
-						'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-cancel']),
+						'class' => ZBX_STYLE_BTN_ALT,
 						'cancel' => true,
 						'action' => ''
 					]
 				],
-				'rules' => (new CFormValidator(CControllerScheduledReportCreate::getValidationRules()))->getRules()
+				'rules' => $data['js_validation_create_rules']
 			]).');'
 		],
 		[
 			'title' => _('Test'),
-			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-test']),
+			'class' => ZBX_STYLE_BTN_ALT,
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'enabled' => $data['allowed_edit'],
@@ -270,7 +268,7 @@ if ($data['reportid']) {
 		[
 			'title' => _('Delete'),
 			'confirmation' => _('Delete scheduled report?'),
-			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-delete']),
+			'class' => ZBX_STYLE_BTN_ALT,
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'enabled' => $data['allowed_edit'],
@@ -283,14 +281,13 @@ else {
 	$buttons = [
 		[
 			'title' => _('Add'),
-			'class' => 'js-add',
 			'keepOpen' => true,
 			'isSubmit' => true,
 			'action' => 'scheduledreport_edit.submit();'
 		],
 		[
 			'title' => _('Test'),
-			'class' => implode(' ', [ZBX_STYLE_BTN_ALT, 'js-test']),
+			'class' => ZBX_STYLE_BTN_ALT,
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'enabled' => $data['allowed_edit'],

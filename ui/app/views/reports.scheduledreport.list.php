@@ -20,6 +20,7 @@
  */
 
 $this->includeJsFile('reports.scheduledreport.list.js.php');
+
 if ($data['uncheck']) {
 	uncheckTableRows('scheduledreport');
 }

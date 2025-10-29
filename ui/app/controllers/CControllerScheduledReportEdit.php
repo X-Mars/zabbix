@@ -286,6 +286,10 @@ class CControllerScheduledReportEdit extends CController {
 			: CControllerScheduledReportCreate::getValidationRules()
 		))->getRules();
 
+		$data['js_validation_create_rules'] = $this->hasInput('reportid')
+			? (new CFormValidator(CControllerScheduledReportCreate::getValidationRules()))->getRules()
+			: $data['js_validation_rules'];
+
 		$this->setResponse(new CControllerResponseData($data));
 	}
 }
