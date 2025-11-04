@@ -55,8 +55,7 @@ if ($data['recipient_type'] == ZBX_REPORT_RECIPIENT_TYPE_USER) {
 				'dstfrm' => $form->getName(),
 				'dstfld1' => 'recipientid'
 			]
-		],
-		'add_post_js' => false
+		]
 	]);
 }
 else {
@@ -77,8 +76,7 @@ else {
 				'dstfrm' => $form->getName(),
 				'dstfld1' => 'recipientid'
 			]
-		],
-		'add_post_js' => false
+		]
 	]);
 }
 
@@ -121,8 +119,7 @@ $output = [
 	'body' => $form->toString(),
 	'script_inline' =>
 		$this->readJsFile('popup.scheduledreport.subscription.js.php').
-		$recipient_multiselect->getPostJS().
-		'scheduled_report_subscription_edit.init('.json_encode([
+		getPagePostJs().';scheduled_report_subscription_edit.init('.json_encode([
 			'rules' => $data['js_validation_rules']
 		]).');',
 	'buttons' => [
