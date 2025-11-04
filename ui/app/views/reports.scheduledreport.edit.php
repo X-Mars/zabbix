@@ -263,7 +263,7 @@ if ($data['reportid']) {
 			'keepOpen' => true,
 			'isSubmit' => false,
 			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.test();'
+			'action' => 'scheduledreport_edit.test(event);'
 		],
 		[
 			'title' => _('Delete'),

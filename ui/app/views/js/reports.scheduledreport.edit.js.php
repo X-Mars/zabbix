@@ -102,7 +102,7 @@ window.scheduledreport_edit = new class {
 		}
 	}
 
-	test() {
+	test(event) {
 		this.form.findFieldByName('name').setChanged();
 		this.form.findFieldByName('dashboardid').setChanged();
 		this.form
@@ -119,7 +119,8 @@ window.scheduledreport_edit = new class {
 					now: Math.floor(Date.now() / 1000),
 					[CSRF_TOKEN_NAME]: <?= json_encode(CCsrfTokenHelper::get('scheduledreport')) ?>
 				}, {
-					dialogue_class: 'modal-popup-medium'
+					dialogue_class: 'modal-popup-medium',
+					trigger_element: event.target
 				});
 				overlay.$dialogue[0].addEventListener('dialogue.close', () => this.overlay.unsetLoading());
 			});
