@@ -222,57 +222,31 @@ if ($data['reportid']) {
 	$buttons = [
 		[
 			'title' => _('Update'),
+			'class' => 'js-submit',
 			'keepOpen' => true,
 			'isSubmit' => true,
-			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.submit(event);'
+			'enabled' => $data['allowed_edit']
 		],
 		[
 			'title' => _('Clone'),
-			'class' => ZBX_STYLE_BTN_ALT,
+			'class' => ZBX_STYLE_BTN_ALT.' js-clone',
 			'keepOpen' => true,
 			'isSubmit' => false,
-			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.clone('.json_encode([
-				'owner_inaccessible' => array_key_exists('owner_inaccessible', $data),
-				'current_user' => [
-					'id' => CWebUser::getId(),
-					'name' => CWebUser::getFullName()
-				],
-				'title' => _('New scheduled report'),
-				'buttons' => [
-					[
-						'title' => _('Add'),
-						'keepOpen' => true,
-						'isSubmit' => true,
-						'action' => 'scheduledreport_edit.submit();'
-					],
-					[
-						'title' => _('Cancel'),
-						'class' => ZBX_STYLE_BTN_ALT,
-						'cancel' => true,
-						'action' => ''
-					]
-				],
-				'rules' => $data['js_validation_create_rules']
-			]).');'
+			'enabled' => $data['allowed_edit']
 		],
 		[
 			'title' => _('Test'),
-			'class' => ZBX_STYLE_BTN_ALT,
+			'class' => ZBX_STYLE_BTN_ALT.' js-test',
 			'keepOpen' => true,
 			'isSubmit' => false,
-			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.test(event);'
+			'enabled' => $data['allowed_edit']
 		],
 		[
 			'title' => _('Delete'),
-			'confirmation' => _('Delete scheduled report?'),
-			'class' => ZBX_STYLE_BTN_ALT,
+			'class' => ZBX_STYLE_BTN_ALT.' js-delete',
 			'keepOpen' => true,
 			'isSubmit' => false,
-			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.delete();'
+			'enabled' => $data['allowed_edit']
 		]
 	];
 }
@@ -281,17 +255,16 @@ else {
 	$buttons = [
 		[
 			'title' => _('Add'),
+			'class' => 'js-submit',
 			'keepOpen' => true,
-			'isSubmit' => true,
-			'action' => 'scheduledreport_edit.submit();'
+			'isSubmit' => true
 		],
 		[
 			'title' => _('Test'),
-			'class' => ZBX_STYLE_BTN_ALT,
+			'class' => ZBX_STYLE_BTN_ALT.' js-test',
 			'keepOpen' => true,
 			'isSubmit' => false,
-			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.test();'
+			'enabled' => $data['allowed_edit']
 		]
 	];
 }
@@ -303,7 +276,12 @@ $form->addItem(
 	(new CScriptTag('scheduledreport_edit.init('.json_encode([
 		'rules' => $data['js_validation_rules'],
 		'reportid' => $data['reportid'],
-		'dashboard_inaccessible' => $data['dashboard_inaccessible']
+		'dashboard_inaccessible' => $data['dashboard_inaccessible'],
+		'rules_for_clone' => $data['js_validation_create_rules'],
+		'owner_inaccessible' => array_key_exists('owner_inaccessible', $data),
+		'allowed_edit' => $data['allowed_edit'],
+		'current_user_id' => CWebUser::getId(),
+		'current_user_name' => CWebUser::getFullName()
 	]).');'))->setOnDocumentReady()
 );
 

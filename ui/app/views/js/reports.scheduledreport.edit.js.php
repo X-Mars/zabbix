@@ -24,7 +24,13 @@ window.scheduledreport_edit = new class {
 
 	old_dashboardid;
 
-	init({rules, dashboard_inaccessible}) {
+	init({rules, rules_for_clone, dashboard_inaccessible, owner_inaccessible, current_user_id, current_user_name,
+			allowed_edit}) {
+		this.allowed_edit = allowed_edit;
+		this.current_user_id = current_user_id;
+		this.current_user_name = current_user_name;
+		this.owner_inaccessible = owner_inaccessible;
+		this.rules_for_clone = rules_for_clone;
 		this.overlay = overlays_stack.getById('scheduledreport.edit');
 		this.dialogue = this.overlay.$dialogue[0];
 		this.form_element = document.getElementById('scheduledreport-form');
@@ -40,7 +46,7 @@ window.scheduledreport_edit = new class {
 		this.#initActions();
 	}
 
-	submit(event) {
+	#submit(event) {
 		const fields = this.form.getAllValues();
 		const curl = new Curl('zabbix.php');
 		const reportid = this.form.findFieldByName('reportid')?.getValue()
@@ -65,11 +71,33 @@ window.scheduledreport_edit = new class {
 		});
 	}
 
-	clone({rules, title, buttons, current_user, owner_inaccessible}) {
+	#clone() {
 		document.getElementById('reportid').remove();
-		this.form.reload(rules);
+		this.form.reload(this.rules_for_clone);
 		this.overlay.unsetLoading();
-		this.overlay.setProperties({title, buttons});
+		const buttons = [
+			{
+				title: <?= json_encode(_('Add')) ?>,
+				class: 'js-submit',
+				keepOpen: true,
+				isSubmit: true
+			},
+			{
+				title: <?= json_encode(_('Test')) ?>,
+				class: <?= json_encode(ZBX_STYLE_BTN_ALT) ?> + ' js-test',
+				keepOpen: true,
+				isSubmit: false,
+				enabled: this.allowed_edit
+			},
+			{
+				title: <?= json_encode(_('Cancel')) ?>,
+				class: <?= json_encode(ZBX_STYLE_BTN_ALT) ?>,
+				cancel: true,
+				action: ''
+			}
+		];
+		this.overlay.setProperties({title: <?= json_encode(_('New scheduled report')) ?>, buttons});
+		this.#initFormActions();
 		this.overlay.recoverFocus();
 		this.overlay.containFocus();
 
@@ -84,17 +112,17 @@ window.scheduledreport_edit = new class {
 				if (subscription.recipient_type == <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>
 						&& subscription.creator_type != <?= ZBX_REPORT_CREATOR_TYPE_RECIPIENT ?>) {
 					subscription.creator_inaccessible = 0;
-					subscription.creator_name = current_user.name;
-					subscription.creatorid = current_user.id;
+					subscription.creator_name = this.current_user_name;
+					subscription.creatorid = this.current_user_id;
 				}
 
 				return subscription;
 			})
 			.forEach((subscription) => new ReportSubscription(subscription));
 
-		if (owner_inaccessible) {
+		if (this.owner_inaccessible) {
 			jQuery('#userid').multiSelect('clean');
-			jQuery('#userid').multiSelect('addData', [current_user]);
+			jQuery('#userid').multiSelect('addData', [{id: this.current_user_id, name: this.current_user_name}]);
 		}
 
 		if (this.dashboard_inaccessible) {
@@ -102,7 +130,7 @@ window.scheduledreport_edit = new class {
 		}
 	}
 
-	test(event) {
+	#test(event) {
 		this.form.findFieldByName('name').setChanged();
 		this.form.findFieldByName('dashboardid').setChanged();
 		this.form
@@ -126,7 +154,12 @@ window.scheduledreport_edit = new class {
 			});
 	}
 
-	delete() {
+	#delete() {
+		if (!window.confirm(<?= json_encode(_('Delete scheduled report?')) ?>)) {
+			this.overlay.unsetLoading();
+			return;
+		}
+
 		const curl = new Curl('zabbix.php');
 		const reportid = this.form.findFieldByName('reportid').getValue()
 
@@ -182,7 +215,22 @@ window.scheduledreport_edit = new class {
 			});
 	}
 
+	#initFormActions() {
+		this.overlay.$dialogue.$footer[0].querySelector('.js-test')
+			.addEventListener('click', (event) => this.#test(event));
+
+		this.overlay.$dialogue.$footer[0].querySelector('.js-submit')
+			.addEventListener('click', (event) => this.#submit(event));
+
+		this.overlay.$dialogue.$footer[0].querySelector('.js-clone')
+			?.addEventListener('click', (event) => this.#clone());
+
+		this.overlay.$dialogue.$footer[0].querySelector('.js-delete')
+			?.addEventListener('click', (event) => this.#delete());
+	}
+
 	#initActions() {
+		this.#initFormActions();
 		document
 			.getElementById('cycle')
 			.addEventListener('change', (event) => {
