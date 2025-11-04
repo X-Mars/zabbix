@@ -225,7 +225,7 @@ if ($data['reportid']) {
 			'keepOpen' => true,
 			'isSubmit' => true,
 			'enabled' => $data['allowed_edit'],
-			'action' => 'scheduledreport_edit.submit();'
+			'action' => 'scheduledreport_edit.submit(event);'
 		],
 		[
 			'title' => _('Clone'),
