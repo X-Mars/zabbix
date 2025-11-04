@@ -125,9 +125,9 @@ $output = [
 	'buttons' => [
 		[
 			'title' => $data['edit'] ? _('Update') : _('Add'),
+			'class' => 'js-submit',
 			'keepOpen' => true,
-			'isSubmit' => true,
-			'action' => 'return window.scheduled_report_subscription_edit.submit(overlay);'
+			'isSubmit' => true
 		]
 	]
 ];

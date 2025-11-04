@@ -23,9 +23,15 @@ window.scheduled_report_subscription_edit = new class {
 	init({rules}) {
 		this.form_element = document.getElementById('subscription-form');
 		this.form = new CForm(this.form_element, rules);
+		this.overlay = overlays_stack.end();
+		this.#initActions();
 	}
 
-	submit(overlay) {
+	#initActions() {
+		this.overlay.$dialogue.$footer[0].querySelector('.js-submit').addEventListener('click', () => this.#submit());
+	}
+
+	#submit() {
 		const recipient = $('#recipientid').multiSelect('getData');
 		if (recipient.length) {
 			document.getElementById('recipient_name').value = recipient[0]['name'];
@@ -34,20 +40,20 @@ window.scheduled_report_subscription_edit = new class {
 
 		fields.recipientid = fields.recipientid === undefined ? null : fields.recipientid;
 
-		overlay.setLoading();
+		this.overlay.setLoading();
 		this.form
 			.validateSubmit(fields)
 			.then((result) => {
 				if (!result) {
-					overlay.unsetLoading();
+					this.overlay.unsetLoading();
 					return;
 				}
 
-				this.#post(fields, overlay);
+				this.#post(fields, this.overlay);
 			});
 	}
 
-	#post(data, overlay) {
+	#post(data) {
 		const url = new Curl(this.form_element.getAttribute('action'));
 		url.setArgument('action', 'popup.scheduledreport.subscription.check');
 
@@ -58,7 +64,7 @@ window.scheduled_report_subscription_edit = new class {
 		})
 			.then((response) => response.json())
 			.then((response) => {
-				if (!overlays_stack.getById(overlay.dialogueid)) {
+				if (!overlays_stack.getById(this.overlay.dialogueid)) {
 					return false;
 				}
 
@@ -78,13 +84,13 @@ window.scheduled_report_subscription_edit = new class {
 					throw {error: response.error};
 				}
 
-				new ReportSubscription(response, response.edit ? overlay.element.closest('tr') : null);
+				new ReportSubscription(response, response.edit ? this.overlay.element.closest('tr') : null);
 
-				overlayDialogueDestroy(overlay.dialogueid);
+				overlayDialogueDestroy(this.overlay.dialogueid);
 			})
 			.catch((exception) => {
 				console.log(exception);
-				overlay.$dialogue.find('.<?= ZBX_STYLE_MSG_BAD ?>').remove();
+				this.overlay.$dialogue.find('.<?= ZBX_STYLE_MSG_BAD ?>').remove();
 
 				let title, messages;
 
@@ -100,6 +106,6 @@ window.scheduled_report_subscription_edit = new class {
 
 				message_box.insertBefore(this.form_element);
 			})
-			.finally(() => overlay.unsetLoading());
+			.finally(() => this.overlay.unsetLoading());
 	}
 }
