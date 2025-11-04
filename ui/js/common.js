@@ -558,7 +558,7 @@ function removeFromOverlaysStack(dialogueid, return_focus = true) {
 	const overlay = overlays_stack.removeById(dialogueid);
 
 	if (overlay && return_focus) {
-		if (overlay.element) {
+		if (overlay.element !== undefined) {
 			const element = overlay.element instanceof jQuery ? overlay.element[0] : overlay.element;
 
 			element.focus({preventScroll: true});
