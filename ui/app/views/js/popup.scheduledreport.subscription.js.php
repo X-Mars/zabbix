@@ -23,7 +23,7 @@ window.scheduled_report_subscription_edit = new class {
 	init({rules}) {
 		this.form_element = document.getElementById('subscription-form');
 		this.form = new CForm(this.form_element, rules);
-		this.overlay = overlays_stack.end();
+		this.overlay = overlays_stack.getById('scheduledreport.edit.subscription');
 		this.#initActions();
 	}
 
