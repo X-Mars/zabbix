@@ -280,8 +280,8 @@ $form->addItem(
 		'rules_for_clone' => $data['js_validation_create_rules'],
 		'owner_inaccessible' => array_key_exists('owner_inaccessible', $data),
 		'allowed_edit' => $data['allowed_edit'],
-		'current_user_id' => CWebUser::getId(),
-		'current_user_name' => CWebUser::getFullName()
+		'current_user_id' => CWebUser::$data['userid'],
+		'current_user_name' => getUserFullname(CWebUser::$data)
 	]).');'))->setOnDocumentReady()
 );
 

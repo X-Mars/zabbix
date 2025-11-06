@@ -203,18 +203,6 @@ class CWebUser {
 		return (self::$data) ? substr(self::$data['lang'], 0, strpos(self::$data['lang'], '_')) : 'en';
 	}
 
-	public static function getId(): string {
-		return self::$data ? self::$data['userid'] : '';
-	}
-
-	public static function getFullName(): string {
-		return self::$data ? getUserFullname([
-			'username' => self::$data['username'],
-			'name' => self::$data['name'],
-			'surname' => self::$data['surname']
-		]) : '';
-	}
-
 	/**
 	 * Get user IP address.
 	 *
