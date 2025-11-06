@@ -33,9 +33,11 @@ window.scheduled_report_subscription_edit = new class {
 
 	#submit() {
 		const recipient = $('#recipientid').multiSelect('getData');
+
 		if (recipient.length) {
 			document.getElementById('recipient_name').value = recipient[0]['name'];
 		}
+
 		const fields = this.form.getAllValues();
 
 		fields.recipientid = fields.recipientid === undefined ? null : fields.recipientid;
@@ -64,17 +66,6 @@ window.scheduled_report_subscription_edit = new class {
 		})
 			.then((response) => response.json())
 			.then((response) => {
-				if (!overlays_stack.getById(this.overlay.dialogueid)) {
-					return false;
-				}
-
-				return response;
-			})
-			.then((response) => {
-				if (response === false) {
-					return;
-				}
-
 				if ('form_errors' in response) {
 					this.form.setErrors(response.form_errors, true, true);
 					this.form.renderErrors();
@@ -89,7 +80,6 @@ window.scheduled_report_subscription_edit = new class {
 				overlayDialogueDestroy(this.overlay.dialogueid);
 			})
 			.catch((exception) => {
-				console.log(exception);
 				this.overlay.$dialogue.find('.<?= ZBX_STYLE_MSG_BAD ?>').remove();
 
 				let title, messages;
@@ -108,4 +98,4 @@ window.scheduled_report_subscription_edit = new class {
 			})
 			.finally(() => this.overlay.unsetLoading());
 	}
-}
+};
