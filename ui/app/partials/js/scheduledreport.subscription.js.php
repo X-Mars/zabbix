@@ -90,10 +90,6 @@
 
 					if (this.data.recipient_type == <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>) {
 						parameters.exclude = recipient.parentNode.parentNode.querySelector('[name*=exclude]').value;
-						parameters.userids = Array.from(userids);
-					}
-					else {
-						parameters.usrgrpids = Array.from(usrgrpids);
 					}
 
 					PopUp('popup.scheduledreport.subscription.edit', parameters, {
@@ -239,8 +235,7 @@
 
 			elem.addEventListener('click', (event) => {
 				PopUp('popup.scheduledreport.subscription.edit', {
-					recipient_type: <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>,
-					userids: Array.from(userids)
+					recipient_type: <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>
 				}, {dialogueid: 'scheduledreport.subscription.edit', dialogue_class: 'modal-popup-medium',
 					trigger_element: event.target
 				});
@@ -256,8 +251,7 @@
 
 			elem.addEventListener('click', (event) => {
 				PopUp('popup.scheduledreport.subscription.edit', {
-					recipient_type: <?= ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP ?>,
-					usrgrpids: Array.from(usrgrpids)
+					recipient_type: <?= ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP ?>
 				}, {dialogueid: 'scheduledreport.subscription.edit', dialogue_class: 'modal-popup-medium',
 					trigger_element: event.target
 				});

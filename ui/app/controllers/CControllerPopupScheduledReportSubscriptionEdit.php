@@ -31,13 +31,10 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 			'creator_type' =>			'in '.ZBX_REPORT_CREATOR_TYPE_USER.','.ZBX_REPORT_CREATOR_TYPE_RECIPIENT,
 			'creator_name' =>			'string',
 			'exclude' =>				'in '.ZBX_REPORT_EXCLUDE_USER_FALSE.','.ZBX_REPORT_EXCLUDE_USER_TRUE,
-			'userids' =>				'array',
-			'usrgrpids' =>				'array',
-			'edit' =>					'in 1',
-			'update' =>					'in 1'
+			'edit' =>					'in 1'
 		];
 
-		$ret = $this->validateInput($fields) && $this->validateSubscription();
+		$ret = $this->validateInput($fields);
 
 		if (!$ret) {
 			$this->setResponse(
@@ -50,37 +47,6 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 		}
 
 		return $ret;
-	}
-
-	protected function validateSubscription(): bool {
-		if (!$this->hasInput('update')) {
-			return true;
-		}
-
-		$recipientid = $this->getInput('recipientid', 0);
-
-		if (!$recipientid) {
-			error(_s('Incorrect value for field "%1$s": %2$s.', _('Recipient'), _('cannot be empty')));
-
-			return false;
-		}
-
-		$recipient_type = $this->getInput('recipient_type', ZBX_REPORT_RECIPIENT_TYPE_USER);
-
-		if (($recipient_type == ZBX_REPORT_RECIPIENT_TYPE_USER
-					&& in_array($recipientid, $this->getInput('userids', [])))
-				|| ($recipient_type == ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP
-					&& in_array($recipientid, $this->getInput('usrgrpids', [])))) {
-			if ($this->getInput('edit', 0) == 1 && $recipientid == $this->getInput('old_recipientid', 0)) {
-				return true;
-			}
-
-			error(_('Recipient already exists.'));
-
-			return false;
-		}
-
-		return true;
 	}
 
 	protected function checkPermissions(): bool {

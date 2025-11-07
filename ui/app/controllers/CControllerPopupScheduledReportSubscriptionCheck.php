@@ -36,14 +36,12 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 				'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE, ZBX_REPORT_EXCLUDE_USER_TRUE],
 				'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
 			],
-			'userids' => ['array', 'field' => ['db users.userid'], 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]],
-			'usrgrpids' => ['array', 'field' => ['db usrgrp.usrgrpid'], 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]],
 			'edit' => ['boolean']
 		]];
 	}
 
 	protected function checkInput(): bool {
-		$ret = $this->validateInput(self::getValidationRules()) && $this->validateSubscription();
+		$ret = $this->validateInput(self::getValidationRules());
 
 		if (!$ret) {
 			$form_errors = $this->getValidationError();
@@ -60,26 +58,6 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 		}
 
 		return $ret;
-	}
-
-	protected function validateSubscription(): bool {
-		$recipient_type = $this->getInput('recipient_type', ZBX_REPORT_RECIPIENT_TYPE_USER);
-		$recipientid = $this->getInput('recipientid');
-
-		if (($recipient_type == ZBX_REPORT_RECIPIENT_TYPE_USER
-					&& in_array($recipientid, $this->getInput('userids', [])))
-				|| ($recipient_type == ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP
-					&& in_array($recipientid, $this->getInput('usrgrpids', [])))) {
-			if ($this->getInput('edit', 0) == 1 && $recipientid == $this->getInput('old_recipientid', 0)) {
-				return true;
-			}
-
-			$this->addFormError('/recipientid', _('Recipient already exists.'), CFormValidator::ERROR_LEVEL_PRIMARY);
-
-			return false;
-		}
-
-		return true;
 	}
 
 	protected function checkPermissions(): bool {

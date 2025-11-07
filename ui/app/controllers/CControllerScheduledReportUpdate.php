@@ -70,8 +70,7 @@ class CControllerScheduledReportUpdate extends CController {
 	}
 
 	protected function checkInput(): bool {
-		$ret = $this->validateInput(self::getValidationRules())
-			&& $this->validateWeekdays() && $this->validateTimePeriods() && $this->validateSubscriptions();
+		$ret = $this->validateInput(self::getValidationRules());
 
 		if (!$ret) {
 			$form_errors = $this->getValidationError();
@@ -88,65 +87,6 @@ class CControllerScheduledReportUpdate extends CController {
 		}
 
 		return $ret;
-	}
-
-	private function validateWeekdays(): bool {
-		$cycle = $this->getInput('cycle', ZBX_REPORT_CYCLE_DAILY);
-		$weekdays = array_sum($this->getInput('weekdays', []));
-
-		if ($cycle == ZBX_REPORT_CYCLE_WEEKLY && $weekdays == 0) {
-			$message = _s('Incorrect value for field "%1$s": %2$s.', _('Repeat on'),
-				_('at least one day of the week must be selected'));
-
-			$this->addFormError('/weekdays', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
-
-			return false;
-		}
-
-		return true;
-	}
-
-	private function validateSubscriptions(): bool {
-		foreach ($this->getInput('subscriptions', []) as $subscription) {
-			if ($subscription['recipient_type'] == ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP) {
-				return true;
-			}
-
-			if ($subscription['exclude'] == ZBX_REPORT_EXCLUDE_USER_FALSE) {
-				return true;
-			}
-		}
-
-		$message = _('If no user groups are specified, at least one user must be included in the mailing list.');
-		$this->addFormError('/subscriptions', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
-
-		return false;
-	}
-
-	protected function validateTimePeriods(): bool {
-		$active_since = $this->getInput('active_since', '');
-		$active_till = $this->getInput('active_till', '');
-
-		if ($active_since === '' || $active_till === '') {
-			return true;
-		}
-
-		$absolute_time_parser = new CAbsoluteTimeParser();
-
-		$absolute_time_parser->parse($active_since);
-		$active_since_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
-
-		$absolute_time_parser->parse($active_till);
-		$active_till_ts = $absolute_time_parser->getDateTime(true)->getTimestamp();
-
-		if ($active_since_ts >= $active_till_ts) {
-			$message = _s('"%1$s" must be an empty string or greater than "%2$s".', _('End date'), _('Start date'));
-			$this->addFormError('/active_till', $message, CFormValidator::ERROR_LEVEL_PRIMARY);
-
-			return false;
-		}
-
-		return true;
 	}
 
 	protected function checkPermissions(): bool {
