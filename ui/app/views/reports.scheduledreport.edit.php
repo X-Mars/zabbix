@@ -290,7 +290,7 @@ $output = [
 	'doc_url' => CDocHelper::getUrl(CDocHelper::REPORTS_SCHEDULEDREPORT_EDIT),
 	'body' => $form->toString(),
 	'buttons' => $buttons,
-	'script_inline' => getPagePostJs().';'.$this->readJsFile('reports.scheduledreport.edit.js.php'),
+	'script_inline' => getPagePostJs().$this->readJsFile('reports.scheduledreport.edit.js.php'),
 	'dialogue_class' => 'modal-popup-static'
 ];
 

@@ -119,7 +119,7 @@ $output = [
 	'body' => $form->toString(),
 	'script_inline' =>
 		$this->readJsFile('popup.scheduledreport.subscription.js.php').
-		getPagePostJs().';scheduled_report_subscription_edit.init('.json_encode([
+		getPagePostJs().'scheduled_report_subscription_edit.init('.json_encode([
 			'rules' => $data['js_validation_rules']
 		]).');',
 	'buttons' => [
