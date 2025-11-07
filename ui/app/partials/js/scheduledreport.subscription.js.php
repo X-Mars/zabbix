@@ -97,7 +97,7 @@
 					}
 
 					PopUp('popup.scheduledreport.subscription.edit', parameters, {
-						dialogueid: 'scheduledreport.edit.subscription', dialogue_class: 'modal-popup-medium',
+						dialogueid: 'scheduledreport.subscription.edit', dialogue_class: 'modal-popup-medium',
 						trigger_element: event.target
 					});
 				});
@@ -241,7 +241,7 @@
 				PopUp('popup.scheduledreport.subscription.edit', {
 					recipient_type: <?= ZBX_REPORT_RECIPIENT_TYPE_USER ?>,
 					userids: Array.from(userids)
-				}, {dialogueid: 'scheduledreport.edit.subscription', dialogue_class: 'modal-popup-medium',
+				}, {dialogueid: 'scheduledreport.subscription.edit', dialogue_class: 'modal-popup-medium',
 					trigger_element: event.target
 				});
 			});
@@ -258,7 +258,7 @@
 				PopUp('popup.scheduledreport.subscription.edit', {
 					recipient_type: <?= ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP ?>,
 					usrgrpids: Array.from(usrgrpids)
-				}, {dialogueid: 'scheduledreport.edit.subscription', dialogue_class: 'modal-popup-medium',
+				}, {dialogueid: 'scheduledreport.subscription.edit', dialogue_class: 'modal-popup-medium',
 					trigger_element: event.target
 				});
 			});
