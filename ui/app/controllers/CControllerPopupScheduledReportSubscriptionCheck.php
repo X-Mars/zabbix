@@ -66,10 +66,19 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 			groupids: []
 		));
 
-		$ret = $ret && $this->validateInput(self::getValidationRules(
-			userids: $this->getInput('userids', []),
-			groupids: $this->getInput('usrgrpids', [])
-		));
+		$userids = $this->getInput('userids', []);
+		$groupids = $this->getInput('usrgrpids', []);
+
+		if ($this->getInput('edit', false)) {
+			if ($this->getInput('recipient_type') == ZBX_REPORT_RECIPIENT_TYPE_USER) {
+				$userids = array_values(array_diff($userids, [$this->getInput('old_recipientid')]));
+			}
+			else {
+				$groupids = array_values(array_diff($groupids, [$this->getInput('old_recipientid')]));
+			}
+		}
+
+		$ret = $ret && $this->validateInput(self::getValidationRules(userids: $userids, groupids: $groupids));
 
 		if (!$ret) {
 			$form_errors = $this->getValidationError();

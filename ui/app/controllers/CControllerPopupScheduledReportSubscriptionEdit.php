@@ -83,16 +83,25 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 			? [['id' => $data['recipientid'], 'name' => $data['recipient_name']]]
 			: [];
 
+		$userids = $this->getInput('userids', []);
+		$groupids = $this->getInput('usrgrpids', []);
+
+		if ($this->getInput('edit', false)) {
+			if ($this->getInput('recipient_type') == ZBX_REPORT_RECIPIENT_TYPE_USER) {
+				$userids = array_values(array_diff($userids, [$this->getInput('old_recipientid')]));
+			}
+			else {
+				$groupids = array_values(array_diff($groupids, [$this->getInput('old_recipientid')]));
+			}
+		}
+
 		$data += [
 			'title' => _('Subscription'),
 			'user' => [
 				'debug_mode' => $this->getDebugMode()
 			],
 			'js_validation_rules' => (new CFormValidator(
-				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules(
-					userids: $this->getInput('userids', []),
-					groupids: $this->getInput('usrgrpids', [])
-				)
+				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules($userids, $groupids)
 			))->getRules()
 		];
 
