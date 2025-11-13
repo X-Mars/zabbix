@@ -30,6 +30,8 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 			'creatorid' =>				'id',
 			'creator_type' =>			'in '.ZBX_REPORT_CREATOR_TYPE_USER.','.ZBX_REPORT_CREATOR_TYPE_RECIPIENT,
 			'creator_name' =>			'string',
+			'userids' =>				'array',
+			'usrgrpids' =>				'array',
 			'exclude' =>				'in '.ZBX_REPORT_EXCLUDE_USER_FALSE.','.ZBX_REPORT_EXCLUDE_USER_TRUE,
 			'edit' =>					'in 1'
 		];
@@ -87,7 +89,10 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 				'debug_mode' => $this->getDebugMode()
 			],
 			'js_validation_rules' => (new CFormValidator(
-				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules()
+				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules(
+					userids: $this->getInput('userids', []),
+					groupids: $this->getInput('usrgrpids', [])
+				)
 			))->getRules()
 		];
 

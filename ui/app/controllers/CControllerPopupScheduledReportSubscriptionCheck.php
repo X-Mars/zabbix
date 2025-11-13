@@ -21,14 +21,34 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
 	}
 
-	public static function getValidationRules(): array {
+	public static function getValidationRules(array $userids, array $groupids): array {
+		$user_rules = $userids
+			? ['not_in' => $userids, 'messages' => ['not_in' => _('Recipient already exists.')]]
+			: [];
+
+		$group_rules = $groupids
+			? ['not_in' => $groupids, 'messages' => ['not_in' => _('Recipient already exists.')]]
+			: [];
+
 		return ['object', 'fields' => [
 			'old_recipientid' => ['id'],
 			'recipient_type' => ['integer', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER, ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]],
 			'recipientid' => [
-				['db users.userid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]],
-				['db usrgrp.usrgrpid', 'required', 'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]]
+				['db users.userid', 'required',
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
+				],
+				['string', 'required', ...$user_rules,
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
+				],
+				['db usrgrp.usrgrpid', 'required',
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]
+				],
+				['string', 'required', ...$group_rules,
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]
+				]
 			],
+			'userids' => ['array', 'field' => ['db users.userid']],
+			'usrgrpids' => ['array', 'field' => ['db usrgrp.usrgrpid']],
 			'recipient_name' => ['string'],
 			'recipient_inaccessible' => ['boolean'],
 			'creator_type' => ['integer', 'required', 'in' => [ZBX_REPORT_CREATOR_TYPE_USER, ZBX_REPORT_CREATOR_TYPE_RECIPIENT]],
@@ -41,7 +61,15 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 	}
 
 	protected function checkInput(): bool {
-		$ret = $this->validateInput(self::getValidationRules());
+		$ret = $this->validateInput(self::getValidationRules(
+			userids: [],
+			groupids: []
+		));
+
+		$ret = $ret && $this->validateInput(self::getValidationRules(
+			userids: $this->getInput('userids', []),
+			groupids: $this->getInput('usrgrpids', [])
+		));
 
 		if (!$ret) {
 			$form_errors = $this->getValidationError();
