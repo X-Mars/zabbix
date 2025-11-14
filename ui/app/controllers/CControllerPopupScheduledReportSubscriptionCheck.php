@@ -22,36 +22,43 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 	}
 
 	public static function getValidationRules(array $userids, array $groupids): array {
-		$user_rules = $userids
-			? ['not_in' => $userids, 'messages' => ['not_in' => _('Recipient already exists.')]]
-			: [];
+		$recipient_rules = [];
 
-		$group_rules = $groupids
-			? ['not_in' => $groupids, 'messages' => ['not_in' => _('Recipient already exists.')]]
-			: [];
+		if ($userids) {
+			$recipient_rules[] = ['integer', 'not_in' => $userids,
+				'messages' => ['not_in' => _('Recipient already exists.')],
+				'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
+			];
+		}
+
+		if ($groupids) {
+			$recipient_rules[] = ['integer', 'not_in' => $groupids,
+				'messages' => ['not_in' => _('Recipient already exists.')],
+				'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]
+			];
+		}
+
 
 		return ['object', 'fields' => [
 			'old_recipientid' => ['id'],
-			'recipient_type' => ['integer', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER, ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]],
-			'recipientid' => [
+			'recipient_type' => ['integer',
+				'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER, ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]
+			],
+			'recipientid' => array_merge($recipient_rules, [
 				['db users.userid', 'required',
-					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
-				],
-				['string', 'required', ...$user_rules,
 					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
 				],
 				['db usrgrp.usrgrpid', 'required',
 					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]
-				],
-				['string', 'required', ...$group_rules,
-					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP]]
 				]
-			],
+			]),
 			'userids' => ['array', 'field' => ['db users.userid']],
 			'usrgrpids' => ['array', 'field' => ['db usrgrp.usrgrpid']],
 			'recipient_name' => ['string'],
 			'recipient_inaccessible' => ['boolean'],
-			'creator_type' => ['integer', 'required', 'in' => [ZBX_REPORT_CREATOR_TYPE_USER, ZBX_REPORT_CREATOR_TYPE_RECIPIENT]],
+			'creator_type' => ['integer', 'required',
+				'in' => [ZBX_REPORT_CREATOR_TYPE_USER, ZBX_REPORT_CREATOR_TYPE_RECIPIENT]
+			],
 			'exclude' => ['integer', 'required',
 				'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE, ZBX_REPORT_EXCLUDE_USER_TRUE],
 				'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
@@ -66,19 +73,10 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 			groupids: []
 		));
 
-		$userids = $this->getInput('userids', []);
-		$groupids = $this->getInput('usrgrpids', []);
-
-		if ($this->getInput('edit', false)) {
-			if ($this->getInput('recipient_type') == ZBX_REPORT_RECIPIENT_TYPE_USER) {
-				$userids = array_values(array_diff($userids, [$this->getInput('old_recipientid')]));
-			}
-			else {
-				$groupids = array_values(array_diff($groupids, [$this->getInput('old_recipientid')]));
-			}
-		}
-
-		$ret = $ret && $this->validateInput(self::getValidationRules(userids: $userids, groupids: $groupids));
+		$ret = $ret && $this->validateInput(self::getValidationRules(
+			userids: $this->getInput('userids', []),
+			groupids: $this->getInput('usrgrpids', [])
+		));
 
 		if (!$ret) {
 			$form_errors = $this->getValidationError();

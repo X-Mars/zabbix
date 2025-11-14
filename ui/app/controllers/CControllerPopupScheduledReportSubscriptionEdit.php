@@ -73,27 +73,19 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 
 		if ($data['recipient_type'] == ZBX_REPORT_RECIPIENT_TYPE_USER) {
 			$data['exclude'] = $this->getInput('exclude', ZBX_REPORT_EXCLUDE_USER_FALSE);
-			$data['userids'] = $this->getInput('userids', []);
+			$data['userids'] = array_values(array_diff($this->getInput('userids', []), [$data['old_recipientid']]));
+			$data['usrgrpids'] = [];
 		}
 		else {
-			$data['usrgrpids'] = $this->getInput('usrgrpids', []);
+			$data['userids'] = [];
+			$data['usrgrpids'] = array_values(
+				array_diff($this->getInput('usrgrpids', []), [$data['old_recipientid']])
+			);
 		}
 
 		$data['recipient_ms'] = ($data['recipientid'] != 0)
 			? [['id' => $data['recipientid'], 'name' => $data['recipient_name']]]
 			: [];
-
-		$userids = $this->getInput('userids', []);
-		$groupids = $this->getInput('usrgrpids', []);
-
-		if ($this->getInput('edit', false)) {
-			if ($this->getInput('recipient_type') == ZBX_REPORT_RECIPIENT_TYPE_USER) {
-				$userids = array_values(array_diff($userids, [$this->getInput('old_recipientid')]));
-			}
-			else {
-				$groupids = array_values(array_diff($groupids, [$this->getInput('old_recipientid')]));
-			}
-		}
 
 		$data += [
 			'title' => _('Subscription'),
@@ -101,7 +93,9 @@ class CControllerPopupScheduledReportSubscriptionEdit extends CController {
 				'debug_mode' => $this->getDebugMode()
 			],
 			'js_validation_rules' => (new CFormValidator(
-				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules($userids, $groupids)
+				CControllerPopupScheduledReportSubscriptionCheck::getValidationRules($data['userids'],
+					$data['usrgrpids']
+				)
 			))->getRules()
 		];
 
