@@ -55,8 +55,6 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 		self::MARKER_TYPE_CROSS => ZBX_ICON_CROSS
 	];
 
-	private const ZBX_STYLE_CLASS = 'svg-graph-points';
-
 	private ?array $point;
 	private string $aggregation_name;
 	private array $item_x_names;
@@ -80,24 +78,6 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 		];
 	}
 
-	public function makeStyles(): array {
-		$index_class = self::ZBX_STYLE_CLASS.'-'.$this->options['order'].'-'.$this->options['key'];
-
-		$this
-			->addClass(self::ZBX_STYLE_CLASS)
-			->addClass($index_class);
-
-		$color = $this->point ? $this->point[4] : $this->options['color'];
-
-		return [
-			'.'.$index_class => [
-				'fill-opacity' => 1,
-				'fill' => $color,
-				'stroke' => $color
-			]
-		];
-	}
-
 	protected function draw(): void {
 		$highlight_point_group = (new CSvgGroup())
 			->setAttribute('transform', 'translate('.self::X_OUT_OF_RANGE.', '.self::Y_OUT_OF_RANGE.')')
@@ -107,7 +87,7 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 			'translate('.$this->point[0].', '.$this->point[1].')'
 		);
 
-		[$highlight, $point] = self::createMarker($this->options['marker'],  $this->options['marker_size']);
+		[$highlight, $point] = self::createMarker($this->options['marker'], $this->options['marker_size']);
 
 		$this
 			->addItem(
@@ -118,11 +98,12 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 			->addItem(
 				$point_group
 					->addClass('metric-point')
+					->setAttribute('x', $this->point[0])
+					->setAttribute('y', $this->point[1])
 					->setAttribute('value_x', $this->point[2])
 					->setAttribute('value_y', $this->point[3])
 					->setAttribute('color', $this->point[4])
-					->setAttribute('time_from', $this->point[5])
-					->setAttribute('time_to', $this->point[6])
+					->setAttribute('time_intervals', $this->point[5])
 					->setAttribute('marker_class', self::MARKER_ICONS[$this->options['marker']])
 					->addItem($point)
 			);
@@ -174,12 +155,17 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 	}
 
 	public function toString($destroy = true): string {
+		$color = $this->point ? $this->point[4] : $this->options['color'];
+
 		$this
 			->setAttribute('data-set', 'points')
 			->setAttribute('data-aggregation-name', $this->aggregation_name)
 			->setAttribute('data-x-items', $this->item_x_names)
 			->setAttribute('data-y-items', $this->item_y_names)
 			->setAttribute('data-ds', $this->options['data_set'])
+			->setAttribute('fill-opacity', 1)
+			->setAttribute('fill', $color)
+			->setAttribute('stroke',$color)
 			->draw();
 
 		return parent::toString($destroy);

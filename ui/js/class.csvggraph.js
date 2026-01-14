@@ -420,10 +420,9 @@ class CSvgGraph {
 		}
 
 		if (this.#graph_type === GRAPH_TYPE_SCATTER_PLOT) {
-			const highlighter_points = this.#svg.querySelectorAll('g.js-svg-highlight-group');
-
-			for (const highlighter_point of highlighter_points) {
+			for (const highlighter_point of this.#svg.querySelectorAll('g.js-svg-highlight-group.visible')) {
 				highlighter_point.setAttribute('transform', 'translate(-10, -10)');
+				highlighter_point.classList.remove('visible');
 			}
 		}
 		else {
@@ -486,22 +485,22 @@ class CSvgGraph {
 				let show_hint = false;
 
 				if (this.#graph_type === GRAPH_TYPE_SCATTER_PLOT) {
-					const offsetY = e.clientY - svg_rect.top;
-
-					included_points = this.#findScatterPlotPoints(offsetX, offsetY);
+					included_points = this.#findScatterPlotPoints(e.clientX, e.clientY);
 
 					if (included_points.length > 0) {
 						show_hint = true;
 					}
 
-					for (const highlighter_point of this.#svg.querySelectorAll('g.js-svg-highlight-group')) {
+					for (const highlighter_point of this.#svg.querySelectorAll('g.js-svg-highlight-group.visible')) {
 						highlighter_point.setAttribute('transform', 'translate(-10, -10)');
+						highlighter_point.classList.remove('visible');
 					}
 
 					included_points.forEach(point => {
 						const point_highlight = point.g.querySelector('g.js-svg-highlight-group');
 
-						point_highlight.setAttribute('transform', point.transform);
+						point_highlight.setAttribute('transform', `translate(${point.x}, ${point.y})`);
+						point_highlight.classList.add('visible');
 					});
 				}
 				else {
@@ -734,37 +733,27 @@ class CSvgGraph {
 
 	// Find scatter plot metric points that touches the given x and y.
 	#findScatterPlotPoints(x, y) {
-		const nodes = this.#svg.querySelectorAll('[data-set]');
 		const points = [];
 
-		for (let i = 0; i < nodes.length; i++) {
-			const point = nodes[i].querySelectorAll('.metric-point');
+		for (const element of document.elementsFromPoint(x, y)) {
+			const point = element.closest('.metric-point');
 
-			for (let c = 0; c < point.length; c++) {
-				const ctm = point[c].getCTM();
-				const cx = ctm.e;
-				const cy = ctm.f;
-
-				if (Math.abs(cx - x) <= CSvgGraph.SCATTER_PLOT_MARKER_MIN_SIZE
-						&& Math.abs(cy - y) <= CSvgGraph.SCATTER_PLOT_MARKER_MIN_SIZE) {
-					if (point[c].getAttribute('value_x') !== null || point[c].getAttribute('value_y') !== null) {
-						points.push({
-							g: nodes[i],
-							x: cx,
-							y: cy,
-							transform: point[c].getAttribute('transform'),
-							vx: point[c].getAttribute('value_x'),
-							vy: point[c].getAttribute('value_y'),
-							color: point[c].getAttribute('color'),
-							time_from: point[c].getAttribute('time_from'),
-							time_to: point[c].getAttribute('time_to'),
-							marker_class: point[c].getAttribute('marker_class'),
-							p: 0,
-							s: 0
-						});
-					}
-				}
+			if (point === null) {
+				continue;
 			}
+
+			points.push({
+				g: point.parentElement,
+				x: point.getAttribute('x'),
+				y: point.getAttribute('y'),
+				vx: point.getAttribute('value_x'),
+				vy: point.getAttribute('value_y'),
+				color: point.getAttribute('color'),
+				time_intervals: JSON.parse(point.getAttribute('time_intervals')),
+				marker_class: point.getAttribute('marker_class'),
+				p: 0,
+				s: 0
+			});
 		}
 
 		return points;
@@ -892,51 +881,57 @@ class CSvgGraph {
 
 		if (this.#graph_type === GRAPH_TYPE_SCATTER_PLOT) {
 			for (const point of included_points) {
-				const time_from = new CDate(point.time_from * 1000);
-				const time_to = new CDate(point.time_to * 1000);
-
 				const aggregation_name = point.g.dataset.aggregationName;
 				const ds = point.g.dataset.ds;
 
-				for (const key of ['xItems', 'yItems']) {
-					const items_data = Object.entries(JSON.parse(point.g.dataset[key]));
+				console.log(point.time_intervals);
 
-					const li = document.createElement('li');
-					li.style.marginTop = key === 'xItems' && rows_added > 0 ? '10px' : null;
-					li.append(`${aggregation_name}(`);
+				for (const time_interval of point.time_intervals) {
+					const time_from = new CDate(time_interval.from * 1000);
+					const time_to = new CDate(time_interval.to * 1000);
 
-					let count = 0;
-					for (const [itemid, name] of items_data) {
-						count++;
+					for (const key of ['xItems', 'yItems']) {
+						const items_data = Object.entries(JSON.parse(point.g.dataset[key]));
 
-						const item_span = document.createElement('span');
-						item_span.classList.add('has-broadcast-data');
-						item_span.dataset.itemid = itemid;
-						item_span.dataset.ds = ds;
-						item_span.innerText = name.toString();
+						const li = document.createElement('li');
+						li.style.marginTop = key === 'xItems' && rows_added > 0 ? '10px' : null;
+						li.append(`${aggregation_name}(`);
 
-						li.append(item_span);
+						let count = 0;
+						for (const [itemid, name] of items_data) {
+							count++;
 
-						if (count !== items_data.length && count > 0) {
-							li.append(', ');
+							const item_span = document.createElement('span');
+							item_span.classList.add('has-broadcast-data');
+							item_span.dataset.itemid = itemid;
+							item_span.dataset.ds = ds;
+							item_span.innerText = name.toString();
+
+							li.append(item_span);
+
+							if (count !== items_data.length && count > 0) {
+								li.append(', ');
+							}
 						}
+
+						const color_span = document.createElement('span');
+						color_span.style.color = point.color;
+						color_span.classList.add('svg-graph-hintbox-icon-color', point.marker_class);
+
+						li.append(`): ${key === 'xItems' ? point.vx : point.vy}`, color_span);
+
+						html.append(li);
+
+						rows_added++;
 					}
 
-					const color_span = document.createElement('span');
-					color_span.style.color = point.color;
-					color_span.classList.add('svg-graph-hintbox-icon-color', point.marker_class);
+					const row = document.createElement('div');
+					row.append(
+						`${time_from.format(PHP_ZBX_FULL_DATE_TIME)} - ${time_to.format(PHP_ZBX_FULL_DATE_TIME)}`
+					);
 
-					li.append(`): ${key === 'xItems' ? point.vx : point.vy}`, color_span);
-
-					html.append(li);
-
-					rows_added++;
+					html.append(row);
 				}
-
-				const row = document.createElement('div');
-				row.append(`${time_from.format(PHP_ZBX_FULL_DATE_TIME)} - ${time_to.format(PHP_ZBX_FULL_DATE_TIME)}`);
-
-				html.append(row);
 			}
 		}
 		else {

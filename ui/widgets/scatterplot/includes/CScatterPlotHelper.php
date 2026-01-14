@@ -133,8 +133,8 @@ class CScatterPlotHelper {
 	private static function getMetricsPattern(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid, bool $show_hostnames): void {
 		$max_metrics = [
-			'x_axis_items' => SVG_GRAPH_MAX_NUMBER_OF_METRICS,
-			'y_axis_items' => SVG_GRAPH_MAX_NUMBER_OF_METRICS
+			'x_axis_items' => 20000,
+			'y_axis_items' => 20000
 		];
 
 		foreach ($data_sets as $index => $data_set) {
@@ -151,17 +151,47 @@ class CScatterPlotHelper {
 					continue;
 				}
 			}
-			else {
-				if (!$data_set['x_axis_items'] || !$data_set['y_axis_items']) {
-					continue;
+			elseif (!$data_set['x_axis_items'] || !$data_set['y_axis_items']) {
+				continue;
+			}
+
+			$items_by_hosts = [];
+			$hostids = [];
+
+			if ($templateid === '') {
+				if ($data_set['override_hostid']) {
+					$hostids = $data_set['override_hostid'];
 				}
+				else {
+					$hosts = API::Host()->get([
+						'output' => [],
+						'search' => [
+							'name' => self::processPattern($data_set['hosts'])
+						],
+						'evaltype' => $data_set['host_tags_evaltype'] ,
+						'tags' => $data_set['host_tags'] ?: null,
+						'groupids' => $data_set['hostgroupids'] ?: null,
+						'searchWildcardsEnabled' => true,
+						'searchByAny' => true,
+						'preservekeys' => true
+					]);
+
+					if ($hosts) {
+						$hostids = array_keys($hosts);
+					}
+				}
+			}
+			else {
+				$hostids = $override_hostid !== '' ? $override_hostid : $templateid;
+			}
+
+			if (!$hostids) {
+				continue;
 			}
 
 			$data_set['timeshift'] = ($data_set['timeshift'] !== '')
 				? (int)timeUnitToSeconds($data_set['timeshift'])
 				: 0;
-
-			$items_by_hosts = [];
 
 			$resolve_macros = $templateid === '' || $override_hostid !== '';
 
@@ -170,6 +200,7 @@ class CScatterPlotHelper {
 					'output' => ['itemid', 'hostid', 'history', 'trends', 'units', 'value_type'],
 					'selectHosts' => $show_hostnames ? ['name'] : null,
 					'webitems' => true,
+					'hostids' => $hostids,
 					'filter' => [
 						'value_type' => [ITEM_VALUE_TYPE_UINT64, ITEM_VALUE_TYPE_FLOAT]
 					],
@@ -195,54 +226,29 @@ class CScatterPlotHelper {
 					$options['search']['name'] = self::processPattern($data_set[$axis]);
 				}
 
-				if ($templateid === '') {
-					if ($data_set['override_hostid']) {
-						$options['hostids'] = $data_set['override_hostid'];
-					}
-					else {
-						$hosts = API::Host()->get([
-							'output' => [],
-							'search' => [
-								'name' => self::processPattern($data_set['hosts'])
-							],
-							'evaltype' => $data_set['host_tags_evaltype'],
-							'tags' => $data_set['host_tags'] ?: null,
-							'groupids' => $data_set['hostgroupids'] ?: null,
-							'searchWildcardsEnabled' => true,
-							'searchByAny' => true,
-							'preservekeys' => true
-						]);
-
-						if ($hosts) {
-							$options['hostids'] = array_keys($hosts);
-						}
-					}
-				}
-				else {
-					$options['hostids'] = $override_hostid !== '' ? $override_hostid : $templateid;
-				}
-
-				$items[$axis] = [];
-
-				if (array_key_exists('hostids', $options) && $options['hostids']) {
-					$items[$axis] = API::Item()->get($options);
-				}
+				$items[$axis] = API::Item()->get($options);
 
 				if (!$items[$axis]) {
-					continue;
+					break;
 				}
 
 				if ($resolve_macros) {
 					$items[$axis] = CArrayHelper::renameObjectsKeys($items[$axis], ['name_resolved' => 'name']);
 				}
 
-				unset($data_set[$axis]);
+				$hostids = [];
 
 				foreach ($items[$axis] as $item) {
 					$items_by_hosts[$item['hostid']][$axis][] = $item;
 
 					$max_metrics[$axis] --;
 				}
+
+				if ($axis === 'x_axis_items') {
+					$hostids = array_keys($items_by_hosts);
+				}
+
+				unset($data_set[$axis]);
 			}
 
 			$items_by_hosts = array_filter($items_by_hosts,
@@ -272,8 +278,8 @@ class CScatterPlotHelper {
 	private static function getMetricsItems(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid, bool $show_hostnames): void {
 		$max_metrics = [
-			'x_axis_itemids' => SVG_GRAPH_MAX_NUMBER_OF_METRICS,
-			'y_axis_itemids' => SVG_GRAPH_MAX_NUMBER_OF_METRICS
+			'x_axis_itemids' => 20000,
+			'y_axis_itemids' => 20000
 		];
 
 		foreach ($data_sets as $index => $data_set) {
@@ -720,9 +726,7 @@ class CScatterPlotHelper {
 				}
 			}
 
-			$metric_points = array_filter($metric_points,
-				static fn ($point) => array_key_exists('x_axis', $point) && array_key_exists('y_axis', $point)
-			);
+			$metric_points = self::filterPoints($metric_points);
 
 			if (!$metric_points) {
 				continue;
@@ -743,6 +747,28 @@ class CScatterPlotHelper {
 			unset($metric['x_axis_items'], $metric['y_axis_items']);
 		}
 		unset($metric);
+	}
+
+	private static function filterPoints(array $points): array {
+		$result = [];
+
+		foreach ($points as $tick => $point) {
+			if (!array_key_exists('x_axis', $point) || !array_key_exists('y_axis', $point)) {
+				continue;
+			}
+
+			$key = $point['x_axis'] . ':' . $point['y_axis'];
+
+			if (!array_key_exists($key, $result)) {
+				$result[$key] = $point + [
+					'ticks' => []
+				];
+			}
+
+			$result[$key]['ticks'][] = $tick;
+		}
+
+		return array_values($result);
 	}
 
 	private static function calculatePointColorByThresholds(string $color, $value_x, $value_y, string $units_x,

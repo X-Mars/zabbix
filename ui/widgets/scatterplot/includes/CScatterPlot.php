@@ -23,6 +23,7 @@ use CMathHelper,
 	CSvgLine,
 	CSvgTag,
 	Exception;
+use CTag;
 
 class CScatterPlot extends CSvg {
 
@@ -397,7 +398,7 @@ class CScatterPlot extends CSvg {
 
 			$path_points = [];
 
-			foreach ($this->points[$index] as $time => $point) {
+			foreach ($this->points[$index] as $point) {
 				$coordinates = [];
 
 				foreach ($params as $axis => $options) {
@@ -423,6 +424,15 @@ class CScatterPlot extends CSvg {
 					}
 				}
 
+				$time_intervals = [];
+
+				foreach ($point['ticks'] as $tick) {
+					$time_intervals[] = [
+						'from' => $tick,
+						'to' => $tick + $metric['options']['aggregate_interval']
+					];
+				}
+
 				$path_points[] = [
 					(int) ceil($coordinates['x_axis']),
 					(int) ceil($coordinates['y_axis']),
@@ -434,8 +444,7 @@ class CScatterPlot extends CSvg {
 						'units' => $this->y_units
 					]),
 					$point['color'],
-					$time,
-					$time + $metric['options']['aggregate_interval']
+					$time_intervals
 				];
 			}
 
