@@ -171,7 +171,6 @@ class CScatterPlot extends CSvg {
 				continue;
 			}
 
-			$this->metrics[$index]['points'] = $metric['points'];
 			$this->points[$index] = $metric['points'];
 		}
 
@@ -508,8 +507,28 @@ class CScatterPlot extends CSvg {
 	}
 
 	private function drawMetricsPoint(): void {
+		$defs = new CTag('defs', true);
+		$has_defs = [];
+
 		foreach ($this->metrics as $index => $metric) {
 			if (array_key_exists($index, $this->paths)) {
+				$type = $metric['options']['marker'];
+				$size = $metric['options']['marker_size'];
+
+				$markers = CScatterPlotMetricPoint::createMarker($type, $size);
+
+				if (!array_key_exists($type, $has_defs) || !array_key_exists($size, $has_defs[$type])) {
+					$defs
+						->addItem(
+							$markers[0]->setId('highlight_point_'.$type.'_'.$size)
+						)
+						->addItem(
+							$markers[1]->setId('point_'.$type.'_'.$size)
+						);
+
+					$has_defs[$type][$size] = true;
+				}
+
 				foreach ($this->paths[$index] as $key => $path) {
 					$this->addItem(new CScatterPlotMetricPoint($path, $metric + [
 						'order' => $index,
@@ -518,6 +537,45 @@ class CScatterPlot extends CSvg {
 				}
 			}
 		}
+
+		$this->addItem($defs);
+	}
+
+	public function getHintboxData(): array {
+		$metrics = [];
+		$paths = [];
+
+		foreach ($this->metrics as $index => $metric) {
+			foreach ($this->paths[$index] as $path) {
+				$x = round($path[0]);
+				$y = round($path[1]);
+
+				if (!array_key_exists($x, $paths) || !array_key_exists($y, $paths[$x])) {
+					$paths[$x][$y] = [];
+				}
+
+				$paths[$x][$y][] = [
+					'vx' => $path[2],
+					'vy' => $path[3],
+					'color' => $path[4],
+					'time_intervals' => $path[5],
+					'metric' => $index
+				];
+			}
+
+			$metrics[$index] = [
+				'data_set' => $metric['data_set'],
+				'aggregation_name' => $metric['aggregation_name'],
+				'x_items' => $metric['x_axis_items_name'],
+				'y_items' => $metric['y_axis_items_name'],
+				'marker_class' => CScatterPlotMetricPoint::MARKER_ICONS[$metric['options']['marker']]
+			];
+		}
+
+		return [
+			'metrics' => $metrics,
+			'paths' => $paths
+		];
 	}
 
 	/**

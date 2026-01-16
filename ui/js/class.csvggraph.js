@@ -420,8 +420,9 @@ class CSvgGraph {
 		}
 
 		if (this.#graph_type === GRAPH_TYPE_SCATTER_PLOT) {
-			for (const highlighter_point of this.#svg.querySelectorAll('g.js-svg-highlight-group.visible')) {
-				highlighter_point.setAttribute('transform', 'translate(-10, -10)');
+			for (const highlighter_point of this.#svg.querySelectorAll(`.metric-point.visible`)) {
+				const href = highlighter_point.dataset.id;
+				highlighter_point.setAttribute('data-id', '#' + href)
 				highlighter_point.classList.remove('visible');
 			}
 		}
@@ -491,15 +492,17 @@ class CSvgGraph {
 						show_hint = true;
 					}
 
-					for (const highlighter_point of this.#svg.querySelectorAll('g.js-svg-highlight-group.visible')) {
-						highlighter_point.setAttribute('transform', 'translate(-10, -10)');
+					for (const highlighter_point of this.#svg.querySelectorAll(`.metric-point.visible`)) {
+						const href = highlighter_point.dataset.id;
+						highlighter_point.setAttribute('data-id', '#' + href);
 						highlighter_point.classList.remove('visible');
 					}
 
 					included_points.forEach(point => {
-						const point_highlight = point.g.querySelector('g.js-svg-highlight-group');
+						const point_highlight = point.g;
+						const href = point_highlight.dataset.id;
 
-						point_highlight.setAttribute('transform', `translate(${point.x}, ${point.y})`);
+						point_highlight.setAttribute('data-id', '#highlight_' + href);
 						point_highlight.classList.add('visible');
 					});
 				}
@@ -743,14 +746,14 @@ class CSvgGraph {
 			}
 
 			points.push({
-				g: point.parentElement,
+				element: point,
 				x: point.getAttribute('x'),
 				y: point.getAttribute('y'),
-				vx: point.getAttribute('value_x'),
-				vy: point.getAttribute('value_y'),
-				color: point.getAttribute('color'),
-				time_intervals: JSON.parse(point.getAttribute('time_intervals')),
-				marker_class: point.getAttribute('marker_class'),
+				vx: point.dataset.x,
+				vy: point.dataset.y,
+				color: point.dataset.color,
+				time_intervals: JSON.parse(point.dataset.timeIntervals),
+				marker_class: point.dataset.marker_class,
 				p: 0,
 				s: 0
 			});
@@ -881,17 +884,15 @@ class CSvgGraph {
 
 		if (this.#graph_type === GRAPH_TYPE_SCATTER_PLOT) {
 			for (const point of included_points) {
-				const aggregation_name = point.g.dataset.aggregationName;
-				const ds = point.g.dataset.ds;
-
-				console.log(point.time_intervals);
+				const aggregation_name = point.element.dataset.aggregationName;
+				const ds = point.element.dataset.ds;
 
 				for (const time_interval of point.time_intervals) {
 					const time_from = new CDate(time_interval.from * 1000);
 					const time_to = new CDate(time_interval.to * 1000);
 
 					for (const key of ['xItems', 'yItems']) {
-						const items_data = Object.entries(JSON.parse(point.g.dataset[key]));
+						const items_data = Object.entries(JSON.parse(point.element.dataset[key]));
 
 						const li = document.createElement('li');
 						li.style.marginTop = key === 'xItems' && rows_added > 0 ? '10px' : null;

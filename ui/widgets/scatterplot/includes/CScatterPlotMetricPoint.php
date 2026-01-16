@@ -20,24 +20,13 @@ use CSvgCircle,
 	CSvgCross,
 	CSvgDiamond,
 	CSvgGraph,
-	CSvgGroup,
 	CSvgRect,
 	CSvgStar,
-	CSvgTag,
 	CSvgTriangle,
+	CTag,
 	InvalidArgumentException;
 
-class CScatterPlotMetricPoint extends CSvgGroup {
-
-	/**
-	 * Horizontal position of points, which must be hidden, yet still rendered.
-	 */
-	public const X_OUT_OF_RANGE = -10;
-
-	/**
-	 * Vertical position of points, which must be hidden, yet still rendered.
-	 */
-	public const Y_OUT_OF_RANGE = -10;
+class CScatterPlotMetricPoint extends CTag {
 
 	public const MARKER_TYPE_ELLIPSIS = 0;
 	public const MARKER_TYPE_SQUARE = 1;
@@ -56,19 +45,13 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 	];
 
 	private ?array $point;
-	private string $aggregation_name;
-	private array $item_x_names;
-	private array $item_y_names;
 
 	protected array $options;
 
 	public function __construct(array $point, array $metric) {
-		parent::__construct();
+		parent::__construct('use', true);
 
 		$this->point = $point;
-		$this->aggregation_name = $metric['aggregation_name'];
-		$this->item_x_names = $metric['x_axis_items_name'];
-		$this->item_y_names = $metric['y_axis_items_name'];
 
 		$this->options = $metric['options'] + [
 			'color' => CSvgGraph::SVG_GRAPH_DEFAULT_COLOR,
@@ -76,37 +59,6 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 			'key' => $metric['key'],
 			'data_set' => $metric['data_set']
 		];
-	}
-
-	protected function draw(): void {
-		$highlight_point_group = (new CSvgGroup())
-			->setAttribute('transform', 'translate('.self::X_OUT_OF_RANGE.', '.self::Y_OUT_OF_RANGE.')')
-			->addClass('js-svg-highlight-group');
-
-		$point_group = (new CSvgGroup())->setAttribute('transform',
-			'translate('.$this->point[0].', '.$this->point[1].')'
-		);
-
-		[$highlight, $point] = self::createMarker($this->options['marker'], $this->options['marker_size']);
-
-		$this
-			->addItem(
-				$highlight_point_group->addItem(
-					$highlight->addClass(CSvgTag::ZBX_STYLE_GRAPH_HIGHLIGHTED_VALUE)
-				)
-			)
-			->addItem(
-				$point_group
-					->addClass('metric-point')
-					->setAttribute('x', $this->point[0])
-					->setAttribute('y', $this->point[1])
-					->setAttribute('value_x', $this->point[2])
-					->setAttribute('value_y', $this->point[3])
-					->setAttribute('color', $this->point[4])
-					->setAttribute('time_intervals', $this->point[5])
-					->setAttribute('marker_class', self::MARKER_ICONS[$this->options['marker']])
-					->addItem($point)
-			);
 	}
 
 	public static function createMarker(int $marker_type, int $size, int $cx = 0, int $cy = 0): array {
@@ -158,15 +110,15 @@ class CScatterPlotMetricPoint extends CSvgGroup {
 		$color = $this->point ? $this->point[4] : $this->options['color'];
 
 		$this
-			->setAttribute('data-set', 'points')
-			->setAttribute('data-aggregation-name', $this->aggregation_name)
-			->setAttribute('data-x-items', $this->item_x_names)
-			->setAttribute('data-y-items', $this->item_y_names)
-			->setAttribute('data-ds', $this->options['data_set'])
+			->addClass('metric-point')
+			->addClass('point-'.round($this->point[0]).'-'.round($this->point[1]))
+			->setAttribute('href', '#point_'.$this->options['marker'].'_'.$this->options['marker_size'])
+			->setAttribute('x', $this->point[0])
+			->setAttribute('y', $this->point[1])
 			->setAttribute('fill-opacity', 1)
 			->setAttribute('fill', $color)
-			->setAttribute('stroke',$color)
-			->draw();
+			->setAttribute('stroke', $color)
+			->setAttribute('data-id', 'point_'.$this->options['marker'].'_'.$this->options['marker_size']);
 
 		return parent::toString($destroy);
 	}

@@ -121,10 +121,7 @@ class CScatterPlotHelper {
 					'w' => $scatter_plot->getCanvasWidth(),
 					'h' => $scatter_plot->getCanvasHeight()
 				],
-				'spp' => $scatter_plot->getCanvasWidth() === 0
-					? 0
-					: ($options['time_period']['time_to'] - $options['time_period']['time_from'])
-					/ $scatter_plot->getCanvasWidth()
+				'hintbox_data' => $scatter_plot->getHintboxData(),
 			],
 			'errors' => $errors
 		];

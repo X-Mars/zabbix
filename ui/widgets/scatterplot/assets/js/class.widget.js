@@ -18,7 +18,7 @@ class CWidgetScatterPlot extends CWidget {
 	static DATASET_TYPE_SINGLE_ITEM = 0;
 
 	/**
-	 * @type {CSvgGraph|null}
+	 * @type {CScatterPlot|null}
 	 */
 	#graph = null;
 
@@ -120,9 +120,6 @@ class CWidgetScatterPlot extends CWidget {
 			}
 
 			this.#initGraph({
-				sbox: false,
-				graph_type: GRAPH_TYPE_SCATTER_PLOT,
-				min_period: 60,
 				...response.svg_options.data
 			});
 		}
@@ -197,7 +194,7 @@ class CWidgetScatterPlot extends CWidget {
 	}
 
 	#initGraph(options) {
-		this.#graph = new CSvgGraph(this._body.querySelector('svg'), this, options);
+		this.#graph = new CScatterPlot(this._body.querySelector('svg'), this, options);
 
 		this.#activateGraph();
 	}
