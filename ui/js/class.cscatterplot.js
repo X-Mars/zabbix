@@ -108,7 +108,7 @@ class CScatterPlot {
 		this.#removePointHighlight();
 
 		if (this.#isInValuesArea(e)) {
-			this.#showHint(true);
+			this.#showHint(e, true);
 		}
 	}
 
@@ -126,7 +126,7 @@ class CScatterPlot {
 			}
 
 			this.#hintbox_timeout = setTimeout(() => {
-				this.#showHint();
+				this.#showHint(e);
 			}, 200);
 		}
 		else {
@@ -134,7 +134,7 @@ class CScatterPlot {
 		}
 	}
 
-	#showHint(is_static = false) {
+	#showHint(e, is_static = false) {
 		const svg_rect = this.#svg.getBoundingClientRect();
 		const offsetX = e.clientX - svg_rect.left;
 		const offsetY = e.clientY - svg_rect.top;
