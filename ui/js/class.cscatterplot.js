@@ -57,7 +57,12 @@ class CScatterPlot {
 	 */
 	#paths;
 
-	#moveTimeOut = null;
+	/**
+	 * @type {boolean}
+	 */
+	#is_static_hintbox_opened;
+
+	#hintbox_timeout = null;
 
 	constructor(svg, widget, options) {
 		this.#svg = svg;
@@ -76,74 +81,98 @@ class CScatterPlot {
 	}
 
 	activate() {
-		this.#svg.dataset.hintbox = '1';
-		this.#svg.dataset.hintboxStatic = '1';
-		this.#svg.dataset.hintboxDelay = '200';
-		this.#svg.dataset.hintboxStaticReopenOnClick = '1';
-
+		this.#svg.addEventListener('click', this.#mouseClickHandler);
 		this.#svg.addEventListener('mousemove', this.#mouseMoveHandler);
 		this.#svg.addEventListener('mouseleave', this.#mouseLeaveHandler);
 		this.#svg.addEventListener('onShowStaticHint', this.#onStaticHintboxOpen);
+		this.#svg.addEventListener('onDeleteStaticHint', this.#onStaticHintboxClose);
 	}
 
 	deactivate() {
-		delete this.#svg.dataset.hintbox;
-		delete this.#svg.dataset.hintboxStatic;
-		delete this.#svg.dataset.hintboxDelay;
-		delete this.#svg.dataset.hintboxStaticReopenOnClick;
-
+		this.#svg.removeEventListener('click', this.#mouseClickHandler);
 		this.#svg.removeEventListener('mousemove', this.#mouseMoveHandler);
 		this.#svg.removeEventListener('mouseleave', this.#mouseLeaveHandler);
 		this.#svg.removeEventListener('onShowStaticHint', this.#onStaticHintboxOpen);
+		this.#svg.removeEventListener('onDeleteStaticHint', this.#onStaticHintboxClose);
 	}
 
-	#mouseMoveHandler = (e) => {
-		const svg_rect = this.#svg.getBoundingClientRect();
+	#isInValuesArea = e => {
+		const in_x = this.#dimX <= e.offsetX && e.offsetX <= this.#dimX + this.#dimW;
+		return in_x && this.#dimY <= e.offsetY && e.offsetY <= this.#dimY + this.#dimH;
+	}
 
+	#mouseClickHandler = e => {
+		clearTimeout(this.#hintbox_timeout);
+		hintBox.hideHint(this.#svg, true);
+
+		this.#removePointHighlight();
+
+		if (this.#isInValuesArea(e)) {
+			this.#showHint(true);
+		}
+	}
+
+	#mouseMoveHandler = e => {
+		clearTimeout(this.#hintbox_timeout);
+		hintBox.hideHint(this.#svg, false);
+
+		this.#removePointHighlight();
+
+		if (this.#isInValuesArea(e)) {
+			this.#setHelperPosition(e);
+
+			if (this.#is_static_hintbox_opened) {
+				return;
+			}
+
+			this.#hintbox_timeout = setTimeout(() => {
+				this.#showHint();
+			}, 200);
+		}
+		else {
+			this.#hideHelper();
+		}
+	}
+
+	#showHint(is_static = false) {
+		const svg_rect = this.#svg.getBoundingClientRect();
 		const offsetX = e.clientX - svg_rect.left;
 		const offsetY = e.clientY - svg_rect.top;
 
-		// Check if mouse in the horizontal area in which hintbox must be shown.
-		const in_x = this.#dimX <= offsetX && offsetX <= this.#dimX + this.#dimW;
-		const in_values_area = in_x && this.#dimY <= e.offsetY && e.offsetY <= this.#dimY + this.#dimH;
+		const included_paths = this.#findPoints(offsetX, offsetY);
 
-		clearTimeout(this.#moveTimeOut);
+		if (included_paths.length > 0) {
+			this.#highlightPoints(included_paths);
 
-		if (in_values_area) {
-			this.#setHelperPosition(e);
-			this.#removePointHighlight();
-
-			this.#moveTimeOut = setTimeout(() => {
-				const included_paths = this.#findPoints(offsetX, offsetY);
-
-				if (included_paths.length > 0) {
-					this.#highlightPoints(included_paths);
-
-					included_paths.sort((p1, p2) => {
-						if (p1.x !== p2.x) {
-							return p2.x - p1.x;
-						}
-
-						return p1.y - p2.y;
-					});
-
-					this.#showHintbox(included_paths)
+			included_paths.sort((p1, p2) => {
+				if (p1.x !== p2.x) {
+					return p2.x - p1.x;
 				}
-			}, 100);
-		}
-		else {
-			this.#mouseLeaveHandler();
+
+				return p1.y - p2.y;
+			});
+
+			if (is_static) {
+				hintBox.showStaticHint(e, this.#svg, null, false, null, this.#getHintboxHtml(included_paths));
+			}
+			else {
+				hintBox.showHint(e, this.#svg, this.#getHintboxHtml(included_paths));
+			}
 		}
 	}
 
 	#mouseLeaveHandler = () => {
-		clearTimeout(this.#moveTimeOut);
+		clearTimeout(this.#hintbox_timeout);
 
-		this.#removeHintboxContents();
+		this.#removePointHighlight();
 		this.#hideHelper();
+
+		hintBox.hideHint(this.#svg, false);
 	}
 
 	#onStaticHintboxOpen = () => {
+		this.#is_static_hintbox_opened = true;
+
 		const hintbox = this.#svg.hintBoxItem[0];
 		const hintbox_items = hintbox.querySelectorAll('.has-broadcast-data');
 
@@ -158,6 +187,10 @@ class CScatterPlot {
 		}
 
 		this.#markSelectedHintboxItems(hintbox);
+	}
+
+	#onStaticHintboxClose = () => {
+		this.#is_static_hintbox_opened = false;
 	}
 
 	#markSelectedHintboxItems(hintbox) {
@@ -193,25 +226,6 @@ class CScatterPlot {
 			helper.setAttribute('y1', -10);
 			helper.setAttribute('y2', -10);
 		}
-
-		this.#removePointHighlight();
-	}
-
-	#showHintbox(included_paths) {
-		if (included_paths) {
-			this.#setHintboxContents(this.#getHintboxHtml(included_paths));
-		}
-		else {
-			this.#removeHintboxContents();
-		}
-	}
-
-	#setHintboxContents(html) {
-		this.#svg.dataset.hintboxContents = html.outerHTML;
-	}
-
-	#removeHintboxContents() {
-		delete this.#svg.dataset.hintboxContents;
 	}
 
 	// Find scatter plot metric paths that touches the given x and y.

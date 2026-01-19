@@ -538,11 +538,11 @@ const hintBox = {
 
 		if (!isStatic) {
 			if (typeof hintText === 'undefined') {
-				hintText = target.dataset.hintboxContents;
-			}
+				if (!target.dataset.hintboxContents) {
+					return;
+				}
 
-			if (!target.dataset.hintboxContents) {
-				return;
+				hintText = target.dataset.hintboxContents;
 			}
 
 			target.isStatic = true;
