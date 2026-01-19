@@ -510,8 +510,6 @@ class CScatterPlot extends CSvg {
 		$defs = new CTag('defs', true);
 		$has_defs = [];
 
-		$count = 0;
-
 		foreach ($this->metrics as $index => $metric) {
 			if (array_key_exists($index, $this->paths)) {
 				$type = $metric['options']['marker'];
@@ -536,13 +534,9 @@ class CScatterPlot extends CSvg {
 						'order' => $index,
 						'key' => $key
 					]));
-
-					$count++;
 				}
 			}
 		}
-
-		sdff($count, '/home/test/work/logs/zabbix.log');
 
 		$this->addItem($defs);
 	}
