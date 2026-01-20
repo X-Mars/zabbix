@@ -33,6 +33,8 @@ use API,
  */
 class CScatterPlotHelper {
 
+	private const SCATTER_PLOT_METRIC_LIMIT = 10000;
+
 	/**
 	 * Calculate graph data and draw Scatter plot graph based on given graph configuration.
 	 *
@@ -90,7 +92,8 @@ class CScatterPlotHelper {
 
 		$scatter_plot = (new CScatterPlot([
 			'time_period' => $options['time_period'],
-			'axes' => $options['axes']
+			'axes' => $options['axes'],
+			'id_prefix' => $options['id_prefix']
 		]))
 			->setSize($width, $svg_height)
 			->addMetrics($metrics)
@@ -130,8 +133,8 @@ class CScatterPlotHelper {
 	private static function getMetricsPattern(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid, bool $show_hostnames): void {
 		$max_metrics = [
-			'x_axis_items' => 20000,
-			'y_axis_items' => 20000
+			'x_axis_items' => self::SCATTER_PLOT_METRIC_LIMIT,
+			'y_axis_items' => self::SCATTER_PLOT_METRIC_LIMIT
 		];
 
 		foreach ($data_sets as $index => $data_set) {
@@ -256,8 +259,9 @@ class CScatterPlotHelper {
 				? CColorPicker::getColorVariations($data_set['color'], count($items_by_hosts))
 				: CColorPicker::getPaletteColors($data_set['color_palette'], count($items_by_hosts));
 
-			$data_set = array_diff_key($data_set, array_flip(['x_axis_itemids, y_axis_itemids', 'x_axis_references',
-				'y_axis_references', 'color_palette'
+			$data_set = array_diff_key($data_set, array_flip(['x_axis_references', 'y_axis_references', 'color_palette',
+				'hostgroupids', 'host_tags_evaltype', 'host_tags', 'dataset_type', 'override_hostid', 'hosts',
+				'x_axis_itemids', 'y_axis_itemids'
 			]));
 
 			foreach ($items_by_hosts as $items_by_host) {
@@ -275,8 +279,8 @@ class CScatterPlotHelper {
 	private static function getMetricsItems(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid, bool $show_hostnames): void {
 		$max_metrics = [
-			'x_axis_itemids' => 20000,
-			'y_axis_itemids' => 20000
+			'x_axis_itemids' => self::SCATTER_PLOT_METRIC_LIMIT,
+			'y_axis_itemids' => self::SCATTER_PLOT_METRIC_LIMIT
 		];
 
 		foreach ($data_sets as $index => $data_set) {
@@ -389,8 +393,9 @@ class CScatterPlotHelper {
 				}
 			}
 
-			$data_set = array_diff_key($data_set, array_flip(['x_axis_items', 'y_axis_items', 'x_axis_references',
-				'y_axis_references', 'hostgroupids', 'hosts', 'host_tags', 'host_tags_evaltype', 'color_palette'
+			$data_set = array_diff_key($data_set, array_flip(['x_axis_itemids', 'y_axis_itemids', 'x_axis_references',
+				'y_axis_references', 'hostgroupids', 'hosts', 'host_tags', 'host_tags_evaltype', 'color_palette',
+				'override_hostid', 'x_axis_items', 'y_axis_items', 'dataset_type'
 			]));
 
 			if ($result['x_axis_itemids'] && $result['y_axis_itemids']) {
@@ -458,6 +463,8 @@ class CScatterPlotHelper {
 				$metric['time_period']['time_from'] += $metric['options']['timeshift'];
 				$metric['time_period']['time_to'] += $metric['options']['timeshift'];
 			}
+
+			unset($metric['options']['timeshift']);
 		}
 		unset($metric);
 	}
@@ -605,7 +612,7 @@ class CScatterPlotHelper {
 	 */
 	private static function setMetricNames(array &$metrics, array $legend_options, bool $show_hostnames): void {
 		foreach ($metrics as &$metric) {
-			$metric['aggregation_name'] = $legend_options['show_aggregation']
+			$metric['options']['aggregation_name'] = $legend_options['show_aggregation']
 				? CItemHelper::getAggregateFunctionName($metric['options']['aggregate_function'])
 				: '';
 
@@ -741,7 +748,9 @@ class CScatterPlotHelper {
 
 			$metric['points'] = $metric_points;
 
-			unset($metric['x_axis_items'], $metric['y_axis_items']);
+			unset($metric['x_axis_items'], $metric['y_axis_items'], $metric['options']['aggregate_function'],
+				$metric['time_period']
+			);
 		}
 		unset($metric);
 	}
@@ -870,7 +879,7 @@ class CScatterPlotHelper {
 			$names = [];
 
 			foreach (['x_axis_items_name', 'y_axis_items_name'] as $axis) {
-				$names[$axis] = $metric['aggregation_name'].'(';
+				$names[$axis] = $metric['options']['aggregation_name'].'(';
 
 				$count = 0;
 
@@ -893,7 +902,6 @@ class CScatterPlotHelper {
 			}
 
 			$item = [
-				'aggregation_name' => $metric['aggregation_name'],
 				'name' => $names['x_axis_items_name'].', '.$names['y_axis_items_name'],
 				'color' => $metric['options']['color'],
 				'marker' => $metric['options']['marker']

@@ -50,6 +50,11 @@ class CScatterPlot {
 	/**
 	 * @type {Object}
 	 */
+	#datasets;
+
+	/**
+	 * @type {Object}
+	 */
 	#metrics;
 
 	/**
@@ -73,6 +78,7 @@ class CScatterPlot {
 		this.#dimY = options.dims.y;
 		this.#dimW = options.dims.w;
 		this.#dimH = options.dims.h;
+		this.#datasets = options.hintbox_data.datasets;
 		this.#metrics = options.hintbox_data.metrics;
 		this.#paths = options.hintbox_data.paths;
 
@@ -239,15 +245,15 @@ class CScatterPlot {
 		const max_y = Math.round(offset_y) + CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
 
 		for (let x = min_x; x < max_x; x++) {
-			if (this.#paths[x]) {
-				for (let y = min_y; y < max_y; y++) {
-					if (this.#paths[x][y]) {
-						paths.push({
-							x,
-							y,
-							points: this.#paths[x][y]
-						});
-					}
+			for (let y = min_y; y < max_y; y++) {
+				const key = `${x}_${y}`;
+
+				if (this.#paths[key]) {
+					paths.push({
+						x,
+						y,
+						points: this.#paths[key]
+					});
 				}
 			}
 		}
@@ -289,12 +295,13 @@ class CScatterPlot {
 		for (const paths of included_paths) {
 			for (const point of paths.points) {
 				const metric = this.#metrics[point.metric];
-				const aggregation_name = metric.aggregation_name;
-				const ds = metric.data_set;
+				const ds_id = metric.data_set;
+				const dataset = this.#datasets[ds_id];
+				const aggregation_name = dataset.aggregation_name;
 
-				for (const time_interval of point.time_intervals) {
-					const time_from = new CDate(time_interval.from * 1000);
-					const time_to = new CDate(time_interval.to * 1000);
+				for (const tick of point.time_intervals) {
+					const time_from = new CDate(tick * 1000);
+					const time_to = new CDate((tick + dataset.aggregate_interval) * 1000);
 
 					for (const key of ['x_items', 'y_items']) {
 						const items_data = Object.entries(metric[key]);
@@ -310,7 +317,7 @@ class CScatterPlot {
 							const item_span = document.createElement('span');
 							item_span.classList.add('has-broadcast-data');
 							item_span.dataset.itemid = itemid;
-							item_span.dataset.ds = ds;
+							item_span.dataset.ds = ds_id;
 							item_span.innerText = name.toString();
 
 							li.append(item_span);
@@ -322,7 +329,7 @@ class CScatterPlot {
 
 						const color_span = document.createElement('span');
 						color_span.style.color = point.color;
-						color_span.classList.add('svg-graph-hintbox-icon-color', metric.marker_class);
+						color_span.classList.add('svg-graph-hintbox-icon-color', dataset.marker_class);
 
 						li.append(`): ${key === 'x_items' ? point.vx : point.vy}`, color_span);
 

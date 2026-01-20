@@ -19,7 +19,6 @@ namespace Widgets\ScatterPlot\Includes;
 use CSvgCircle,
 	CSvgCross,
 	CSvgDiamond,
-	CSvgGraph,
 	CSvgRect,
 	CSvgStar,
 	CSvgTriangle,
@@ -46,19 +45,18 @@ class CScatterPlotMetricPoint extends CTag {
 
 	private ?array $point;
 
-	protected array $options;
+	protected string $prefix;
+	protected int $marker_type;
+	protected int $marker_size;
 
-	public function __construct(array $point, array $metric) {
+	public function __construct(array $point, string $prefix, int $marker_type, int $marker_size) {
 		parent::__construct('use', true);
 
 		$this->point = $point;
 
-		$this->options = $metric['options'] + [
-			'color' => CSvgGraph::SVG_GRAPH_DEFAULT_COLOR,
-			'order' => $metric['order'],
-			'key' => $metric['key'],
-			'data_set' => $metric['data_set']
-		];
+		$this->prefix = $prefix;
+		$this->marker_type = $marker_type;
+		$this->marker_size = $marker_size;
 	}
 
 	public static function createMarker(int $marker_type, int $size, int $cx = 0, int $cy = 0): array {
@@ -107,18 +105,16 @@ class CScatterPlotMetricPoint extends CTag {
 	}
 
 	public function toString($destroy = true): string {
-		$color = $this->point ? $this->point[4] : $this->options['color'];
-
 		$this
 			->addClass('metric-point')
 			->addClass('point-'.round($this->point[0]).'-'.round($this->point[1]))
-			->setAttribute('href', '#point_'.$this->options['marker'].'_'.$this->options['marker_size'])
+			->setAttribute('href', '#point_'.$this->prefix.'_'.$this->marker_type.'_'.$this->marker_size)
 			->setAttribute('x', $this->point[0])
 			->setAttribute('y', $this->point[1])
 			->setAttribute('fill-opacity', 1)
-			->setAttribute('fill', $color)
-			->setAttribute('stroke', $color)
-			->setAttribute('data-id', 'point_'.$this->options['marker'].'_'.$this->options['marker_size']);
+			->setAttribute('fill', $this->point[4])
+			->setAttribute('stroke', $this->point[4])
+			->setAttribute('data-id', 'point_'.$this->prefix.'_'.$this->marker_type.'_'.$this->marker_size);
 
 		return parent::toString($destroy);
 	}
