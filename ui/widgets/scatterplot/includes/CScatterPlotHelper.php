@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -879,7 +879,7 @@ class CScatterPlotHelper {
 			$names = [];
 
 			foreach (['x_axis_items_name', 'y_axis_items_name'] as $axis) {
-				$names[$axis] = $metric['options']['aggregation_name'].'(';
+				$names[$axis] = '';
 
 				$count = 0;
 
@@ -894,7 +894,7 @@ class CScatterPlotHelper {
 				}
 
 				if ($legend_options['show_aggregation']) {
-					$names[$axis] .= ')';
+					$names[$axis] = $metric['options']['aggregation_name'].'('.$names[$axis].')';
 				}
 				elseif ($count > 1) {
 					$names[$axis] = '('.$names[$axis].')';

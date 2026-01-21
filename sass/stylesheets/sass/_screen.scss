@@ -2529,27 +2529,41 @@ select {
 		}
 	}
 
-	li {
-		padding-left: 23px;
-
-		.svg-graph-hintbox-icon-color {
-			@extend %icon-small;
-
-			display: inline-block;
-			float: left;
-			width: 12px;
-			height: 12px;
-			margin-left: -20px;
-			margin-top: -1px;
+	.scatter-plot-hintbox-row {
+		&:not(:first-child) {
+			margin-top: 10px;
 		}
+
+		.scatter-plot-hintbox-row-axis {
+			display: flex;
+			flex-wrap: nowrap;
+			align-items: center;
+			padding-left: 3px;
+			white-space: pre;
+
+			.scatter-plot-hintbox-icon-color {
+				@extend %icon-small;
+
+				display: inline-block;
+				width: 12px;
+				height: 18px;
+				margin-left: 3px;
+				margin-right: 10px;
+			}
+		}
+	}
+
+	li {
+		display: flex;
+		align-items: center;
 
 		.svg-graph-hintbox-item-color,
 		.svg-graph-hintbox-trigger-color {
-			margin: 3px 10px 3px -20px;
-			width: 10px;
+			display: inline-block;
+			min-width: 10px;
 			height: 10px;
-			float: left;
-			display: block;
+			margin-left: 3px;
+			margin-right: 10px
 		}
 
 		.svg-graph-hintbox-trigger-color {

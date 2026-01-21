@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -634,10 +634,14 @@ const hintBox = {
 	},
 
 	positionElement: function(e, target, $elem) {
+		const EVENT_OFFSET = 10;
+		const SCREEN_Y_PADDING = 10;
+
 		const hint = $elem[0];
 		const host = hint.offsetParent;
+
 		const host_rect = host.getBoundingClientRect();
-		const event_offset = 10;
+
 		const css = {
 			width: null,
 			top: null,
@@ -679,6 +683,11 @@ const hintBox = {
 			const host_y_min = host.scrollTop;
 			const host_y_max = Math.min(host.scrollHeight, host_rect.height - scrollbar_horizontal_height + host_y_min);
 
+			// Max width needs to be set before getting the rect and computed style, to check if the hint content has
+			// a scroll bar and calculate the correct height.
+			hint.style.maxWidth = `${host_client_width}px`;
+			hint.style.maxHeight = `${host_client_height - 20}px`;
+
 			// Hint size.
 			const hint_rect = hint.getBoundingClientRect();
 			const hint_computed_style = getComputedStyle(hint);
@@ -688,7 +697,6 @@ const hintBox = {
 				if positioned further than the width of window when horizontal scrolling is active.
 			*/
 			css.width = Math.ceil(parseFloat(hint_computed_style.width));
-			const height = Math.ceil(parseFloat(hint_computed_style.height));
 
 			// Event coordinates relative to host.
 			if (target.event_x === undefined) {
@@ -710,34 +718,55 @@ const hintBox = {
 				target.event_y = client_y - host_rect.top + host_y_min;
 			}
 
-			css.left = target.event_x + event_offset + hint_rect.width <= host_x_max
-				? target.event_x + event_offset
-				: host_x_max - hint_rect.width;
+			let hint_fits_vertically = true;
 
 			// Hint fits under event.
-			if (target.event_y + event_offset + hint_rect.height <= host_y_max) {
-				css.top = target.event_y + event_offset;
+			if (target.event_y + EVENT_OFFSET + SCREEN_Y_PADDING + hint_rect.height <= host_y_max) {
+				css.top = target.event_y + EVENT_OFFSET;
 			}
 			// Hint fits above event.
-			else if (target.event_y - event_offset - hint_rect.height >= host_y_min) {
-				css.top = target.event_y - event_offset - hint_rect.height;
+			else if (target.event_y - EVENT_OFFSET - SCREEN_Y_PADDING - hint_rect.height >= host_y_min) {
+				css.top = target.event_y - EVENT_OFFSET - hint_rect.height;
 			}
-			// Hint fits neither under nor above event - then show it where the biggest part is presented.
+			// Hint fits neither under nor above event - then show it in the biggest part of the screen.
 			else {
 				css.top = Math.ceil(window.innerHeight / 2 - e.clientY > 0
-					? host_y_max - hint_rect.height - event_offset
-					: host_y_min + event_offset
+					? host_y_max - EVENT_OFFSET - hint_rect.height - SCREEN_Y_PADDING
+					: host_y_min + SCREEN_Y_PADDING
 				);
 
-				if (target.event_x + event_offset + hint_rect.width > host_x_max) {
-					css.left = target.event_x - event_offset - hint_rect.width;
+				hint_fits_vertically = false;
+			}
+
+			// Hint fits right of the event.
+			if (target.event_x + EVENT_OFFSET + css.width <= host_x_max) {
+				css.left = target.event_x + EVENT_OFFSET;
+			}
+			// Hint fits left of the event.
+			else if (target.event_x - EVENT_OFFSET - css.width >= host_x_min) {
+				css.left = target.event_x - css.width - EVENT_OFFSET;
+			}
+			// Hint fits neither right nor left of the event.
+			else {
+				if (hint_fits_vertically) {
+					css.left = host_client_width / 2 > target.event_x
+						? Math.min(target.event_x + EVENT_OFFSET, host_x_max - css.width)
+						: Math.max(target.event_x - EVENT_OFFSET - css.width, host_x_min);
+				}
+				else {
+					if (host_client_width / 2 > target.event_x) {
+						css.width = Math.min(css.width, host_x_max - target.event_x - EVENT_OFFSET);
+						css.left = target.event_x + EVENT_OFFSET;
+					}
+					else {
+						css.width = Math.min(css.width, target.event_x - EVENT_OFFSET - host_x_min);
+						css.left = target.event_x - EVENT_OFFSET - css.width;
+					}
 				}
 			}
 
 			// Assign css rules to hint.
 			Object.entries(css).forEach(([key, value]) => hint.style[key] = value !== null ? `${value}px` : null);
-
-			hint.style.height = `min(${height}px, calc(100vh - 20px))`;
 		}
 		while (host_client_width > host.clientWidth || host_client_height > host.clientHeight);
 
