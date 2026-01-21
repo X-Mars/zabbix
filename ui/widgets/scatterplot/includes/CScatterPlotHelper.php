@@ -33,8 +33,6 @@ use API,
  */
 class CScatterPlotHelper {
 
-	private const SCATTER_PLOT_METRIC_LIMIT = 10000;
-
 	/**
 	 * Calculate graph data and draw Scatter plot graph based on given graph configuration.
 	 *
@@ -91,9 +89,9 @@ class CScatterPlotHelper {
 		$svg_height = max(0, $height - ($legend !== null ? $legend->getHeight() : 0));
 
 		$scatter_plot = (new CScatterPlot([
+			'id_prefix' => $options['id_prefix'],
 			'time_period' => $options['time_period'],
-			'axes' => $options['axes'],
-			'id_prefix' => $options['id_prefix']
+			'axes' => $options['axes']
 		]))
 			->setSize($width, $svg_height)
 			->addMetrics($metrics)
@@ -132,16 +130,7 @@ class CScatterPlotHelper {
 
 	private static function getMetricsPattern(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid, bool $show_hostnames): void {
-		$max_metrics = [
-			'x_axis_items' => self::SCATTER_PLOT_METRIC_LIMIT,
-			'y_axis_items' => self::SCATTER_PLOT_METRIC_LIMIT
-		];
-
 		foreach ($data_sets as $index => $data_set) {
-			if ($max_metrics['x_axis_items'] <= 0 || $max_metrics['y_axis_items'] <= 0) {
-				break;
-			}
-
 			if ($data_set['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM) {
 				continue;
 			}
@@ -207,8 +196,7 @@ class CScatterPlotHelper {
 					'searchWildcardsEnabled' => true,
 					'searchByAny' => true,
 					'sortfield' => 'name',
-					'sortorder' => ZBX_SORT_UP,
-					'limit' => $max_metrics[$axis]
+					'sortorder' => ZBX_SORT_UP
 				];
 
 				if ($resolve_macros) {
@@ -240,8 +228,6 @@ class CScatterPlotHelper {
 
 				foreach ($items[$axis] as $item) {
 					$items_by_hosts[$item['hostid']][$axis][] = $item;
-
-					$max_metrics[$axis] --;
 				}
 
 				if ($axis === 'x_axis_items') {
@@ -278,16 +264,7 @@ class CScatterPlotHelper {
 
 	private static function getMetricsItems(array &$metrics, array $data_sets, string $templateid,
 			string $override_hostid, bool $show_hostnames): void {
-		$max_metrics = [
-			'x_axis_itemids' => self::SCATTER_PLOT_METRIC_LIMIT,
-			'y_axis_itemids' => self::SCATTER_PLOT_METRIC_LIMIT
-		];
-
 		foreach ($data_sets as $index => $data_set) {
-			if ($max_metrics['x_axis_itemids'] <= 0 || $max_metrics['y_axis_itemids'] <= 0) {
-				break;
-			}
-
 			if ($data_set['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM) {
 				continue;
 			}
@@ -364,8 +341,7 @@ class CScatterPlotHelper {
 						'value_type' => [ITEM_VALUE_TYPE_UINT64, ITEM_VALUE_TYPE_FLOAT]
 					],
 					'itemids' => $data_set[$axis],
-					'preservekeys' => true,
-					'limit' => $max_metrics[$axis]
+					'preservekeys' => true
 				]);
 
 				if (!$db_items) {
@@ -387,8 +363,6 @@ class CScatterPlotHelper {
 							: $db_items[$itemid];
 
 						$result[$axis][] = $item;
-
-						$max_metrics[$axis]--;
 					}
 				}
 			}
