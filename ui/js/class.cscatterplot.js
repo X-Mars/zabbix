@@ -114,7 +114,7 @@ class CScatterPlot {
 		this.#removePointHighlight();
 
 		if (this.#isInValuesArea(e)) {
-			this.#showHint(e, true);
+			this.#showHintAndHighlightPoints(e, true);
 		}
 	}
 
@@ -132,7 +132,7 @@ class CScatterPlot {
 			}
 
 			this.#hintbox_timeout = setTimeout(() => {
-				this.#showHint(e);
+				this.#showHintAndHighlightPoints(e);
 			}, 200);
 		}
 		else {
@@ -140,7 +140,7 @@ class CScatterPlot {
 		}
 	}
 
-	#showHint(e, is_static = false) {
+	#showHintAndHighlightPoints(e, is_static = false) {
 		const svg_rect = this.#svg.getBoundingClientRect();
 		const offsetX = e.clientX - svg_rect.left;
 		const offsetY = e.clientY - svg_rect.top;
@@ -285,12 +285,8 @@ class CScatterPlot {
 	}
 
 	#getHintboxHtml(included_paths) {
-		let rows_added = 0;
-
 		const hintbox_container = document.createElement('div');
 		hintbox_container.classList.add('svg-graph-hintbox');
-
-		const html = document.createElement('ul');
 
 		for (const paths of included_paths) {
 			for (const point of paths.points) {
@@ -303,16 +299,35 @@ class CScatterPlot {
 					const time_from = new CDate(tick * 1000);
 					const time_to = new CDate((tick + dataset.aggregate_interval) * 1000);
 
+					const row = document.createElement('div');
+					row.classList.add('scatter-plot-hintbox-row');
+
 					for (const key of ['x_items', 'y_items']) {
 						const items_data = Object.entries(metric[key]);
 
-						const li = document.createElement('li');
-						li.style.marginTop = key === 'x_items' && rows_added > 0 ? '10px' : null;
-						li.append(`${aggregation_name}(`);
+						const axis = document.createElement('div');
+						axis.classList.add('scatter-plot-hintbox-row-axis');
+
+						const color_span = document.createElement('span');
+						color_span.style.color = point.color;
+						color_span.classList.add('scatter-plot-hintbox-icon-color', dataset.marker_class);
+
+						axis.append(color_span);
+
+						if (aggregation_name) {
+							axis.append(`${aggregation_name}(`);
+						}
+						else if (items_data.length > 1) {
+							axis.append('(');
+						}
 
 						let count = 0;
 						for (const [itemid, name] of items_data) {
 							count++;
+
+							if (count > 1) {
+								axis.append(', ');
+							}
 
 							const item_span = document.createElement('span');
 							item_span.classList.add('has-broadcast-data');
@@ -320,35 +335,26 @@ class CScatterPlot {
 							item_span.dataset.ds = ds_id;
 							item_span.innerText = name.toString();
 
-							li.append(item_span);
-
-							if (count !== items_data.length && count > 0) {
-								li.append(', ');
-							}
+							axis.append(item_span);
 						}
 
-						const color_span = document.createElement('span');
-						color_span.style.color = point.color;
-						color_span.classList.add('svg-graph-hintbox-icon-color', dataset.marker_class);
+						if (aggregation_name || count > 1) {
+							axis.append(')');
+						}
 
-						li.append(`): ${key === 'x_items' ? point.vx : point.vy}`, color_span);
+						axis.append(`: ${key === 'x_items' ? point.vx : point.vy}`);
 
-						html.append(li);
-
-						rows_added++;
+						row.append(axis);
 					}
 
-					const row = document.createElement('div');
 					row.append(
 						`${time_from.format(PHP_ZBX_FULL_DATE_TIME)} - ${time_to.format(PHP_ZBX_FULL_DATE_TIME)}`
 					);
 
-					html.append(row);
+					hintbox_container.append(row);
 				}
 			}
 		}
-
-		hintbox_container.append(html);
 
 		return hintbox_container;
 	}
