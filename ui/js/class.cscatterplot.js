@@ -65,9 +65,12 @@ class CScatterPlot {
 	/**
 	 * @type {boolean}
 	 */
-	#is_static_hintbox_opened;
+	#is_static_hintbox_opened = false;
 
-	#hintbox_timeout = null;
+	/**
+	 * @type {number|undefined}
+	 */
+	#hintbox_timeout;
 
 	constructor(svg, widget, options) {
 		this.#svg = svg;
@@ -122,7 +125,9 @@ class CScatterPlot {
 		clearTimeout(this.#hintbox_timeout);
 		hintBox.hideHint(this.#svg, false);
 
-		this.#removePointHighlight();
+		if (!this.#is_static_hintbox_opened) {
+			this.#removePointHighlight();
+		}
 
 		if (this.#isInValuesArea(e)) {
 			this.#setHelperPosition(e);
@@ -170,8 +175,11 @@ class CScatterPlot {
 	#mouseLeaveHandler = () => {
 		clearTimeout(this.#hintbox_timeout);
 
-		this.#removePointHighlight();
 		this.#hideHelper();
+
+		if (!this.#is_static_hintbox_opened) {
+			this.#removePointHighlight();
+		}
 
 		hintBox.hideHint(this.#svg, false);
 	}
@@ -197,6 +205,8 @@ class CScatterPlot {
 
 	#onStaticHintboxClose = () => {
 		this.#is_static_hintbox_opened = false;
+
+		this.#removePointHighlight();
 	}
 
 	#markSelectedHintboxItems(hintbox) {
@@ -238,11 +248,14 @@ class CScatterPlot {
 	#findPoints(offset_x, offset_y) {
 		const paths = [];
 
-		const min_x = Math.round(offset_x) - CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
-		const max_x = Math.round(offset_x) + CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
+		const x_rounded = Math.round(offset_x);
+		const y_rounded = Math.round(offset_y);
 
-		const min_y = Math.round(offset_y) - CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
-		const max_y = Math.round(offset_y) + CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
+		const min_x = x_rounded - CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
+		const max_x = x_rounded + CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
+
+		const min_y = y_rounded - CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
+		const max_y = y_rounded + CScatterPlot.SCATTER_PLOT_MARKER_MIN_SIZE;
 
 		for (let x = min_x; x < max_x; x++) {
 			for (let y = min_y; y < max_y; y++) {
@@ -333,7 +346,7 @@ class CScatterPlot {
 							item_span.classList.add('has-broadcast-data');
 							item_span.dataset.itemid = itemid;
 							item_span.dataset.ds = ds_id;
-							item_span.innerText = name.toString();
+							item_span.innerText = name;
 
 							axis.append(item_span);
 						}
