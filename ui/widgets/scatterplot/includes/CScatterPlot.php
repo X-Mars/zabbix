@@ -566,7 +566,7 @@ class CScatterPlot extends CSvg {
 			$datasets[$index] = [
 				'aggregation_name' => $dataset['aggregation_name'],
 				'aggregate_interval' => $dataset['aggregate_interval'],
-				'marker_class' => CScatterPlotMetricPoint::MARKER_ICONS[$dataset['marker']],
+				'marker_class' => CScatterPlotMetricPoint::MARKER_ICONS[$dataset['marker']]
 			];
 		}
 

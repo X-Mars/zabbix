@@ -122,7 +122,7 @@ class CScatterPlotHelper {
 					'w' => $scatter_plot->getCanvasWidth(),
 					'h' => $scatter_plot->getCanvasHeight()
 				],
-				'hintbox_data' => $scatter_plot->getHintboxData(),
+				'hintbox_data' => $scatter_plot->getHintboxData()
 			],
 			'errors' => $errors
 		];
