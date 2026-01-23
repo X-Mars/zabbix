@@ -281,11 +281,11 @@ class CScatterPlot {
 	}
 
 	#removePointHighlight() {
-		for (const highlighter_point of this.#svg.querySelectorAll(`.highlighted`)) {
-			const href = highlighter_point.dataset.id;
+		for (const highlighted_point of this.#svg.querySelectorAll(`.highlighted`)) {
+			const href = highlighted_point.dataset.id;
 
-			highlighter_point.setAttribute('href', `#point_${href}`);
-			highlighter_point.classList.remove('highlighted');
+			highlighted_point.setAttribute('href', `#point_${href}`);
+			highlighted_point.classList.remove('highlighted');
 		}
 	}
 
