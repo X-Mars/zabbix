@@ -146,29 +146,21 @@ class CScatterPlot {
 	}
 
 	#showHintAndHighlightPoints(e, is_static = false) {
-		const svg_rect = this.#svg.getBoundingClientRect();
-		const offsetX = e.clientX - svg_rect.left;
-		const offsetY = e.clientY - svg_rect.top;
+		const included_paths = this.#findPoints(e.offsetX, e.offsetY);
 
-		const included_paths = this.#findPoints(offsetX, offsetY);
+		if (included_paths.length === 0) {
+			return;
+		}
 
-		if (included_paths.length > 0) {
-			this.#highlightPoints(included_paths);
+		this.#highlightPoints(included_paths);
 
-			included_paths.sort((p1, p2) => {
-				if (p1.x !== p2.x) {
-					return p2.x - p1.x;
-				}
+		included_paths.sort((p1, p2) => p1.x !== p2.x ? p2.x - p1.x : p1.y - p2.y);
 
-				return p1.y - p2.y;
-			});
-
-			if (is_static) {
-				hintBox.showStaticHint(e, this.#svg, null, false, null, this.#getHintboxHtml(included_paths));
-			}
-			else {
-				hintBox.showHint(e, this.#svg, this.#getHintboxHtml(included_paths));
-			}
+		if (is_static) {
+			hintBox.showStaticHint(e, this.#svg, null, false, null, this.#getHintboxHtml(included_paths));
+		}
+		else {
+			hintBox.showHint(e, this.#svg, this.#getHintboxHtml(included_paths));
 		}
 	}
 
@@ -282,18 +274,18 @@ class CScatterPlot {
 			for (const point_to_highlight of this.#svg.querySelectorAll(`.point-${x}-${y}`)) {
 				const href = point_to_highlight.dataset.id;
 
-				point_to_highlight.setAttribute('href', '#highlight_' + href);
-				point_to_highlight.classList.add('visible');
+				point_to_highlight.setAttribute('href', `#highlight_point_${href}`);
+				point_to_highlight.classList.add('highlighted');
 			}
 		});
 	}
 
 	#removePointHighlight() {
-		for (const highlighter_point of this.#svg.querySelectorAll(`.metric-point.visible`)) {
+		for (const highlighter_point of this.#svg.querySelectorAll(`.highlighted`)) {
 			const href = highlighter_point.dataset.id;
 
-			highlighter_point.setAttribute('href', '#' + href);
-			highlighter_point.classList.remove('visible');
+			highlighter_point.setAttribute('href', `#point_${href}`);
+			highlighter_point.classList.remove('highlighted');
 		}
 	}
 
