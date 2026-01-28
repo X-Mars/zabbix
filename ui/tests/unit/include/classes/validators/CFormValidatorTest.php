@@ -1507,7 +1507,7 @@ class CFormValidatorTest extends TestCase {
 				[],
 				CFormValidator::ERROR,
 				['/value' => [
-					['message' => 'This value cannot be less than "5".', 'level' => CFormValidator::ERROR_LEVEL_PRIMARY]
+					['message' => 'Value must be greater than or equal to 5.', 'level' => CFormValidator::ERROR_LEVEL_PRIMARY]
 				]]
 			],
 			[
@@ -1536,7 +1536,7 @@ class CFormValidatorTest extends TestCase {
 				[],
 				CFormValidator::ERROR,
 				['/value' => [
-					['message' => 'This value cannot be greater than "5".', 'level' => CFormValidator::ERROR_LEVEL_PRIMARY]
+					['message' => 'Value must be less than or equal to 5.', 'level' => CFormValidator::ERROR_LEVEL_PRIMARY]
 				]]
 			],
 			[
@@ -2366,7 +2366,7 @@ class CFormValidatorTest extends TestCase {
 				[],
 				CFormValidator::ERROR,
 				['/field2' => [
-					['message' => 'This value cannot be less than "3".', 'level' => CFormValidator::ERROR_LEVEL_PRIMARY]
+					['message' => 'Value must be greater than or equal to 3.', 'level' => CFormValidator::ERROR_LEVEL_PRIMARY]
 				]]
 			],
 			[

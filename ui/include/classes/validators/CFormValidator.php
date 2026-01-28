@@ -920,13 +920,13 @@ class CFormValidator {
 		}
 
 		if (array_key_exists('min', $rules) && bccomp($value, $rules['min']) == -1) {
-			$error = self::getMessage($rules, 'min', _s('This value cannot be less than "%1$s".', $rules['min']));
+			$error = self::getMessage($rules, 'min', _s('Value must be greater than or equal to %1$s.', $rules['min']));
 
 			return false;
 		}
 
 		if (array_key_exists('max', $rules) && bccomp($value, $rules['max']) == 1) {
-			$error = self::getMessage($rules, 'max', _s('This value cannot be greater than "%1$s".', $rules['max']));
+			$error = self::getMessage($rules, 'max', _s('Value must be less than or equal to %1$s.', $rules['max']));
 
 			return false;
 		}
@@ -971,13 +971,13 @@ class CFormValidator {
 		}
 
 		if (array_key_exists('min', $rules) && bccomp($value, $rules['min']) == -1) {
-			$error = self::getMessage($rules, 'min', _s('This value cannot be less than "%1$s".', $rules['min']));
+			$error = self::getMessage($rules, 'min', _s('Value must be greater than or equal to %1$s.', $rules['min']));
 
 			return false;
 		}
 
 		if (array_key_exists('max', $rules) && bccomp($value, $rules['max']) == 1) {
-			$error = self::getMessage($rules, 'max', _s('This value cannot be greater than "%1$s".', $rules['max']));
+			$error = self::getMessage($rules, 'max', _s('Value must be less than or equal to %1$s.', $rules['max']));
 
 			return false;
 		}
