@@ -42,13 +42,13 @@ class CControllerScheduledReportUpdate extends CController {
 			],
 			'hours' => ['integer', 'required', 'min' => 0, 'max' => 23],
 			'minutes' => ['integer', 'required', 'min' => 0, 'max' => 59],
-			'active_since' => ['string', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+			'active_since' => ['string', 'use' => [CAbsoluteTimeValidator::class, ['min' => 0, 'max' => ZBX_MAX_DATE]],
 				'regex' => '/^(\\d\\d\\d\\d-\\d\\d-\\d\\d)?$/',
-				'messages' => ['use' => _('Invalid date.'), 'regex' => _('Invalid date.')]
+				'messages' => ['regex' => _('Invalid date.')]
 			],
-			'active_till' => ['string', 'use' => [CAbsoluteTimeParser::class, [], ['min' => 0, 'max' => ZBX_MAX_DATE]],
+			'active_till' => ['string', 'use' => [CAbsoluteTimeValidator::class, ['min' => 0, 'max' => ZBX_MAX_DATE]],
 				'regex' => '/^(\\d\\d\\d\\d-\\d\\d-\\d\\d)?$/',
-				'messages' => ['use' => _('Invalid date.'), 'regex' => _('Invalid date.')]
+				'messages' => ['regex' => _('Invalid date.')]
 			],
 			'subject' => ['string'],
 			'message' => ['string'],
