@@ -1149,7 +1149,7 @@ class CFormValidator {
 			return {
 				result: CFormValidator.ERROR,
 				error: this.#getMessage(rules, 'min',
-					sprintf(t('This value cannot be less than "%1$s".'), rules['min'])
+					sprintf(t('Value must be greater than or equal to %1$s.'), rules['min'])
 				)
 			};
 		}
@@ -1158,7 +1158,7 @@ class CFormValidator {
 			return {
 				result: CFormValidator.ERROR,
 				error: this.#getMessage(rules, 'max',
-					sprintf(t('This value cannot be greater than "%1$s".'), rules['max'])
+					sprintf(t('Value must be less than or equal to %1$s.'), rules['max'])
 				)
 			};
 		}
