@@ -88,7 +88,7 @@ JAVASCRIPT;
 			'templated' => false,
 			'templateid' => 0,
 			'timeout' => DB::getDefault('items', 'timeout'),
-			'trapper_hosts' => DB::getDefault('items', 'trapper_hosts'),
+			'trapper_hosts' => '{$TRAPPER.ALLOWED_HOSTS}',
 			'trends_mode' => ITEM_STORAGE_CUSTOM,
 			'trends' => DB::getDefault('items', 'trends'),
 			'type' => DB::getDefault('items', 'type'),
@@ -255,6 +255,12 @@ JAVASCRIPT;
 
 		if ($item['type'] != ITEM_TYPE_JMX) {
 			$item['jmx_endpoint'] = ZBX_DEFAULT_JMX_ENDPOINT;
+		}
+
+		if ($item['type'] != ITEM_TYPE_TRAPPER && $item['type'] != ITEM_TYPE_HTTPAGENT) {
+			$item['trapper_hosts'] = $item['trapper_hosts'] !== ''
+				? $item['trapper_hosts']
+				: '{$TRAPPER.ALLOWED_HOSTS}';
 		}
 
 		if ($item['timeout'] !== DB::getDefault('items', 'timeout')) {

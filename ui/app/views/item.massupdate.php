@@ -384,7 +384,7 @@ $item_form_list->addRow(
 	)
 	->addRow(
 		(new CVisibilityBox('visible[trapper_hosts]', 'trapper_hosts', _('Original')))->setLabel(_('Allowed hosts')),
-		(new CTextBox('trapper_hosts', ''))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
+		(new CTextBox('trapper_hosts', '{$TRAPPER.ALLOWED_HOSTS}'))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
 	);
 
 // Append master item select to form list.
