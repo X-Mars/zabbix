@@ -434,6 +434,22 @@ static int	DBpatch_7050030(void)
 
 	return SUCCEED;
 }
+
+static int	DBpatch_7050031(void)
+{
+	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
+		return SUCCEED;
+
+	if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro"
+			" (globalmacroid, macro, value, description, type)"
+			" values (" ZBX_FS_UI64 ",'{$TRAPPER.ALLOWED_HOSTS}','127.0.0.1,::1','',%d)",
+			zbx_db_get_maxid("globalmacro"), 0))
+	{
+		return FAIL;
+	}
+
+	return SUCCEED;
+}
 #endif
 
 DBPATCH_START(7050)
@@ -471,5 +487,6 @@ DBPATCH_ADD(7050027, 0, 1)
 DBPATCH_ADD(7050028, 0, 1)
 DBPATCH_ADD(7050029, 0, 1)
 DBPATCH_ADD(7050030, 0, 1)
+DBPATCH_ADD(7050031, 0, 1)
 
 DBPATCH_END()
