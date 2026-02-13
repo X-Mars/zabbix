@@ -893,6 +893,12 @@ if (hasRequest('form')) {
 		$data['jmx_endpoint'] = ZBX_DEFAULT_JMX_ENDPOINT;
 	}
 
+	if ($data['type'] != ITEM_TYPE_TRAPPER && $data['type'] != ITEM_TYPE_HTTPAGENT) {
+		$data['trapper_hosts'] = $data['trapper_hosts'] !== ''
+			? $data['trapper_hosts']
+			: '{$TRAPPER.ALLOWED_HOSTS}';
+	}
+
 	$data['counter'] = null;
 	if (hasRequest('conditions')) {
 		$conditions = getRequest('conditions');
