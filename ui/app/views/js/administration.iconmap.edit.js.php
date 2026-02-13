@@ -179,7 +179,8 @@
 								location.href = this.#list_action;
 							}
 						})
-						.catch((exception) => this.#ajaxExceptionHandler(exception));
+						.catch((exception) => this.#ajaxExceptionHandler(exception))
+						.finally(() => this.#unsetLoadingStatus())
 			});
 		}
 

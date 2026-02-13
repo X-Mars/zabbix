@@ -95,15 +95,18 @@
 					})
 						.then(response => response.json())
 						.then(response => {
+							if ('error' in response) {
+								throw {error: response.error};
+							}
+
 							if ('form_errors' in response) {
 								this.form.setErrors(response.form_errors, true, true);
 								this.form.renderErrors();
-								this.#unsetLoadingStatus();
+
+								return;
 							}
-							else if ('error' in response) {
-								throw {error: response.error};
-							}
-							else {
+
+							if ('success' in response) {
 								postMessageOk(response.success.title);
 
 								if ('messages' in response.success) {
@@ -114,7 +117,8 @@
 								location.href = curl.getUrl();
 							}
 						})
-						.catch(exception => this.#ajaxExceptionHandler(exception));
+						.catch(exception => this.#ajaxExceptionHandler(exception))
+						.finally(() => this.#unsetLoadingStatus());
 				});
 		}
 
