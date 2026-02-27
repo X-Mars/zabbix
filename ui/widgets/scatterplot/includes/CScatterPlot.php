@@ -22,8 +22,8 @@ use CMathHelper,
 	CSvgGraphGrid,
 	CSvgLine,
 	CSvgTag,
+	CTag,
 	Exception;
-use CTag;
 
 class CScatterPlot extends CSvg {
 

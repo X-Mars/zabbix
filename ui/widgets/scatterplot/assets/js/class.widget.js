@@ -201,7 +201,7 @@ class CWidgetScatterPlot extends CWidget {
 
 	#initGraph(options) {
 		this.#svg = this._body.querySelector('svg');
-		this.#graph = new CSvgGraph(this.#svg, this, options);
+		this.#graph = new CScatterPlot(this.#svg, this, options);
 
 		this.#activateGraph();
 	}
