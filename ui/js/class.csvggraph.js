@@ -95,6 +95,16 @@ class CSvgGraph {
 	 */
 	#end;
 
+	/**
+	 * @type {boolean}
+	 */
+	#mouse_click_handled = false;
+
+	/**
+	 * @type {number|null}
+	 */
+	#hintbox_animation_frame_id = null;
+
 	constructor(svg, widget, options) {
 		this.#svg = svg;
 
@@ -118,12 +128,8 @@ class CSvgGraph {
 	}
 
 	activate() {
-		this.#svg.dataset.hintbox = '1';
-		this.#svg.dataset.hintboxStatic = '1';
-		this.#svg.dataset.hintboxDelay = '0';
-		this.#svg.dataset.hintboxStaticReopenOnClick = '1';
-
-		this.#svg.addEventListener('mousemove', this.#showHintbox);
+		this.#svg.addEventListener('click', this.#mouseClickHandler);
+		this.#svg.addEventListener('mousemove', this.#mouseMoveHandler);
 		this.#svg.addEventListener('mouseleave', this.#mouseLeaveHandler);
 		this.#svg.addEventListener('onShowStaticHint', this.#onStaticHintboxOpen);
 		this.#svg.addEventListener('onDeleteStaticHint', this.#onStaticHintboxClose);
@@ -134,13 +140,9 @@ class CSvgGraph {
 		}
 	}
 
-	deactivate(e) {
-		delete this.#svg.dataset.hintbox;
-		delete this.#svg.dataset.hintboxStatic;
-		delete this.#svg.dataset.hintboxDelay;
-		delete this.#svg.dataset.hintboxStaticReopenOnClick;
-
-		this.#svg.removeEventListener('mousemove', this.#showHintbox);
+	deactivate() {
+		this.#svg.removeEventListener('click', this.#mouseClickHandler);
+		this.#svg.removeEventListener('mousemove', this.#mouseMoveHandler);
 		this.#svg.removeEventListener('mouseleave', this.#mouseLeaveHandler);
 		this.#svg.removeEventListener('onShowStaticHint', this.#onStaticHintboxOpen);
 		this.#svg.removeEventListener('onDeleteStaticHint', this.#onStaticHintboxClose);
@@ -153,8 +155,38 @@ class CSvgGraph {
 		}
 	}
 
+	#cancelHintboxAnimationFrame() {
+		if (this.#hintbox_animation_frame_id !== null) {
+			cancelAnimationFrame(this.#hintbox_animation_frame_id);
+
+			this.#hintbox_animation_frame_id = null;
+		}
+	}
+
+	#mouseClickHandler = e => {
+		if (this.#mouse_click_handled) {
+			this.#mouse_click_handled = false;
+
+			return;
+		}
+
+		this.#cancelHintboxAnimationFrame();
+		this.#showHintboxAndHighlightPoints(e, true);
+	}
+
+	#mouseMoveHandler = e => {
+		if (this.#hintbox_animation_frame_id === null) {
+			this.#hintbox_animation_frame_id = requestAnimationFrame(() => {
+				this.#showHintboxAndHighlightPoints(e, false);
+
+				this.#hintbox_animation_frame_id = null;
+			});
+		}
+	}
+
 	#mouseLeaveHandler = () => {
-		this.#removeHintboxContents();
+		this.#cancelHintboxAnimationFrame();
+		this.#removeHintbox();
 		this.#hideHelper();
 	}
 
@@ -263,13 +295,11 @@ class CSvgGraph {
 	#startSBoxDrag = e => {
 		e.stopPropagation();
 
-		const offsetX = e.clientX - this.#svg.getBoundingClientRect().left;
-
-		if (this.#dimX <= offsetX && offsetX <= this.#dimX + this.#dimW && this.#dimY <= e.offsetY
+		if (this.#dimX <= e.offsetX && e.offsetX <= this.#dimX + this.#dimW && this.#dimY <= e.offsetY
 				&& e.offsetY <= this.#dimY + this.#dimH) {
 			this.#registerSBoxEvents();
 
-			this.#start = offsetX - this.#dimX;
+			this.#start = e.offsetX - this.#dimX;
 		}
 	}
 
@@ -289,10 +319,9 @@ class CSvgGraph {
 
 			this.#is_boxing = true;
 
-			this.#removeHintboxContents();
+			this.#cancelHintboxAnimationFrame();
+			this.#removeHintbox(true);
 			this.#hideHelper();
-
-			hintBox.hideHint(this.#svg, true);
 		}
 
 		if (this.#is_boxing) {
@@ -310,6 +339,8 @@ class CSvgGraph {
 			selection_text.innerHTML = `${formatTimestamp(seconds, false, true)}${label_end}`;
 			selection_text.setAttribute('x', `${Math.min(this.#start, this.#end) + this.#dimX + 5}px`);
 			selection_text.setAttribute('y', `${this.#dimY + 15}px`);
+
+			this.#mouse_click_handled = true;
 		}
 	}
 
@@ -360,7 +391,8 @@ class CSvgGraph {
 	}
 
 	#zoomOutTime = () => {
-		hintBox.hideHint(this.#svg, true);
+		this.#cancelHintboxAnimationFrame();
+		this.#removeHintbox(true);
 
 		this.#widget.updateTimeSelector({
 			method: 'zoomout',
@@ -395,11 +427,10 @@ class CSvgGraph {
 		}
 	}
 
-	#showHintbox = e => {
-		const svg_rect = this.#svg.getBoundingClientRect();
-		const offsetX = e.clientX - svg_rect.left;
-
+	#showHintboxAndHighlightPoints(e, is_static) {
 		let html = null;
+
+		this.#removeHintbox(is_static);
 
 		if (this.#is_boxing) {
 			this.#hideHelper();
@@ -408,7 +439,7 @@ class CSvgGraph {
 		}
 
 		// Check if mouse in the horizontal area in which hintbox must be shown.
-		const in_x = this.#dimX <= offsetX && offsetX <= this.#dimX + this.#dimW;
+		const in_x = this.#dimX <= e.offsetX && e.offsetX <= this.#dimX + this.#dimW;
 		const in_problem_area = in_x && this.#dimY + this.#dimH <= e.offsetY
 			&& e.offsetY <= this.#dimY + this.#dimH + 15;
 		const in_values_area = in_x && this.#dimY <= e.offsetY && e.offsetY <= this.#dimY + this.#dimH;
@@ -442,7 +473,7 @@ class CSvgGraph {
 				this.#setHelperPosition(e);
 
 				let included_points = [];
-				const points = this.#findValues(offsetX);
+				const points = this.#findValues(e.offsetX);
 
 				let xy_point = false;
 				let points_total = points.length;
@@ -499,15 +530,17 @@ class CSvgGraph {
 		}
 
 		if (html !== null) {
-			this.#svg.dataset.hintboxContents = html.outerHTML;
-		}
-		else if (in_values_area || in_problem_area) {
-			this.#removeHintboxContents();
+			if (is_static) {
+				hintBox.showStaticHint(e, this.#svg, null, false, null, html.outerHTML);
+			}
+			else {
+				hintBox.showHint(e, this.#svg, html.outerHTML);
+			}
 		}
 	}
 
-	#removeHintboxContents() {
-		delete this.#svg.dataset.hintboxContents;
+	#removeHintbox(is_static = false) {
+		hintBox.hideHint(this.#svg, is_static);
 	}
 
 	#findProblems(x) {
