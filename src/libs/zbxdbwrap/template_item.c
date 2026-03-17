@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,7 +18,6 @@
 #include "template.h"
 #include "tag_cache.h"
 
-#include "zbxcacheconfig.h"
 #include "zbxdb.h"
 #include "audit/zbxaudit.h"
 #include "audit/zbxaudit_item.h"
@@ -244,16 +243,20 @@ static void	get_template_items(zbx_uint64_t hostid, const zbx_vector_uint64_t *t
 		switch (interface_type = zbx_get_interface_type_by_item_type(item->type))
 		{
 			case INTERFACE_TYPE_UNKNOWN:
-			case INTERFACE_TYPE_OPT:
 				item->interfaceid = 0;
 				break;
-			case INTERFACE_TYPE_ANY:
+			case INTERFACE_TYPE_OPT:
+				item->interfaceid = 0;
+
 				for (i = 0; INTERFACE_TYPE_COUNT > i; i++)
 				{
 					if (0 != interfaceids[zbx_get_interface_type_priority(i) - 1])
+					{
+						item->interfaceid =
+								interfaceids[zbx_get_interface_type_priority(i) - 1];
 						break;
+					}
 				}
-				item->interfaceid = interfaceids[zbx_get_interface_type_priority(i) - 1];
 				break;
 			default:
 				item->interfaceid = interfaceids[interface_type - 1];
@@ -857,8 +860,8 @@ static void	save_template_item(zbx_uint64_t hostid, zbx_uint64_t *itemid, zbx_te
 														\
 			zbx_audit_item_update_json_update_##field(audit_context_mode, item->itemid,		\
 					item->flags, (0 == strcmp("", item->field##_orig) ? "" :		\
-					ZBX_MACRO_SECRET_MASK), (0 == strcmp("", item->field) ? "" :		\
-					ZBX_MACRO_SECRET_MASK));						\
+					ZBX_SECRET_MASK), (0 == strcmp("", item->field) ? "" :		\
+					ZBX_SECRET_MASK));						\
 		}												\
 
 #define PREPARE_UPDATE_UC(FLAG_POSTFIX, field)				\
