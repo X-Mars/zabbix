@@ -77,7 +77,7 @@ void	zbx_mock_test_entry(void **state)
 
 	zbx_mock_assert_result_eq("return value", expected_ret, returned_ret);
 
-	if (SUCCEED == expected_ret)
+	if (SUCCEED == expected_ret && ZBX_MOCK_SUCCESS == zbx_mock_parameter_exists("out.value"))
 	{
 		/* use custom epsilon for floating point values to account for */
 		/* rounding differences with various systems/libs              */

@@ -1415,6 +1415,34 @@ in:
 out:
   result: FAIL
 ---
+test case: Expression 'repeat("AA",9223372036854775808)'
+in:
+  rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_VAR]
+  expression: 'repeat("AA",9223372036854775808)'
+out:
+  result: FAIL
+---
+test case: Expression 'repeat("A",2047)'
+in:
+  rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_VAR]
+  expression: 'repeat("A",2047)'
+out:
+  result: SUCCEED
+---
+test case: Expression 'repeat("A",2048)'
+in:
+  rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_VAR]
+  expression: 'repeat("AA",2048)'
+out:
+  result: FAIL
+---
+test case: Expression 'repeat("A",2049)'
+in:
+  rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_VAR]
+  expression: 'repeat("AA",2049)'
+out:
+  result: FAIL
+---
 test case: Expression 'char(65)'
 in:
   rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_VAR]
