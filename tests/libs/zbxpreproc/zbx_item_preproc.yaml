@@ -1724,6 +1724,24 @@ out:
     time: 2017-10-29 03:15:00 +03:00
     data: "00000005000000290000001A"
 ---
+test case: throttle of two float values with excess significant digits
+in:
+  value:
+    value_type: ITEM_VALUE_TYPE_FLOAT
+    time: 2017-10-29 03:15:00 +03:00
+    data: "5.0000000000000000000000000001112"
+  history:
+    variant: ZBX_VARIANT_DBL
+    time: 2017-10-29 03:14:00 +03:00
+    data: "5.0000000000000000000000000001111"
+  step:
+    type: ZBX_PREPROC_THROTTLE_VALUE
+out:
+  return: SUCCEED
+  history:
+    time: 2017-10-29 03:14:00 +03:00
+    data: "5"
+---
 test case: throttle_timed(, abc)
 in:
   value:
