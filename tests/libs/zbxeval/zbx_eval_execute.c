@@ -77,23 +77,27 @@ void	zbx_mock_test_entry(void **state)
 
 	zbx_mock_assert_result_eq("return value", expected_ret, returned_ret);
 
-	if (SUCCEED == expected_ret && ZBX_MOCK_SUCCESS == zbx_mock_parameter_exists("out.value"))
+	if (SUCCEED == expected_ret)
 	{
-		/* use custom epsilon for floating point values to account for */
-		/* rounding differences with various systems/libs              */
-		if (ZBX_VARIANT_DBL == value.type)
+		if (ZBX_MOCK_SUCCESS == zbx_mock_parameter_exists("out.value"))
 		{
-			double	expected_value;
+			/* use custom epsilon for floating point values to account for */
+			/* rounding differences with various systems/libs              */
+			if (ZBX_VARIANT_DBL == value.type)
+			{
+				double	expected_value;
 
-			expected_value = atof(zbx_mock_get_parameter_string("out.value"));
+				expected_value = atof(zbx_mock_get_parameter_string("out.value"));
 
-			if (1e-12 < fabs(value.data.dbl - expected_value))
-				fail_msg("Expected value \"%f\" while got \"%f\"", expected_value, value.data.dbl);
-		}
-		else
-		{
-			zbx_mock_assert_str_eq("output value", zbx_mock_get_parameter_string("out.value"),
-				zbx_variant_value_desc(&value));
+				if (1e-12 < fabs(value.data.dbl - expected_value))
+					fail_msg("Expected value \"%f\" while got \"%f\"", expected_value,
+							value.data.dbl);
+			}
+			else
+			{
+				zbx_mock_assert_str_eq("output value", zbx_mock_get_parameter_string("out.value"),
+					zbx_variant_value_desc(&value));
+			}
 		}
 
 		zbx_variant_clear(&value);
