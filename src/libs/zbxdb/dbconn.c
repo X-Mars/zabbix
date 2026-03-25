@@ -405,7 +405,7 @@ static int	dbconn_open(zbx_dbconn_t *db)
 	if (NULL == (db->conn = mysql_init(NULL)))
 	{
 		zabbix_log(LOG_LEVEL_CRIT, "cannot allocate or initialize MYSQL database connection object");
-		exit(EXIT_FAILURE);
+		zbx_exit(EXIT_FAILURE);
 	}
 
 	if (1 == db->autoincrement)
@@ -866,9 +866,15 @@ static int	dbconn_vexecute(zbx_dbconn_t *db, const char *fmt, va_list args)
 		goto clean;
 	}
 
-	zabbix_log(LOG_LEVEL_DEBUG, "query [txnlev:%d] [%s]", db->txn_level,
-			db_replace_nonprintable_chars(sql, &sql_printable));
+	if (SUCCEED == ZBX_CHECK_LOG_LEVEL(LOG_LEVEL_DEBUG))
+	{
+		char		buf_sql_trunc[MAX_BUFFER_LEN + 1];
+		const char	*sql_trunc = zbx_truncate_value(sql, MAX_BUFFER_LEN, buf_sql_trunc,
+				sizeof(buf_sql_trunc));
 
+		zabbix_log(LOG_LEVEL_DEBUG, "query [txnlev:%d] [%s]", db->txn_level,
+				db_replace_nonprintable_chars(sql_trunc, &sql_printable));
+	}
 #if defined(HAVE_MYSQL)
 	if (NULL == db->conn)
 	{

@@ -532,14 +532,13 @@ class testFormItem extends CLegacyWebTest {
 				case INTERFACE_TYPE_SNMP :
 				case INTERFACE_TYPE_JMX :
 				case INTERFACE_TYPE_IPMI :
-				case INTERFACE_TYPE_ANY :
 				case INTERFACE_TYPE_OPT :
 					$this->assertTrue($form->query('id:js-item-interface-label')->one()->isDisplayed());
 					$dbInterfaces = DBfetchArray(DBselect(
 						'SELECT type,ip,port'.
 						' FROM interface'.
 						' WHERE hostid='.$hostid.
-							(($interfaceType == INTERFACE_TYPE_ANY || $interfaceType === INTERFACE_TYPE_OPT) ? '' : ' AND type='.$interfaceType)
+							($interfaceType === INTERFACE_TYPE_OPT ? '' : ' AND type='.$interfaceType)
 					));
 					if ($dbInterfaces != null) {
 						foreach ($dbInterfaces as $host_interface) {
@@ -700,9 +699,12 @@ class testFormItem extends CLegacyWebTest {
 				$this->assertFalse($form->getField('Update interval')->isDisplayed());
 		}
 
-		$value_types = ($type === 'Dependent item')
-			? ['Numeric (unsigned)', 'Numeric (float)', 'Character', 'Log', 'Text', 'Binary']
-			: ['Numeric (unsigned)', 'Numeric (float)', 'Character', 'Log', 'Text'];
+		$value_types = ($type === 'Dependent item') ?
+				['Numeric (unsigned)', 'Numeric (float)', 'Character', 'Log', 'Text', 'Binary', 'JSON']
+				: (($type === 'Calculated')
+					? ['Numeric (unsigned)', 'Numeric (float)', 'Character', 'Log', 'Text']
+					: ['Numeric (unsigned)', 'Numeric (float)', 'Character', 'Log', 'Text', 'JSON']
+				);
 
 		if (isset($templateid)) {
 			$this->assertEquals('true', $form->getField('Type of information')->getAttribute('readonly'));
@@ -710,7 +712,7 @@ class testFormItem extends CLegacyWebTest {
 		else {
 			$this->assertEquals($value_types, $form->getField('Type of information')->asDropdown()->getOptions()->asText());
 
-			foreach (['Numeric (unsigned)', 'Numeric (float)', 'Character', 'Log', 'Text'] as $info_type) {
+			foreach ($value_types as $info_type) {
 				$this->zbxTestIsEnabled('//*[@id="value_type"]//li[text()='.CXPathHelper::escapeQuotes($info_type).']');
 			}
 		}
@@ -974,18 +976,24 @@ class testFormItem extends CLegacyWebTest {
 				$preprocessing_type = get_preprocessing_types($itemPreproc['type'], false,
 					CItem::SUPPORTED_PREPROCESSING_TYPES
 				);
-				$this->zbxTestAssertAttribute("//z-select[@id='preprocessing_".($itemPreproc['step']-1)."_type']", 'readonly');
-				$this->zbxTestDropdownAssertSelected("preprocessing_".($itemPreproc['step']-1)."_type", $preprocessing_type);
+				$this->zbxTestAssertAttribute('//z-select[@id="preprocessing_'.($itemPreproc['step']-1).'_type"]', 'readonly');
+				$this->zbxTestDropdownAssertSelected('preprocessing_'.($itemPreproc['step']-1).'_type', $preprocessing_type);
 				if ((1 <= $itemPreproc['type']) && ($itemPreproc['type'] <= 4)) {
-					$this->zbxTestAssertAttribute("//input[@id='preprocessing_".($itemPreproc['step']-1)."_params_0']", 'readonly');
-					$this->zbxTestAssertElementValue("preprocessing_".($itemPreproc['step']-1)."_params_0", $itemPreproc['params']);
+					$this->zbxTestAssertAttribute('//z-textarea-flexible[@id="preprocessing_'.($itemPreproc['step']-1).
+							'_params_0"]', 'readonly'
+					);
+					$this->zbxTestAssertElementValue('preprocessing_'.($itemPreproc['step']-1).'_params_0', $itemPreproc['params']);
 				}
 				elseif ($itemPreproc['type'] == 5) {
 					$reg_exp = preg_split("/\n/", $itemPreproc['params']);
-					$this->zbxTestAssertAttribute("//input[@id='preprocessing_".($itemPreproc['step']-1)."_params_0']", 'readonly');
-					$this->zbxTestAssertAttribute("//input[@id='preprocessing_".($itemPreproc['step']-1)."_params_1']", 'readonly');
-					$this->zbxTestAssertElementValue("preprocessing_".($itemPreproc['step']-1)."_params_0", $reg_exp[0]);
-					$this->zbxTestAssertElementValue("preprocessing_".($itemPreproc['step']-1)."_params_1", $reg_exp[1]);
+					$this->zbxTestAssertAttribute('//z-textarea-flexible[@id="preprocessing_'.($itemPreproc['step']-1).
+							'_params_0"]', 'readonly'
+					);
+					$this->zbxTestAssertAttribute('//z-textarea-flexible[@id="preprocessing_'.($itemPreproc['step']-1).
+							'_params_1"]', 'readonly'
+					);
+					$this->zbxTestAssertElementValue('preprocessing_'.($itemPreproc['step']-1).'_params_0', $reg_exp[0]);
+					$this->zbxTestAssertElementValue('preprocessing_'.($itemPreproc['step']-1).'_params_1', $reg_exp[1]);
 				}
 			}
 		}
@@ -2030,22 +2038,22 @@ class testFormItem extends CLegacyWebTest {
 		}
 
 		if (isset($data['name'])) {
-			$this->zbxTestInputType('name', $data['name']);
+			$form->getField('Name')->fill($data['name']);
 		}
-		$name = $this->zbxTestGetValue("//input[@id='name']");
+		$name = $this->zbxTestGetValue("//z-textarea-flexible[@id='name']");
 
 		if (isset($data['key'])) {
-			$this->zbxTestInputType('key', $data['key']);
+			$form->getField('Key')->fill($data['key']);
 		}
-		$key = $this->zbxTestGetValue("//input[@id='key']");
+		$key = $this->zbxTestGetValue("//z-textarea-flexible[@id='key']");
 
 		if (isset($data['username'])) {
-			$this->zbxTestInputType('username', $data['username']);
+			$form->getField('User name')->fill($data['username']);
 		}
 
 		if (isset($data['ipmi_sensor'])) {
-			$this->zbxTestInputType('ipmi_sensor', $data['ipmi_sensor']);
-			$ipmi_sensor = $this->zbxTestGetValue("//input[@id='ipmi_sensor']");
+			$form->getField('IPMI sensor')->fill($data['ipmi_sensor']);
+			$ipmi_sensor = $this->zbxTestGetValue("//z-textarea-flexible[@id='ipmi_sensor']");
 		}
 
 		if (isset($data['script'])) {
@@ -2057,7 +2065,7 @@ class testFormItem extends CLegacyWebTest {
 		}
 
 		if (isset($data['allowed_hosts'])) {
-			$this->zbxTestInputType('trapper_hosts', $data['allowed_hosts']);
+			$form->getField('Allowed hosts')->fill($data['allowed_hosts']);
 		}
 
 		if (isset($data['params_f'])) {
@@ -2076,15 +2084,15 @@ class testFormItem extends CLegacyWebTest {
 			$this->zbxTestInputTypeOverwrite('delay', $data['delay']);
 		}
 
-		if (array_key_exists('master_item',$data))	{
+		if (array_key_exists('master_item',$data)) {
 			$this->zbxTestClickButtonMultiselect('master_itemid');
 			$master_overlay = COverlayDialogElement::find()->all()->last()->waitUntilReady();
 			$this->assertEquals('Items', $master_overlay->getTitle());
 			$master_overlay->query('link:'.$data['master_item'])->one()->click();
 		}
 
-		if (array_key_exists('snmp_oid', $data))	{
-			$this->zbxTestInputTypeOverwrite('snmp_oid', $data['snmp_oid']);
+		if (array_key_exists('snmp_oid', $data)) {
+			$form->getField('SNMP OID')->fill($data['snmp_oid']);
 		}
 
 		// Check hidden update and custom interval for mqtt.get key.
@@ -2107,7 +2115,6 @@ class testFormItem extends CLegacyWebTest {
 				$itemCount ++;
 
 				$add = $form->getFieldContainer('Custom intervals')->query('button:Add')->one();
-				$add->click();
 				// TODO: sometimes inline validation error appears simultaneously and intercepts the "Add" button click.
 				try {
 					$add->click();
@@ -2259,7 +2266,7 @@ class testFormItem extends CLegacyWebTest {
 			}
 
 			if (isset($data['ipmi_sensor'])) {
-				$ipmiValue = $this->zbxTestGetValue("//input[@id='ipmi_sensor']");
+				$ipmiValue = $this->zbxTestGetValue("//z-textarea-flexible[@id='ipmi_sensor']");
 				$this->assertEquals($ipmi_sensor, $ipmiValue);
 			}
 
@@ -2298,10 +2305,14 @@ class testFormItem extends CLegacyWebTest {
 		$this->zbxTestClickLinkTextWait($this->item);
 		$dialog = COverlayDialogElement::find()->waitUntilReady()->one();
 		$form = $dialog->asForm();
-		$form->getLabel('History')->query("xpath:span[@class='js-hint']/button")->one()->click();
-		$this->zbxTestAssertElementText("//div[@class='overlay-dialogue wordbreak']", 'Overridden by global housekeeping settings (99d)');
-		$form->getLabel('Trends')->query("xpath:span[@class='js-hint']/button")->one()->click();
-		$this->zbxTestAssertElementText("//div[@class='overlay-dialogue wordbreak'][2]", 'Overridden by global housekeeping settings (455d)');
+		$form->getLabel('History')->query('xpath:span[@class="js-hint"]/button')->one()->click();
+		$this->zbxTestAssertElementText('//div[contains(@class, "hintbox-static")]',
+				'Overridden by global housekeeping settings (99d)'
+		);
+		$form->getLabel('Trends')->query('xpath:span[@class="js-hint"]/button')->one()->click();
+		$this->zbxTestAssertElementText('//div[contains(@class, "hintbox-static")][2]',
+				'Overridden by global housekeeping settings (455d)'
+		);
 		$dialog->close();
 
 		$this->zbxTestOpen('zabbix.php?action=housekeeping.edit');

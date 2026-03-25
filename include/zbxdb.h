@@ -63,6 +63,15 @@ typedef struct
 }
 zbx_db_config_t;
 
+#define ZBX_MAX_SQL_SIZE	256 * 1024	/* 256KB */
+
+#ifndef ZBX_MAX_OVERFLOW_SQL_SIZE
+#	define ZBX_MAX_OVERFLOW_SQL_SIZE	ZBX_MAX_SQL_SIZE
+#elif 0 != ZBX_MAX_OVERFLOW_SQL_SIZE && \
+	(1024 > ZBX_MAX_OVERFLOW_SQL_SIZE || ZBX_MAX_OVERFLOW_SQL_SIZE > ZBX_MAX_SQL_SIZE)
+#error ZBX_MAX_OVERFLOW_SQL_SIZE is out of range
+#endif
+
 #ifdef HAVE_SQLITE3
 	/* we have to put double % here for sprintf */
 #	define ZBX_SQL_MOD(x, y) #x "%%" #y
@@ -567,6 +576,12 @@ void	zbx_db_large_query_append_sql(zbx_db_large_query_t *query, const char *sql)
 
 zbx_db_query_mask_t	zbx_db_set_log_masked_values(zbx_db_query_mask_t flag);
 zbx_db_query_mask_t	zbx_db_get_log_masked_values(void);
+
+/* connection pool settings */
+#define ZBX_SETTINGS_DBPOOL			"dbpool_"
+#define ZBX_SETTINGS_DBPOOL_MAX_IDLE		ZBX_SETTINGS_DBPOOL "max_idle"
+#define ZBX_SETTINGS_DBPOOL_MAX_OPEN		ZBX_SETTINGS_DBPOOL "max_open"
+#define ZBX_SETTINGS_DBPOOL_IDLE_TIMEOUT	ZBX_SETTINGS_DBPOOL "idle_timeout"
 
 #endif
 
