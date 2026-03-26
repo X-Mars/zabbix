@@ -43,8 +43,7 @@ $user_multiselect = (new CMultiSelect([
 			'dstfrm' => $form->getName(),
 			'dstfld1' => 'userid'
 		]
-	],
-	'add_post_js' => true
+	]
 ]))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH);
 
 $dashboard_multiselect = (new CMultiSelect([
@@ -60,8 +59,7 @@ $dashboard_multiselect = (new CMultiSelect([
 			'dstfrm' => $form->getName(),
 			'dstfld1' => 'dashboardid'
 		]
-	],
-	'add_post_js' => true
+	]
 ]))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH);
 
 $form_grid
@@ -113,13 +111,11 @@ $form_grid
 			(new CDiv([
 				(new CNumericBox('hours', $data['hours'], 2, !$data['allowed_edit'], false, false))
 					->padWithZeroes(2)
-					->setWidth(ZBX_TEXTAREA_NUMERIC_STANDARD_WIDTH)
-					->setReadonly(!$data['allowed_edit']),
+					->setWidth(ZBX_TEXTAREA_NUMERIC_STANDARD_WIDTH),
 				' : ',
 				(new CNumericBox('minutes', $data['minutes'], 2, !$data['allowed_edit'], false, false))
 					->padWithZeroes(2)
 					->setWidth(ZBX_TEXTAREA_NUMERIC_STANDARD_WIDTH)
-					->setReadonly(!$data['allowed_edit'])
 			]))->addClass(ZBX_STYLE_FORM_FIELDS_INLINE)
 		)
 	]);
