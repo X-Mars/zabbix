@@ -21,10 +21,6 @@
 
 $this->includeJsFile('reports.scheduledreport.list.js.php');
 
-if ($data['uncheck']) {
-	uncheckTableRows('scheduledreport');
-}
-
 $html_page = (new CHtmlPage())
 	->setTitle(_('Scheduled reports'))
 	->setDocUrl(CDocHelper::getUrl(CDocHelper::REPORTS_SCHEDULEDREPORT_LIST))
