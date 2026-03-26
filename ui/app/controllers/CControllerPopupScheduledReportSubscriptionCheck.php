@@ -15,6 +15,12 @@
 
 class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 
+	protected function init(): void {
+		$this->disableCsrfValidation();
+		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
+		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
+	}
+
 	public static function getValidationRules(array $userids, array $groupids): array {
 		$recipient_rules = [];
 
@@ -58,12 +64,6 @@ class CControllerPopupScheduledReportSubscriptionCheck extends CController {
 			],
 			'edit' => ['boolean']
 		]];
-	}
-
-	protected function init(): void {
-		$this->disableCsrfValidation();
-		$this->setInputValidationMethod(self::INPUT_VALIDATION_FORM);
-		$this->setPostContentType(self::POST_CONTENT_TYPE_JSON);
 	}
 
 	protected function checkInput(): bool {
