@@ -250,8 +250,6 @@ int	zbx_pg_stop(char **error)
 	zbx_ipc_socket_t	sock;
 	int			ret;
 
-	zabbix_log(LOG_LEVEL_DEBUG, "In %s()", __func__);
-
 	if (FAIL == zbx_ipc_socket_open(&sock, ZBX_IPC_SERVICE_PGSERVICE, ZBX_PG_SERVICE_TIMEOUT, error))
 		return FAIL;
 

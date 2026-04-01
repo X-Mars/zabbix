@@ -2381,6 +2381,7 @@ static void	server_restart_ha(zbx_rtc_t *rtc)
 
 	ha_status = ZBX_NODE_STATUS_STANDBY;
 }
+
 static void	zbx_on_exit_rtc(int ret, void *on_exit_args)
 {
 	ZBX_UNUSED(ret);
