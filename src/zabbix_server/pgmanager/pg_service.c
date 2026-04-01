@@ -457,7 +457,10 @@ void	pg_service_destroy(zbx_pg_service_t *pgs)
 	char	*error = NULL;
 
 	if (FAIL == zbx_pg_stop(&error))
-		zabbix_log(LOG_LEVEL_WARNING, "cannot stop pg service:%s", error);
+	{
+		zabbix_log(LOG_LEVEL_WARNING, "cannot stop pg service: %s", error);
+		zbx_free(error);
+	}
 
 	atomic_store(&pgs->stop, 1);
 	pthread_join(pgs->thread, &retval);
