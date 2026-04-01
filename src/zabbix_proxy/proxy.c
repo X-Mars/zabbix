@@ -2032,7 +2032,7 @@ int	MAIN_ZABBIX_ENTRY(int flags)
 	if (0 != config_forks[ZBX_PROCESS_TYPE_DISCOVERYMANAGER])
 		zbx_discoverer_init();
 
-	zbx_unset_exit_on_terminate();
+	zbx_unset_exit_on_terminate(NULL);
 
 	zbx_threads_num = zbx_supervisor_get_process_count(config_forks);
 	zbx_threads = (pid_t *)zbx_calloc(zbx_threads, (size_t)zbx_threads_num, sizeof(pid_t));
