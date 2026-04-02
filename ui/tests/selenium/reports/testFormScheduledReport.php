@@ -186,7 +186,7 @@ class testFormScheduledReport extends CWebTest {
 	 */
 	public static function getCommonValidationData() {
 		return [
-			// Empty fields.
+			// #0 Empty fields.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -201,6 +201,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #1.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -215,6 +216,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #2.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -235,6 +237,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #3.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -255,6 +258,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #4.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -275,7 +279,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
-			// The identical report names, users or user groups recipient.
+			// #5 The identical report names, users or user groups recipient.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -289,6 +293,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #6.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -309,6 +314,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #7.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -336,7 +342,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
-			// Start time field validation.
+			// #8 Start time field validation.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -345,10 +351,11 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'Start time' => '24:10',
 					'inline_errors' => [
-						'id:hours' => 'This value cannot be greater than "23".'
+						'id:hours' => 'Value must be less than or equal to 23.'
 					]
 				]
 			],
+			// #9.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -357,11 +364,11 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'Start time' => '00:60',
 					'inline_errors' => [
-						'id:minutes' => 'This value cannot be greater than "59".'
+						'id:minutes' => 'Value must be less than or equal to 59.'
 					]
 				]
 			],
-			// Date fields validation.
+			// #10 Date fields validation.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -372,11 +379,14 @@ class testFormScheduledReport extends CWebTest {
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true,
-					'inline_errors' => [
-						'id:active_till' => '"End date" must be an empty string or greater than "Start date".'
-					]
+					'error_message_part' => 'add', // Zachem eto?
+					'message_details' => '"active_till" must be an empty string or greater than "active_since".'
+					//'inline_errors' => [
+					//	'id:active_till' => '"End date" must be an empty string or greater than "Start date".'
+					//]
 				]
 			],
+			// #11.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -390,6 +400,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #12.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -403,6 +414,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #13.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -416,6 +428,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #14.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -429,6 +442,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #15.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -442,6 +456,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #16.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -456,6 +471,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #17.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -469,6 +485,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #18.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -492,6 +509,7 @@ class testFormScheduledReport extends CWebTest {
 	 */
 	public static function getCommonCreateData() {
 		return [
+			// #0.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -501,6 +519,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #1.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -521,7 +540,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
-			// Exclude user from subscriptions.
+			// #2 Exclude user from subscriptions.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -539,11 +558,14 @@ class testFormScheduledReport extends CWebTest {
 						]
 					],
 					'submit' => true,
-					'inline_errors' => [
-						'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
-					]
+					'error_message_part' => 'add', // Zachem eto?
+					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
+					//'inline_errors' => [
+					//	'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
+					//]
 				]
 			],
+			// #3.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -552,6 +574,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #4.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -564,6 +587,7 @@ class testFormScheduledReport extends CWebTest {
 					'trim' => true
 				]
 			],
+			// #5.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -589,6 +613,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #6.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -616,6 +641,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #7.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -674,6 +700,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #8.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -685,6 +712,7 @@ class testFormScheduledReport extends CWebTest {
 					'Dashboard' => 'Global view'
 				]
 			],
+			// #9.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -696,6 +724,7 @@ class testFormScheduledReport extends CWebTest {
 					'Dashboard' => 'Global view'
 				]
 			],
+			// #10.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -721,6 +750,11 @@ class testFormScheduledReport extends CWebTest {
 		foreach ($common_data as $report) {
 			if (!array_key_exists('Dashboard', $report[0]['fields'])) {
 				$report[0]['fields']['Dashboard'] = 'Global view';
+			}
+
+			if ($report[0]['expected'] === TEST_BAD && array_key_exists('message_details', $report[0])) {
+				$report[0]['message_header'] = 'Cannot '.CTestArrayHelper::get($report[0], 'error_message_part', 'create').
+						' scheduled report';
 			}
 
 			$data[] = $report;
@@ -776,6 +810,11 @@ class testFormScheduledReport extends CWebTest {
 			// Add prefix to the report name in the common data so that the names do not match with create data on page.
 			if (array_key_exists('Name', $report[0]['fields']) && $report[0]['fields']['Name'] !== 'Report for delete') {
 				$report[0]['fields']['Name'] = 'From dashboard - '.$report[0]['fields']['Name'];
+			}
+
+			if ($report[0]['expected'] === TEST_BAD && array_key_exists('message_details', $report[0])) {
+				$report[0]['message_header'] = 'Cannot '.CTestArrayHelper::get($report[0], 'error_message_part', 'create').
+						' scheduled report';
 			}
 
 			$data[] = $report;
@@ -1495,7 +1534,18 @@ class testFormScheduledReport extends CWebTest {
 			}
 
 			if ($data['expected'] === TEST_BAD) {
-				$this->assertInlineError($form, $data['inline_errors']);
+
+				echo '<pre>';
+				var_export($data);
+				echo '</pre>'; // to remove
+
+				if (array_key_exists('message_details', $data)) {
+					$this->assertMessage(TEST_BAD, $data['message_header'], $data['message_details']);
+				}
+				else {
+					$this->assertInlineError($form, $data['inline_errors']);
+				}
+
 				$this->assertEquals($old_hash, $this->getHash());
 			}
 		}
