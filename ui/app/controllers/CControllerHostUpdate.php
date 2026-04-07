@@ -73,12 +73,12 @@ class CControllerHostUpdate extends CControllerHostUpdateGeneral {
 				'port' => [
 					['db interface.port'],
 					['db interface.port', 'required', 'not_empty',
-						'use' => [CNumberValidator::class, ['usermacros' => true,
+						'use' => [CNumberValidator::class, ['usermacros' => true, 'with_float' => false,
 							'min' => ZBX_MIN_PORT_NUMBER, 'max' => ZBX_MAX_PORT_NUMBER
 						]]
 					],
 					['db interface.port', 'required', 'not_empty',
-						'use' => [CNumberValidator::class, ['usermacros' => true,
+						'use' => [CNumberValidator::class, ['usermacros' => true, 'with_float' => false,
 							'min' => ZBX_AGENT_INTERFACE_MIN_PORT_NUMBER, 'max' => ZBX_AGENT_INTERFACE_MAX_PORT_NUMBER
 						]],
 						'when' => ['type', 'in' => [INTERFACE_TYPE_AGENT]]
