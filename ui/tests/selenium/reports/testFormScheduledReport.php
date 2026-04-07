@@ -884,7 +884,7 @@ class testFormScheduledReport extends CWebTest {
 		}
 
 		return array_merge($data, [
-			// Empty fields.
+			// #0 Empty fields.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -902,6 +902,7 @@ class testFormScheduledReport extends CWebTest {
 					'submit' => true
 				]
 			],
+			// #1.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -913,6 +914,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #2.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -926,7 +928,7 @@ class testFormScheduledReport extends CWebTest {
 					'submit' => true
 				]
 			],
-			// Remove all subscriptions.
+			// #3 Remove all subscriptions.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -958,7 +960,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
-			// Exclude user from subscriptions.
+			// #4 Exclude user from subscriptions.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -980,11 +982,12 @@ class testFormScheduledReport extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
+					'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 					],
 					'submit' => true
 				]
 			],
+			// #5.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -1013,7 +1016,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
-			// Remove not required fields and remove subscriptions except user group.
+			// #6 Remove not required fields and remove subscriptions except user group.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -1045,7 +1048,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
-			// Update all fields (update, delete and create new subscriptions).
+			// #7 Update all fields (update, delete and create new subscriptions).
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -1112,6 +1115,7 @@ class testFormScheduledReport extends CWebTest {
 					]
 				]
 			],
+			// #8.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -1123,6 +1127,7 @@ class testFormScheduledReport extends CWebTest {
 					'Dashboard' => 'Global view'
 				]
 			],
+			// #9.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -1134,6 +1139,7 @@ class testFormScheduledReport extends CWebTest {
 					'Dashboard' => 'Global view'
 				]
 			],
+			// #10.
 			[
 				[
 					'expected' => TEST_GOOD,
