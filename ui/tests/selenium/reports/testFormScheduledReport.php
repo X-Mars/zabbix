@@ -1541,6 +1541,7 @@ class testFormScheduledReport extends CWebTest {
 
 			if ($data['expected'] === TEST_BAD) {
 
+				//remove section
 				echo '<pre>';
 				var_export($data);
 				echo '</pre>'; // to remove
