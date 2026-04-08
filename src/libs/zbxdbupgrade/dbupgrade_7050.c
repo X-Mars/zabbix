@@ -764,8 +764,19 @@ static int	DBpatch_7050052(void)
 
 static int	DBpatch_7050053(void)
 {
+	zbx_db_result_t	result;
+
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
+
+	result = zbx_db_select_n(
+			"select macro from globalmacro where macro='{$TRAPPER.ALLOWED_HOSTS}'", 1);
+
+	if (NULL != zbx_db_fetch(result))
+	{
+		zbx_db_free_result(result);
+		return SUCCEED;
+	}
 
 	if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro"
 			" (globalmacroid, macro, value, description, type)"
