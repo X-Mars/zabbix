@@ -147,9 +147,6 @@
 			const cell = document.createElement('td');
 
 			if (this.data.recipient_type == <?= ZBX_REPORT_RECIPIENT_TYPE_USER_GROUP ?>) {
-				// Required for inline validation rule 'count_values' as it does not support 'when' condition.
-				cell.appendChild(this.createHiddenInput('[exclude]', <?= ZBX_REPORT_EXCLUDE_USER_FALSE ?>));
-
 				return cell;
 			}
 

@@ -60,12 +60,9 @@ class CControllerScheduledReportUpdate extends CController {
 				],
 				'creatorid' => ['db users.userid', 'required'],
 				'exclude' => ['integer', 'required',
-					'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE, ZBX_REPORT_EXCLUDE_USER_TRUE]
+					'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE, ZBX_REPORT_EXCLUDE_USER_TRUE],
+					'when' => ['recipient_type', 'in' => [ZBX_REPORT_RECIPIENT_TYPE_USER]]
 				]
-			], 'count_values' => [
-				'field_rules' => ['exclude', 'in' => [ZBX_REPORT_EXCLUDE_USER_FALSE]],
-				'min' => 1,
-				'message' => _('If no user groups are specified, at least one user must be included in the mailing list.')
 			]],
 			'description' => ['db report.description'],
 			'status' => ['db report.status', 'in' => [ZBX_REPORT_STATUS_DISABLED, ZBX_REPORT_STATUS_ENABLED]]
