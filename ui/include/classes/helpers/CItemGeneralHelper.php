@@ -88,7 +88,7 @@ JAVASCRIPT;
 			'templated' => false,
 			'templateid' => 0,
 			'timeout' => DB::getDefault('items', 'timeout'),
-			'trapper_hosts' => '{$TRAPPER.ALLOWED_HOSTS}',
+			'trapper_hosts' => DB::getDefault('items', 'trapper_hosts'),
 			'trends_mode' => ITEM_STORAGE_CUSTOM,
 			'trends' => DB::getDefault('items', 'trends'),
 			'type' => DB::getDefault('items', 'type'),
@@ -260,7 +260,7 @@ JAVASCRIPT;
 		if ($item['type'] != ITEM_TYPE_TRAPPER && $item['type'] != ITEM_TYPE_HTTPAGENT) {
 			$item['trapper_hosts'] = $item['trapper_hosts'] !== ''
 				? $item['trapper_hosts']
-				: '{$TRAPPER.ALLOWED_HOSTS}';
+				: DB::getDefault('items', 'trapper_hosts');
 		}
 
 		if ($item['timeout'] !== DB::getDefault('items', 'timeout')) {
