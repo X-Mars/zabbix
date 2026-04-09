@@ -106,17 +106,21 @@ window.scheduledreport_edit = new class {
 
 		const {subscriptions} = this.form.getAllValues();
 
-		[...Object.values(subscriptions)]
-			.filter(subscription => subscription.recipient_inaccessible === "0")
-			.filter(subscription => subscription.creator_type == <?= ZBX_REPORT_CREATOR_TYPE_USER ?>)
-			.map(subscription => {
+		for (let index in subscriptions) {
+			const subscription = subscriptions[index];
+
+			if (subscription.recipient_inaccessible === '1') {
+				continue;
+			}
+
+			if (subscription.creator_type != <?= ZBX_REPORT_CREATOR_TYPE_RECIPIENT ?>) {
 				subscription.creator_inaccessible = 0;
 				subscription.creator_name = this.current_user_name;
 				subscription.creatorid = this.current_user_id;
+			}
 
-				return subscription;
-			})
-			.forEach((subscription) => new ReportSubscription(subscription));
+			new ReportSubscription(subscription);
+		}
 
 		if (this.owner_inaccessible) {
 			jQuery('#userid').multiSelect('clean');
