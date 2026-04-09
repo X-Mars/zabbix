@@ -332,7 +332,7 @@ class testUserRolesPermissions extends CWebTest {
 					'list_link' => 'zabbix.php?action=scheduledreport.list',
 					'action_link' => 'zabbix.php?action=popup&popup=scheduledreport.edit&reportid=',
 					'action' => 'Manage scheduled reports',
-					'check_links' => ['zabbix.php?action=popup&popup=scheduledreport.edit&reportid=1']
+					'check_links' => ['zabbix.php?action=popup&popup=scheduledreport.edit']
 				]
 			]
 		];
