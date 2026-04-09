@@ -558,11 +558,8 @@ class testFormScheduledReport extends CWebTest {
 						]
 					],
 					'submit' => true,
-					'error_message_part' => 'add', // Zachem eto?
+					'error_message_part' => 'add',
 					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
-					//'inline_errors' => [
-					//	'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
-					//]
 				]
 			],
 			// #3.
@@ -981,9 +978,8 @@ class testFormScheduledReport extends CWebTest {
 							]
 						]
 					],
-					'inline_errors' => [
-					'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
-					],
+					'message_header' => 'Cannot update scheduled report',
+					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.',
 					'submit' => true
 				]
 			],
@@ -1011,9 +1007,8 @@ class testFormScheduledReport extends CWebTest {
 						]
 					],
 					'submit' => true,
-					'inline_errors' => [
-						'id:subscriptions' => 'If no user groups are specified, at least one user must be included in the mailing list.'
-					]
+					'message_header' => 'Cannot update scheduled report',
+					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 				]
 			],
 			// #6 Remove not required fields and remove subscriptions except user group.

@@ -366,6 +366,9 @@ class testUserRolesPermissions extends CWebTest {
 				$this->assertTrue($this->query('button', $text)->one()->isEnabled(($text === 'Cancel') ? true : $action_status));
 			}
 
+			// To avoid pop up alert and severe browser error.
+			$this->query('button:Cancel')->one()->click();
+
 			if ($action_status) {
 				$this->changeRoleRule([$data['action'] => false]);
 			}
