@@ -366,8 +366,11 @@ class testUserRolesPermissions extends CWebTest {
 				$this->assertTrue($this->query('button', $text)->one()->isEnabled(($text === 'Cancel') ? true : $action_status));
 			}
 
-			// To avoid pop up alert and severe browser error.
-			$this->query('button:Cancel')->one()->click();
+			// For modal overlay form pages, click Cancel to properly close the overlay before navigating away.
+			// This preventing Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
+			if (in_array('Cancel', $data['form_button'])) {
+				$this->query('button:Cancel')->one()->click();
+				}
 
 			if ($action_status) {
 				$this->changeRoleRule([$data['action'] => false]);
