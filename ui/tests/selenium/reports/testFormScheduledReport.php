@@ -381,9 +381,6 @@ class testFormScheduledReport extends CWebTest {
 					'submit' => true,
 					'error_message_part' => 'add', // Zachem eto?
 					'message_details' => '"active_till" must be an empty string or greater than "active_since".'
-					//'inline_errors' => [
-					//	'id:active_till' => '"End date" must be an empty string or greater than "Start date".'
-					//]
 				]
 			],
 			// #11.
@@ -1535,12 +1532,6 @@ class testFormScheduledReport extends CWebTest {
 			}
 
 			if ($data['expected'] === TEST_BAD) {
-
-				//remove section
-				echo '<pre>';
-				var_export($data);
-				echo '</pre>'; // to remove
-
 				if (array_key_exists('message_details', $data)) {
 					$this->assertMessage(TEST_BAD, $data['message_header'], $data['message_details']);
 				}

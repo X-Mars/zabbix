@@ -144,7 +144,7 @@ class testUsersPasswordComplexity extends CWebTest {
 					'db_passwd_min_length' => 70
 				]
 			],
-			// #8. Negative number will be converted to positive when focus-out.
+			// #8 Negative number will be converted to positive when focus-out.
 			[
 				[
 					'fields' => ['Minimum password length' => '-8'],

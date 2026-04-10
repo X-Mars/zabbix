@@ -730,6 +730,7 @@ class testGeneric extends CWebTest {
 		if (array_key_exists('header', $data)) {
 			$this->page->assertHeader($data['header']);
 		}
+
 		if (CTestArrayHelper::get($data, 'error', false)) {
 			// Error message is expected for 'Queue' pages as case is checked without running server.
 
@@ -745,8 +746,9 @@ class testGeneric extends CWebTest {
 			$this->assertTrue($this->query('link', $text)->exists());
 		}
 
-		// For modal overlay form pages, click Cancel to properly close the overlay before navigating away.
-		// This preventing Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
+		/* For modal overlay form pages, click Cancel to properly close the overlay before navigating away.
+		*  This preventing Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
+		**/
 		if (array_key_exists('modal', $data)) {
 			$this->query('button:Cancel')->one()->click();
 		}

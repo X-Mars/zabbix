@@ -329,7 +329,7 @@ class testFormServicesSla extends CWebTest {
 					]
 				]
 			],
-			// #2 Duplicate SLA name
+			// #2 Duplicate SLA name.
 			[
 				[
 					'expected' => TEST_BAD,
