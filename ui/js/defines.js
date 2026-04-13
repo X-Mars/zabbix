@@ -253,3 +253,6 @@ const GROUP_GUI_ACCESS_DISABLED = 3;
 const NAME_DELIMITER = ': ';
 
 const WRAPPER_PADDING_RIGHT = 10;
+
+const EVENT_CONTEXT_PAGE_NAVIGATION = 'page_navigation';
+const EVENT_BACK_FORWARD = 'back_forward';
