@@ -737,7 +737,7 @@ class CScatterPlotHelper {
 				continue;
 			}
 
-			$key = $point['x_axis'] . ':' . $point['y_axis'];
+			$key = $point['x_axis'].':'.$point['y_axis'];
 
 			if (!array_key_exists($key, $result)) {
 				$result[$key] = $point + [
