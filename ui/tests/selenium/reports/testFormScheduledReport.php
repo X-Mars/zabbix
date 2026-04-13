@@ -379,7 +379,7 @@ class testFormScheduledReport extends CWebTest {
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
 					'submit' => true,
-					'error_message_part' => 'add', // Zachem eto?
+					'error_message_part' => 'add',
 					'message_details' => '"active_till" must be an empty string or greater than "active_since".'
 				]
 			],
