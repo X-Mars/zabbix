@@ -157,7 +157,7 @@ class CScatterPlotHelper {
 						'search' => [
 							'name' => self::processPattern($data_set['hosts'])
 						],
-						'evaltype' => $data_set['host_tags_evaltype'] ,
+						'evaltype' => $data_set['host_tags_evaltype'],
 						'tags' => $data_set['host_tags'] ?: null,
 						'groupids' => $data_set['hostgroupids'] ?: null,
 						'searchWildcardsEnabled' => true,
