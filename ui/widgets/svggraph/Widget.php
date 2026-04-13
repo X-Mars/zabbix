@@ -29,6 +29,9 @@ class Widget extends CWidget {
 			'class.widget.js' => [
 				'Actions' => _('Actions'),
 				'Download image' => _('Download image')
+			],
+			'class.csvggraph.js' => [
+				'S_MINUTE_SHORT' => _x('m', 'minute short')
 			]
 		];
 	}
