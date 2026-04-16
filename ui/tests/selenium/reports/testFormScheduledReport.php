@@ -376,8 +376,8 @@ class testFormScheduledReport extends CWebTest {
 						'Start date' => '2021-07-02',
 						'End date' => '2021-07-01'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true,
+					//Flag left as multiple fields are not covered with inline validation.
+					'submit' => true,
 					'error_message_part' => 'add',
 					'message_details' => '"active_till" must be an empty string or greater than "active_since".'
 				]
@@ -754,8 +754,8 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true
+					// Initially there is no focus on dashboard field.
+					'submit' => true
 				]
 			],
 			[
@@ -767,8 +767,8 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true
+					// Initially there is no focus on dashboard field.
+					'submit' => true
 				]
 			]
 		]);
