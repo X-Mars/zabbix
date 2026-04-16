@@ -195,7 +195,7 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'empty owner'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true,
+					//'submit' => true,
 					'inline_errors' => [
 						'Owner' => 'This field cannot be empty.'
 					]
@@ -286,7 +286,6 @@ class testFormScheduledReport extends CWebTest {
 					'fields' => [
 						'Name' => 'Report for delete'
 					],
-//					'error_message_part' => 'add',
 					'unique' => false,
 					'inline_errors' => [
 						'Name' => 'This object already exists.'
@@ -378,7 +377,7 @@ class testFormScheduledReport extends CWebTest {
 						'End date' => '2021-07-01'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true,
+					//'submit' => true,
 					'error_message_part' => 'add',
 					'message_details' => '"active_till" must be an empty string or greater than "active_since".'
 				]
@@ -765,7 +764,7 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'This field cannot be empty.'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true
+					//'submit' => true
 				]
 			],
 			[
@@ -778,7 +777,7 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'This field cannot be empty.'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true
+					//'submit' => true
 				]
 			]
 		]);
@@ -829,7 +828,7 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'This field cannot be empty.'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true
+					//'submit' => true
 				]
 			],
 			[
@@ -842,7 +841,7 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'This field cannot be empty.'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true
+					//'submit' => true
 				]
 			]
 		]);
@@ -893,7 +892,7 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'This field cannot be empty.'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true
+					//'submit' => true
 				]
 			],
 			// #1.
@@ -919,7 +918,7 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'This field cannot be empty.'
 					],
 					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					'submit' => true
+					//'submit' => true
 				]
 			],
 			// #3 Remove all subscriptions.
