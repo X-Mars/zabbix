@@ -746,6 +746,8 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 			$this->processExpressionRows($data['mappings']);
 		}
 
+		//Activate inline validation error
+		$this->query('id:name')->one()->click();
 		$this->page->removeFocus();
 
 		// Check the results in frontend.
