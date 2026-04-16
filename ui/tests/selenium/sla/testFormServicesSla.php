@@ -400,7 +400,6 @@ class testFormServicesSla extends CWebTest {
 				]
 			],
 			// #7 TODO: move "Schedule", days and period fields to the end of the fields array when DEV-4776 is merged.
-			// CheckTODOs
 			[
 				[
 					'expected' => TEST_BAD,
@@ -549,7 +548,6 @@ class testFormServicesSla extends CWebTest {
 				]
 			],
 			// #16 TODO: change the error message when ZBX-21085 will be fixed.
-			// Check TODOs
 			[
 				[
 					'expected' => TEST_BAD,
