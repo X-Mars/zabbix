@@ -194,8 +194,6 @@ class testFormScheduledReport extends CWebTest {
 						'Owner' => '',
 						'Name' => 'empty owner'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true,
 					'inline_errors' => [
 						'Owner' => 'This field cannot be empty.'
 					]
@@ -818,8 +816,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true
 				]
 			],
 			[
@@ -831,8 +827,6 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true
 				]
 			]
 		]);
@@ -882,8 +876,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true
 				]
 			],
 			// #1.
@@ -908,8 +900,6 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
 					],
-					// TODO: Please remove the below flag once ZBX-26932 is merged.
-					//'submit' => true
 				]
 			],
 			// #3 Remove all subscriptions.
