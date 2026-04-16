@@ -390,7 +390,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'start date with symbols',
 						'Start date' => 'YYYY-MM-DD'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_since' => 'Invalid date.'
 					]
@@ -404,7 +403,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'end date with symbols',
 						'End date' => 'YYYY-MM-DD'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_till' => 'Invalid date.'
 					]
@@ -418,7 +416,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'start date month is 13',
 						'Start date' => '2021-13-02'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_since' => 'Invalid date.'
 					]
@@ -432,7 +429,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'end date month is 13',
 						'End date' => '2021-13-02'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_till' => 'Invalid date.'
 					]
@@ -446,7 +442,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'start date is february 30',
 						'Start date' => '2021-02-30'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_since' => 'Invalid date.'
 					]
@@ -461,7 +456,6 @@ class testFormScheduledReport extends CWebTest {
 						'Dashboard' => 'Global view',
 						'End date' => '2021-02-30'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_till' => 'Invalid date.'
 					]
@@ -475,7 +469,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'start date invalid',
 						'Start date' => '2021/07/02'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_since' => 'Invalid date.'
 					]
@@ -489,7 +482,6 @@ class testFormScheduledReport extends CWebTest {
 						'Name' => 'end date invalid',
 						'End date' => '02-07-2021'
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:active_till' => 'Invalid date.'
 					]
@@ -530,7 +522,6 @@ class testFormScheduledReport extends CWebTest {
 							]
 						]
 					],
-//					'error_message_part' => 'add',
 					'inline_errors' => [
 						'id:subscriptions' => 'This field cannot be empty.'
 					]
@@ -1635,7 +1626,8 @@ class testFormScheduledReport extends CWebTest {
 				if (CTestArrayHelper::get($data, 'subscription_inline_errors') && $i === ($subscriptions_count - 1)) {
 					// Check error in subscription overlay for last subscriber.
 					$this->page->removeFocus();
-$form->submit(); // Temporary workaround.
+					// Temporary workaround.
+					$form->submit();
 					$this->assertInlineError($form, $data['subscription_inline_errors']);
 				}
 				else {
