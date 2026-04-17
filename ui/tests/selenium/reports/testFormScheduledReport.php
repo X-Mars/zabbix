@@ -815,7 +815,7 @@ class testFormScheduledReport extends CWebTest {
 						'Owner' => 'This field cannot be empty.',
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
-					],
+					]
 				]
 			],
 			[
@@ -826,7 +826,7 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
-					],
+					]
 				]
 			]
 		]);
@@ -875,7 +875,7 @@ class testFormScheduledReport extends CWebTest {
 						'Owner' => 'This field cannot be empty.',
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
-					],
+					]
 				]
 			],
 			// #1.
@@ -899,7 +899,7 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
-					],
+					]
 				]
 			],
 			// #3 Remove all subscriptions.
