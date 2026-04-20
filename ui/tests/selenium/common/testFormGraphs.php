@@ -440,7 +440,7 @@ class testFormGraphs extends CWebTest {
 					],
 					'inline_errors' => [
 						'Width' => 'Value must be less than or equal to 8000.',
-						'Height' => 'This value must be no greater than "4500".'
+						'Height' => 'Value must be less than or equal to 4500.'
 					]
 				]
 			],
