@@ -138,9 +138,12 @@ class CControllerAuditLogList extends CController {
 		}
 
 		$data['auditlogs'] = API::AuditLog()->get($params);
-		$data['paging'] = CPagerHelper::paginate($data['page'], $data['auditlogs'], ZBX_SORT_UP,
-			(new CUrl('zabbix.php'))->setArgument('action', $this->getAction())
-		);
+
+		if ($this->getAction() !== 'auditlog.csv') {
+			$data['paging'] = CPagerHelper::paginate($data['page'], $data['auditlogs'], ZBX_SORT_UP,
+				(new CUrl('zabbix.php'))->setArgument('action', $this->getAction())
+			);
+		}
 
 		$data['auditlogs'] = $this->sanitizeDetails($data['auditlogs']);
 
@@ -172,6 +175,11 @@ class CControllerAuditLogList extends CController {
 
 		$response = new CControllerResponseData($data);
 		$response->setTitle(_('Audit log'));
+
+		if ($this->getAction() === 'auditlog.csv') {
+			$response->setFileName('zbx_auditlog_export.csv');
+		}
+
 		$this->setResponse($response);
 	}
 

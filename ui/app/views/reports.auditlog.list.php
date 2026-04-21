@@ -51,6 +51,14 @@ $filter_actions = (new CCheckBoxList('filter_actions'))
 $html_page = (new CHtmlPage())
 	->setTitle(_('Audit log'))
 	->setDocUrl(CDocHelper::getUrl(CDocHelper::REPORTS_AUDITLOG_LIST))
+	->setControls(
+		(new CTag('nav', true,
+			(new CList())
+				->addItem(new CRedirectButton(_('Export to CSV'),
+					(new CUrl())->setArgument('action', 'auditlog.csv')
+				))
+		))->setAttribute('aria-label', _('Content controls'))
+	)
 	->addItem($filter
 		->addVar('action', $data['action'])
 		->setProfile($data['timeline']['profileIdx'])
