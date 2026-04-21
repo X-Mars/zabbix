@@ -224,6 +224,8 @@ static int	validate_item_config(ZBX_SOCKADDR *peer_addr, ZBX_SOCKADDR *client_ad
 		zbx_hashset_t *rights, const zbx_user_t *user, zbx_history_recv_item_t *item,
 		const zbx_hp_item_value_t *value, char **error)
 {
+	int	ret = SUCCEED;
+
 	if (NULL != rights)
 	{
 		zbx_host_permission_t	*perm;
@@ -280,7 +282,6 @@ static int	validate_item_config(ZBX_SOCKADDR *peer_addr, ZBX_SOCKADDR *client_ad
 	if ('\0' != *item->trapper_hosts)
 	{
 		char			*allowed_peers;
-		int			ret = FAIL;
 		zbx_dc_um_handle_t	*um_handle = zbx_dc_open_user_macros();
 
 		allowed_peers = zbx_strdup(NULL, item->trapper_hosts);
@@ -297,12 +298,14 @@ static int	validate_item_config(ZBX_SOCKADDR *peer_addr, ZBX_SOCKADDR *client_ad
 			*error = zbx_strdup(NULL, "Connection source address is not in item's allowed hosts list.");
 
 		zbx_free(allowed_peers);
-
-		if (FAIL == ret)
-			return FAIL;
+	}
+	else
+	{
+		ret = FAIL;
+		*error = zbx_strdup(NULL, "Item's allowed hosts list is empty.");
 	}
 
-	return SUCCEED;
+	return ret;
 }
 
 /******************************************************************************

@@ -1411,6 +1411,7 @@ static int	sender_item_validator(zbx_history_recv_item_t *item, zbx_socket_t *so
 {
 	zbx_host_rights_t	*rights;
 	char			key_short[VALUE_ERRMSG_MAX * ZBX_MAX_BYTES_IN_UTF8_CHAR + 1];
+	int			ret = FAIL;
 
 	if (HOST_MONITORED_BY_SERVER != item->host.monitored_by)
 	{
@@ -1444,23 +1445,21 @@ static int	sender_item_validator(zbx_history_recv_item_t *item, zbx_socket_t *so
 	if ('\0' != *item->trapper_hosts)	/* list of allowed hosts not empty */
 	{
 		char			*allowed_peers;
-		int			ret;
 		zbx_dc_um_handle_t	*um_handle = zbx_dc_open_user_macros();
 
 		allowed_peers = zbx_strdup(NULL, item->trapper_hosts);
 		zbx_substitute_macros(&allowed_peers, NULL, 0, zbx_macro_allowed_hosts_resolv, um_handle, item);
 		ret = zbx_tcp_check_allowed_peers(sock, allowed_peers);
 		zbx_free(allowed_peers);
-
 		zbx_dc_close_user_macros(um_handle);
+	}
 
-		if (FAIL == ret)
-		{
-			*error = zbx_dsprintf(*error, "cannot process item \"%s\" trap: %s",
-					zbx_truncate_itemkey(item->key_orig, VALUE_ERRMSG_MAX, key_short,
-					sizeof(key_short)), zbx_socket_strerror());
-			return FAIL;
-		}
+	if (FAIL == ret)
+	{
+		*error = zbx_dsprintf(*error, "cannot process item \"%s\" trap: %s",
+				zbx_truncate_itemkey(item->key_orig, VALUE_ERRMSG_MAX, key_short,
+				sizeof(key_short)), zbx_socket_strerror());
+		return FAIL;
 	}
 
 	rights = (zbx_host_rights_t *)args;
