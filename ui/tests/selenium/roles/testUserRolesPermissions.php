@@ -370,7 +370,8 @@ class testUserRolesPermissions extends CWebTest {
 			// This preventing Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
 			if (in_array('Cancel', $data['form_button'])) {
 				$this->query('button:Cancel')->one()->click();
-				}
+				COverlayDialogElement::ensureNotPresent();
+			}
 
 			if ($action_status) {
 				$this->changeRoleRule([$data['action'] => false]);
@@ -1946,7 +1947,6 @@ class testUserRolesPermissions extends CWebTest {
 	private function checkLinks($links, $page = 'Dashboards') {
 		foreach ($links as $link) {
 			$this->page->open($link)->waitUntilReady();
-			$this->query('id:back')->waitUntilClickable();
 			$this->assertMessage(TEST_BAD, 'Access denied', 'You are logged in as "user_for_role". '.
 					'You have no permissions to access this page.');
 			$this->query('button:Go to "'.$page.'"')->one()->waitUntilClickable()->click();
