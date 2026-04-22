@@ -54,9 +54,9 @@ $html_page = (new CHtmlPage())
 	->setControls(
 		(new CTag('nav', true,
 			(new CList())
-				->addItem(new CRedirectButton(_('Export to CSV'),
-					(new CUrl())->setArgument('action', 'auditlog.csv')
-				))
+				->addItem(
+					new CRedirectButton(_('Export to CSV'), (new CUrl())->setArgument('action', 'auditlog.csv'))
+				)
 		))->setAttribute('aria-label', _('Content controls'))
 	)
 	->addItem($filter
