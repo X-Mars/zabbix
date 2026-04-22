@@ -1412,6 +1412,8 @@ static int	sender_item_validator(zbx_history_recv_item_t *item, zbx_socket_t *so
 	zbx_host_rights_t	*rights;
 	char			key_short[VALUE_ERRMSG_MAX * ZBX_MAX_BYTES_IN_UTF8_CHAR + 1];
 	int			ret = FAIL;
+	char			err_msg[MAX_STRING_LEN];
+	const char		*err = err_msg;
 
 	if (HOST_MONITORED_BY_SERVER != item->host.monitored_by)
 	{
@@ -1452,13 +1454,19 @@ static int	sender_item_validator(zbx_history_recv_item_t *item, zbx_socket_t *so
 		ret = zbx_tcp_check_allowed_peers(sock, allowed_peers);
 		zbx_free(allowed_peers);
 		zbx_dc_close_user_macros(um_handle);
+		err = zbx_socket_strerror();
+	}
+	else
+	{
+		zbx_snprintf(err_msg, sizeof(err_msg), "connection from \"%s\" rejected, allowed hosts list is empty",
+				sock->peer);
 	}
 
 	if (FAIL == ret)
 	{
 		*error = zbx_dsprintf(*error, "cannot process item \"%s\" trap: %s",
 				zbx_truncate_itemkey(item->key_orig, VALUE_ERRMSG_MAX, key_short,
-				sizeof(key_short)), zbx_socket_strerror());
+				sizeof(key_short)), err);
 		return FAIL;
 	}
 
