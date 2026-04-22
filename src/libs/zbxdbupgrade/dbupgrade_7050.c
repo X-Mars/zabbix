@@ -804,7 +804,7 @@ static int	DBpatch_7050054(void)
 {
 	zbx_db_result_t	result;
 	char		*sql = NULL;
-	char *macro = "{$TRAPPER.ALLOWED_HOSTS: \"all allowed\"}";
+	char *macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
@@ -828,7 +828,7 @@ static int DBpatch_7050055(void)
 	zbx_db_result_t	result;
 	int		ret = SUCCEED;
 	int		first = 1;
-	char *macro = "{$TRAPPER.ALLOWED_HOSTS: \"all allowed\"}";
+	char *macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
