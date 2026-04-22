@@ -806,7 +806,8 @@ if (hasRequest('form')) {
 		$data['jmx_endpoint'] = ZBX_DEFAULT_JMX_ENDPOINT;
 	}
 
-	if ($data['type'] != ITEM_TYPE_TRAPPER && $data['type'] != ITEM_TYPE_HTTPAGENT) {
+	if ($data['type'] != ITEM_TYPE_TRAPPER && $data['type'] != ITEM_TYPE_HTTPAGENT
+			|| ($data['type'] == ITEM_TYPE_HTTPAGENT && $data['allow_traps'] == 0)) {
 		$data['trapper_hosts'] = '{$TRAPPER.ALLOWED_HOSTS}';
 	}
 
