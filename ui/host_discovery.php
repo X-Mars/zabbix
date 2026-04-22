@@ -894,9 +894,7 @@ if (hasRequest('form')) {
 	}
 
 	if ($data['type'] != ITEM_TYPE_TRAPPER && $data['type'] != ITEM_TYPE_HTTPAGENT) {
-		$data['trapper_hosts'] = $data['trapper_hosts'] !== ''
-			? $data['trapper_hosts']
-			: DB::getDefault('items', 'trapper_hosts');
+		$data['trapper_hosts'] = '{$TRAPPER.ALLOWED_HOSTS}';
 	}
 
 	$data['counter'] = null;
