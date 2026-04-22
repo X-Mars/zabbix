@@ -762,24 +762,25 @@ static int	DBpatch_7050052(void)
 	return ret;
 }
 
-static int	DBpatch_7050053_add_global_macro(const char *macro, char *value)
+static int	DBpatch_7050053_add_global_macro(const char *macro, const char *value)
 {
 	zbx_db_result_t	result;
-	char		*sql = NULL;
+	char		sql[MAX_STRING_LEN];
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
-	sql = zbx_dsprintf(NULL, "select macro from globalmacro where macro='%s'", macro);
+	zbx_snprintf(sql, sizeof(sql), "select macro from globalmacro where macro='%s'", macro);
 
-	result = zbx_db_select_n(sql, 1);
+	if (NULL == (result = zbx_db_select_n(sql, 1)))
+		return FAIL;
 
 	if (NULL != zbx_db_fetch(result))
 	{
 		zbx_db_free_result(result);
-		zbx_free(sql);
 		return SUCCEED;
 	}
+	zbx_db_free_result(result);
 
 	if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro"
 			" (globalmacroid, macro, value, description, type)"
@@ -788,9 +789,6 @@ static int	DBpatch_7050053_add_global_macro(const char *macro, char *value)
 	{
 		return FAIL;
 	}
-
-	zbx_db_free_result(result);
-	zbx_free(sql);
 
 	return SUCCEED;
 }
@@ -803,23 +801,25 @@ static int	DBpatch_7050053(void)
 static int	DBpatch_7050054(void)
 {
 	zbx_db_result_t	result;
-	char		*sql = NULL;
-	char *macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
+	int 		ret = SUCCEED;
+	const char	*macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
 	/* type - ITEM_TYPE_TRAPPER, ITEM_TYPE_HTTPAGENT */
-	result = zbx_db_select_n("select itemid from items"
-				" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''", 1);
-
-	if (NULL != zbx_db_fetch(result))
+	if (NULL == (result = zbx_db_select_n("select itemid from items"
+			" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''", 1)))
 	{
-		zbx_db_free_result(result);
-		return DBpatch_7050053_add_global_macro(macro, "0.0.0.0/0,::/0");
+		return FAIL;
 	}
 
-	return SUCCEED;
+	if (NULL != zbx_db_fetch(result))
+		ret = DBpatch_7050053_add_global_macro(macro, "0.0.0.0/0,::/0");
+
+	zbx_db_free_result(result);
+
+	return ret;
 }
 
 static int DBpatch_7050055(void)
@@ -827,23 +827,23 @@ static int DBpatch_7050055(void)
 	zbx_db_row_t	row;
 	zbx_db_result_t	result;
 	int		ret = SUCCEED;
-	int		first = 1;
-	char *macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
+	const char	*macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
 	/* type - ITEM_TYPE_TRAPPER, ITEM_TYPE_HTTPAGENT */
-	result = zbx_db_select("select itemid from items"
-			" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''");
+	if (NULL == (result = zbx_db_select("select itemid from items"
+			" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''")))
+	{
+		return FAIL;
+	}
 
 	while (SUCCEED == ret && NULL != (row = zbx_db_fetch(result)))
 	{
-		if (ZBX_DB_OK > zbx_db_execute("update items set trapper_hosts='%s' where itemid=%s;\n",
-			macro, row[0]))
-				ret = FAIL;
+		if (ZBX_DB_OK > zbx_db_execute("update items set trapper_hosts='%s' where itemid=%s", macro, row[0]))
+			ret = FAIL;
 	}
-
 	zbx_db_free_result(result);
 
 	return ret;
