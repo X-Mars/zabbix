@@ -48,7 +48,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			'contents_height' => 'int32|ge '.self::GRAPH_HEIGHT_MIN.'|le '.self::GRAPH_HEIGHT_MAX,
 			'has_custom_time_period' => 'in 1',
 			'preview' => 'in 1',
-			'widgetid' => 'db widget.widgetid'
+			'unique_id' => 'string'
 		]);
 	}
 
@@ -92,7 +92,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 		unset($data_set);
 
 		$graph_data = [
-			'id_prefix' => $this->getInput('widgetid'),
+			'id_prefix' => $this->getInput('unique_id'),
 			'data_sets' => $data_sets,
 			'data_source' => $this->fields_values['source'],
 			'fix_time_period' => ($this->isTemplateDashboard() && !$this->fields_values['override_hostid'])

@@ -76,7 +76,10 @@ class CWidgetScatterPlot extends CWidget {
 	}
 
 	getUpdateRequestData() {
-		const request_data = super.getUpdateRequestData();
+		const request_data = {
+			...super.getUpdateRequestData(),
+			unique_id: this.getUniqueId()
+		};
 
 		for (const [dataset_key, dataset] of request_data.fields.ds.entries()) {
 			if (dataset.dataset_type != CWidgetScatterPlot.DATASET_TYPE_SINGLE_ITEM) {
