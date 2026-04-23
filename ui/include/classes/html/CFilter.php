@@ -440,7 +440,7 @@ class CFilter extends CDiv {
 		}
 
 		$this
-			->addStyle('display:none')
+			->addStyle('display: none;')
 			->form->addItem($this->tabs);
 
 		if ($headers_cnt) {

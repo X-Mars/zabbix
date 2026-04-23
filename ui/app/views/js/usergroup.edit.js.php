@@ -310,23 +310,13 @@
 		#toggleMfaWarningIcon(mfa_value) {
 			const icon = document.getElementById('mfa-warning');
 
-			if (this.mfa_status == <?= MFA_DISABLED ?> && mfa_value != -1) {
-				icon.style.display = '';
-			}
-			else {
-				icon.style.display = 'none';
-			}
+			icon.hidden = this.mfa_status != <?= MFA_DISABLED ?> || mfa_value == -1;
 		}
 
 		#toggleLdapWarningIcon(userdirectory_value) {
 			const icon = document.getElementById('ldap-warning');
 
-			if (this.ldap_status == <?= ZBX_AUTH_LDAP_DISABLED ?> && userdirectory_value != 0) {
-				icon.style.display = '';
-			}
-			else {
-				icon.style.display = 'none';
-			}
+			icon.hidden = this.ldap_status != <?= ZBX_AUTH_LDAP_DISABLED ?> || userdirectory_value == 0
 		}
 	};
 </script>
