@@ -629,6 +629,7 @@ class testEscalations extends CIntegrationTest {
 				'name' => $name,
 				'key_' => $key,
 				'type' => ITEM_TYPE_TRAPPER,
+				'trapper_hosts' => '{$TRAPPER.ALLOWED_HOSTS}',
 				'value_type' => ITEM_VALUE_TYPE_UINT64
 			]);
 			$this->assertArrayHasKey('itemids', $response['result']);
