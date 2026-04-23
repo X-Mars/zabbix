@@ -152,6 +152,7 @@ class testNestedLLD extends CIntegrationTest{
 			'key_' => self::LLDRULE_MAIN,
 			'hostid' => self::$templateid_main,
 			'type' => ITEM_TYPE_TRAPPER,
+			'trapper_hosts' => '{$TRAPPER.ALLOWED_HOSTS}',
 			'delay' => 0,
 			'lifetime' => '7d',
 			'lld_macro_paths' => [
