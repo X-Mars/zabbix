@@ -1456,15 +1456,6 @@ static int	sender_item_validator(zbx_history_recv_item_t *item, zbx_socket_t *so
 			return FAIL;
 	}
 
-	if ('\0' == *item->trapper_hosts)	/* list of allowed hosts is empty */
-	{
-		*error = zbx_dsprintf(*error, "cannot process item \"%s\" trap:"
-				" connection from \"%s\" rejected, allowed hosts list is empty",
-				zbx_truncate_itemkey(item->key_orig, VALUE_ERRMSG_MAX, key_short, sizeof(key_short)),
-				sock->peer);
-		return FAIL;
-	}
-
 	allowed_peers = zbx_strdup(NULL, item->trapper_hosts);
 	um_handle = zbx_dc_open_user_macros();
 	zbx_substitute_macros(&allowed_peers, NULL, 0, zbx_macro_allowed_hosts_resolv, um_handle, item);

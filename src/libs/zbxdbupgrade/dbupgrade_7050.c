@@ -762,7 +762,7 @@ static int	DBpatch_7050052(void)
 	return ret;
 }
 
-static int	DBpatch_7050053_add_global_macro(const char *macro, const char *value)
+static int	DBpatch_add_global_macro(const char *macro, const char *value)
 {
 	zbx_db_result_t	result;
 	char		sql[MAX_STRING_LEN];
@@ -795,7 +795,7 @@ static int	DBpatch_7050053_add_global_macro(const char *macro, const char *value
 
 static int	DBpatch_7050053(void)
 {
-	return DBpatch_7050053_add_global_macro("{$TRAPPER.ALLOWED_HOSTS}", "127.0.0.1,::1");
+	return DBpatch_add_global_macro("{$TRAPPER.ALLOWED_HOSTS}", "127.0.0.1,::1");
 }
 
 static int	DBpatch_7050054(void)
@@ -815,18 +815,20 @@ static int	DBpatch_7050054(void)
 	}
 
 	if (NULL != zbx_db_fetch(result))
-		ret = DBpatch_7050053_add_global_macro(macro, "0.0.0.0/0,::/0");
+		ret = DBpatch_add_global_macro(macro, "0.0.0.0/0,::/0");
 
 	zbx_db_free_result(result);
 
 	return ret;
 }
 
-static int DBpatch_7050055(void)
+static int	DBpatch_7050055(void)
 {
 	zbx_db_row_t	row;
 	zbx_db_result_t	result;
 	int		ret = SUCCEED;
+	char		*sql = NULL;
+	size_t		sql_alloc = 0, sql_offset = 0;
 	const char	*macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
@@ -841,10 +843,18 @@ static int DBpatch_7050055(void)
 
 	while (SUCCEED == ret && NULL != (row = zbx_db_fetch(result)))
 	{
-		if (ZBX_DB_OK > zbx_db_execute("update items set trapper_hosts='%s' where itemid=%s", macro, row[0]))
+		zbx_snprintf_alloc(&sql, &sql_alloc, &sql_offset,
+				"update items set trapper_hosts='%s' where itemid=%s;\n", macro, row[0]);
+
+		if (ZBX_DB_OK > zbx_db_execute_overflowed_sql(&sql, &sql_alloc, &sql_offset))
 			ret = FAIL;
 	}
 	zbx_db_free_result(result);
+
+	if (SUCCEED == ret && ZBX_DB_OK > zbx_db_flush_overflowed_sql(sql, sql_offset))
+		ret = FAIL;
+
+	zbx_free(sql);
 
 	return ret;
 }
