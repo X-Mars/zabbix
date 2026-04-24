@@ -772,6 +772,8 @@ static int	DBpatch_add_global_macro(const char *macro, const char *value)
 
 	if (NULL == (result = zbx_db_select_n(sql, 1)))
 	{
+		zabbix_log(LOG_LEVEL_WARNING, "cannot perform database upgrade of global macro table,"
+						" please check upgrade notes");
 		zbx_free(macro_esc);
 		return FAIL;
 	}
@@ -818,6 +820,8 @@ static int	DBpatch_7050054(void)
 	if (NULL == (result = zbx_db_select_n("select itemid from items"
 			" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''", 1)))
 	{
+		zabbix_log(LOG_LEVEL_WARNING, "cannot perform database upgrade of global macro table,"
+						" please check upgrade notes");
 		return FAIL;
 	}
 
