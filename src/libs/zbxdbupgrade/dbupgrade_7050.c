@@ -838,9 +838,9 @@ static int	DBpatch_7050055(void)
 
 	if (ZBX_DB_OK > zbx_db_execute(
 			"update items"
-				"set trapper_hosts='%s'"
-				"where (type=2 or (type=19 and allow_traps=1))"
-					"and trapper_hosts=''", macro))
+				" set trapper_hosts='%s'"
+				" where (type=2 or (type=19 and allow_traps=1))"
+					" and trapper_hosts=''", macro))
 	{
 		return FAIL;
 	}
