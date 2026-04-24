@@ -842,6 +842,8 @@ static int	DBpatch_7050055(void)
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
+	/* 2  - ITEM_TYPE_TRAPPER   */
+	/* 19 - ITEM_TYPE_HTTPAGENT */
 	if (ZBX_DB_OK > zbx_db_execute(
 			"update items"
 				" set trapper_hosts='%s'"
