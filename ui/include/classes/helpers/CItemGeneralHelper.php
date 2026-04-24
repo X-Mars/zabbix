@@ -257,8 +257,7 @@ JAVASCRIPT;
 			$item['jmx_endpoint'] = ZBX_DEFAULT_JMX_ENDPOINT;
 		}
 
-		if (($item['type'] != ITEM_TYPE_TRAPPER && $item['type'] != ITEM_TYPE_HTTPAGENT)
-				|| ($item['type'] == ITEM_TYPE_HTTPAGENT && $item['allow_traps'] == 0)) {
+		if ($item['type'] != ITEM_TYPE_TRAPPER && $item['type'] != ITEM_TYPE_HTTPAGENT || $item['allow_traps'] == 0) {
 			$item['trapper_hosts'] = '{$TRAPPER.ALLOWED_HOSTS}';
 		}
 
