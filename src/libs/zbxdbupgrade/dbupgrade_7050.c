@@ -765,36 +765,43 @@ static int	DBpatch_7050052(void)
 static int	DBpatch_add_global_macro(const char *macro, const char *value)
 {
 	zbx_db_result_t	result;
-	char		sql[MAX_STRING_LEN];
+	char		sql[MAX_STRING_LEN], *macro_esc, *value_esc;
 
-	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
-		return SUCCEED;
-
-	zbx_snprintf(sql, sizeof(sql), "select macro from globalmacro where macro='%s'", macro);
+	macro_esc = zbx_db_dyn_escape_string(macro);
+	zbx_snprintf(sql, sizeof(sql), "select macro from globalmacro where macro='%s'", macro_esc);
 
 	if (NULL == (result = zbx_db_select_n(sql, 1)))
+	{
+		zbx_free(macro_esc);
 		return FAIL;
+	}
 
 	if (NULL != zbx_db_fetch(result))
 	{
+		zbx_free(macro_esc);
 		zbx_db_free_result(result);
 		return SUCCEED;
 	}
 	zbx_db_free_result(result);
 
-	if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro"
-			" (globalmacroid, macro, value, description, type)"
-			" values (" ZBX_FS_UI64 ",'%s','%s','',%d)",
-			zbx_db_get_maxid("globalmacro"), macro, value, 0))
-	{
+	value_esc = zbx_db_dyn_escape_string(value);
+	zbx_snprintf(sql, sizeof(sql), "insert into globalmacro (globalmacroid,macro,value,description,type)"
+			" values (" ZBX_FS_UI64 ",'%s','%s','',%d)", zbx_db_get_maxid("globalmacro"),
+			macro_esc, value_esc, 0);
+	zbx_free(macro_esc);
+	zbx_free(value_esc);
+
+	if (ZBX_DB_OK > zbx_db_execute(sql))
 		return FAIL;
-	}
 
 	return SUCCEED;
 }
 
 static int	DBpatch_7050053(void)
 {
+	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
+		return SUCCEED;
+
 	return DBpatch_add_global_macro("{$TRAPPER.ALLOWED_HOSTS}", "127.0.0.1,::1");
 }
 
@@ -824,39 +831,21 @@ static int	DBpatch_7050054(void)
 
 static int	DBpatch_7050055(void)
 {
-	zbx_db_row_t	row;
-	zbx_db_result_t	result;
-	int		ret = SUCCEED;
-	char		*sql = NULL;
-	size_t		sql_alloc = 0, sql_offset = 0;
 	const char	*macro = "{$TRAPPER.ALLOWED_HOSTS:\"all allowed\"}";
 
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
-	/* type - ITEM_TYPE_TRAPPER, ITEM_TYPE_HTTPAGENT */
-	if (NULL == (result = zbx_db_select("select itemid from items"
-			" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''")))
+	if (ZBX_DB_OK > zbx_db_execute(
+			"update items"
+				"set trapper_hosts='%s'"
+				"where (type=2 or (type=19 and allow_traps=1))"
+					"and trapper_hosts=''", macro))
 	{
 		return FAIL;
 	}
 
-	while (SUCCEED == ret && NULL != (row = zbx_db_fetch(result)))
-	{
-		zbx_snprintf_alloc(&sql, &sql_alloc, &sql_offset,
-				"update items set trapper_hosts='%s' where itemid=%s;\n", macro, row[0]);
-
-		if (ZBX_DB_OK > zbx_db_execute_overflowed_sql(&sql, &sql_alloc, &sql_offset))
-			ret = FAIL;
-	}
-	zbx_db_free_result(result);
-
-	if (SUCCEED == ret && ZBX_DB_OK > zbx_db_flush_overflowed_sql(sql, sql_offset))
-		ret = FAIL;
-
-	zbx_free(sql);
-
-	return ret;
+	return SUCCEED;
 }
 
 #endif
