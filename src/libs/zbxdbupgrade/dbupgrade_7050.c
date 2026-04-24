@@ -786,6 +786,7 @@ static int	DBpatch_add_global_macro(const char *macro, const char *value)
 	}
 	zbx_db_free_result(result);
 
+	/* 0 - ZBX_MACRO_VALUE_TEXT (plain-text value) */
 	value_esc = zbx_db_dyn_escape_string(value);
 	zbx_snprintf(sql, sizeof(sql), "insert into globalmacro (globalmacroid,macro,value,description,type)"
 			" values (" ZBX_FS_UI64 ",'%s','%s','',%d)", zbx_db_get_maxid("globalmacro"),
@@ -816,7 +817,8 @@ static int	DBpatch_7050054(void)
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
-	/* type - ITEM_TYPE_TRAPPER, ITEM_TYPE_HTTPAGENT */
+	/* 2  - ITEM_TYPE_TRAPPER   */
+	/* 19 - ITEM_TYPE_HTTPAGENT */
 	if (NULL == (result = zbx_db_select_n("select itemid from items"
 			" where (type=2 or (type=19 and allow_traps=1)) and trapper_hosts=''", 1)))
 	{
