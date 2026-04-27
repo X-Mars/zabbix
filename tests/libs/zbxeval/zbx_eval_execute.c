@@ -98,6 +98,28 @@ void	zbx_mock_test_entry(void **state)
 
 		zbx_variant_clear(&value);
 	}
+	else
+	{
+		zbx_mock_handle_t	param_handle;
+		const char		*expected_error;
+		zbx_mock_error_t	mock_ret;
+
+		mock_ret = zbx_mock_out_parameter("error", &param_handle);
+
+		if (ZBX_MOCK_SUCCESS != mock_ret)
+			fail_msg("Cannot get expected 'error' parameter: %s", zbx_mock_error_string(mock_ret));
+
+		mock_ret = zbx_mock_string(param_handle, &expected_error);
+
+		if (ZBX_MOCK_SUCCESS != mock_ret)
+			fail_msg("Cannot read expected 'error' string: %s", zbx_mock_error_string(mock_ret));
+
+		if (NULL == error)
+			fail_msg("Expected error '%s' but got NULL", expected_error);
+
+		if (0 != strcmp(error, expected_error))
+			fail_msg("Got\n'%s'\ninstead of\n'%s'", error, expected_error);
+	}
 out:
 	zbx_free(error);
 	zbx_eval_clear(&ctx);
