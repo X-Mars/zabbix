@@ -82,7 +82,7 @@ void	zbx_mock_test_entry(void **state)
 
 	if (ZBX_MOCK_SUCCESS == zbx_mock_parameter("in.time", &htime))
 	{
-		const char *str;
+		const char	*str;
 
 		if (ZBX_MOCK_SUCCESS != zbx_mock_string(htime, &str))
 			fail_msg("invalid in.time field");
@@ -90,7 +90,7 @@ void	zbx_mock_test_entry(void **state)
 		if (ZBX_MOCK_SUCCESS != zbx_strtime_to_timespec(str, &ts))
 			fail_msg("Invalid in.time format");
 
-		if (0 != setenv("TZ",zbx_mock_get_parameter_string("in.timezone"), 1))
+		if (0 != setenv("TZ", zbx_mock_get_parameter_string("in.timezone"), 1))
 				fail_msg("Cannot set 'TZ' environment variable: %s", zbx_strerror(errno));
 
 		pts = &ts;
@@ -105,14 +105,17 @@ void	zbx_mock_test_entry(void **state)
 
 	if (SUCCEED == expected_ret)
 	{
+		/* use custom epsilon for floating point values to account for */
+		/* rounding differences with various systems/libs              */
 		if (ZBX_VARIANT_DBL == value.type)
 		{
-			double	expected_value;
+			double	expected_value = atof(zbx_mock_get_parameter_string("out.value"));
 
-			expected_value = atof(zbx_mock_get_parameter_string("out.value"));
-
-			if (1e-12 < fabs(value.data.dbl - expected_value))
-				fail_msg("Expected value \"%f\" while got \"%f\"", expected_value, value.data.dbl);
+			if (SUCCEED != zbx_double_compare(value.data.dbl, expected_value))
+			{
+				fail_msg("Expected value \"%.20f\" while got \"%.20f\"", expected_value,
+						value.data.dbl);
+			}
 		}
 		else
 		{

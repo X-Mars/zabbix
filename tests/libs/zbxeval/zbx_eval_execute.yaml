@@ -1739,7 +1739,7 @@ in:
   expression: 'cbrt(63)'
 out:
   result: SUCCEED
-  value: 3.9790572078963922
+  value: 3.97905720789639172352
 ---
 test case: Expression 'cbrt(2.5)'
 in:
