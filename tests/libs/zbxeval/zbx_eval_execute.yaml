@@ -1450,7 +1450,7 @@ in:
   rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_VAR]
   expression: 'repeat("AA",9223372036854775808)'
 out:
-  error: 'Cannot evaluate expression: maximum allowed string length (2048) exceeded: 0'
+  error: 'Cannot evaluate expression: maximum allowed string length (2048) exceeded: 18446744073709551615'
   result: FAIL
 ---
 test case: Expression 'repeat("A",2047)'
