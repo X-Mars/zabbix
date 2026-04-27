@@ -762,50 +762,31 @@ static int	DBpatch_7050052(void)
 	return ret;
 }
 
-static int	DBpatch_add_global_macro(const char *macro, const char *value)
-{
-	zbx_db_result_t	result;
-	char		sql[MAX_STRING_LEN], *macro_esc, *value_esc;
-
-	macro_esc = zbx_db_dyn_escape_string(macro);
-	zbx_snprintf(sql, sizeof(sql), "select macro from globalmacro where macro='%s'", macro_esc);
-
-	if (NULL == (result = zbx_db_select_n(sql, 1)))
-	{
-		zabbix_log(LOG_LEVEL_WARNING, "cannot perform database upgrade of global macro table,"
-						" please check upgrade notes");
-		zbx_free(macro_esc);
-		return FAIL;
-	}
-
-	if (NULL != zbx_db_fetch(result))
-	{
-		zbx_free(macro_esc);
-		zbx_db_free_result(result);
-		return SUCCEED;
-	}
-	zbx_db_free_result(result);
-
-	/* 0 - ZBX_MACRO_VALUE_TEXT (plain-text value) */
-	value_esc = zbx_db_dyn_escape_string(value);
-	zbx_snprintf(sql, sizeof(sql), "insert into globalmacro (globalmacroid,macro,value,description,type)"
-			" values (" ZBX_FS_UI64 ",'%s','%s','',%d)", zbx_db_get_maxid("globalmacro"),
-			macro_esc, value_esc, 0);
-	zbx_free(macro_esc);
-	zbx_free(value_esc);
-
-	if (ZBX_DB_OK > zbx_db_execute(sql))
-		return FAIL;
-
-	return SUCCEED;
-}
-
 static int	DBpatch_7050053(void)
 {
+	zbx_db_result_t	result;
+	const char	*macro = "{$TRAPPER.ALLOWED_HOSTS}";
+	int		ret = SUCCEED;
+
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
-	return DBpatch_add_global_macro("{$TRAPPER.ALLOWED_HOSTS}", "127.0.0.1,::1");
+	if (NULL == (result = zbx_db_select("select macro from globalmacro where macro='%s'", macro)))
+		return FAIL;
+
+	if (NULL == zbx_db_fetch(result))
+	{
+		if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro (globalmacroid,macro,value)"
+				" values (" ZBX_FS_UI64 ",'%s','127.0.0.1,::1')", zbx_db_get_maxid("globalmacro"),
+				macro))
+		{
+			ret = FAIL;
+		}
+	}
+
+	zbx_db_free_result(result);
+
+	return ret;
 }
 
 static int	DBpatch_7050054(void)
