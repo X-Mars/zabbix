@@ -810,8 +810,6 @@ static int	DBpatch_7050053(void)
 
 static int	DBpatch_7050054(void)
 {
-	const char	*value = "0.0.0.0/0,::/0";
-
 	if (0 == (DBget_program_type() & ZBX_PROGRAM_TYPE_SERVER))
 		return SUCCEED;
 
@@ -819,9 +817,9 @@ static int	DBpatch_7050054(void)
 	/* 19 - ITEM_TYPE_HTTPAGENT */
 	if (ZBX_DB_OK > zbx_db_execute(
 			"update items"
-				" set trapper_hosts='%s'"
+				" set trapper_hosts='0.0.0.0/0,::/0'"
 				" where (type=2 or (type=19 and allow_traps=1))"
-					" and trapper_hosts=''", value))
+					" and trapper_hosts=''"))
 	{
 		return FAIL;
 	}
