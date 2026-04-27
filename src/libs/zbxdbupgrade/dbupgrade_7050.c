@@ -776,9 +776,9 @@ static int	DBpatch_7050053(void)
 
 	if (NULL == zbx_db_fetch(result))
 	{
-		if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro (globalmacroid,macro,value)"
+		if (ZBX_DB_OK > zbx_db_execute("insert into globalmacro (globalmacroid,macro,value,description)"
 				" values (" ZBX_FS_UI64 ",'%s','127.0.0.1,::1')", zbx_db_get_maxid("globalmacro"),
-				macro))
+				macro, ""))
 		{
 			ret = FAIL;
 		}
