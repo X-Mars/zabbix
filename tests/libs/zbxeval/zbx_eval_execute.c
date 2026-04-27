@@ -22,7 +22,6 @@
 #include "zbxlog.h"
 #include "mock_eval.h"
 
-
 static void	check_expected_error(const char *actual_error)
 {
 	zbx_mock_handle_t	param_handle;
@@ -63,7 +62,6 @@ void	zbx_mock_test_entry(void **state)
 	expected_ret = zbx_mock_str_to_return_code(zbx_mock_get_parameter_string("out.result"));
 
 	expression = zbx_mock_get_parameter_string("in.expression");
-
 #ifndef HAVE_LIBXML2
 	if (NULL != strstr(expression, "xmlxpath"))
 		skip();
@@ -99,7 +97,7 @@ void	zbx_mock_test_entry(void **state)
 	returned_ret = zbx_eval_execute(&ctx, pts, &value, &error);
 
 	if (SUCCEED != returned_ret)
-		printf("ERROR: %s\n", NULL != error ? error : "(null)");
+		printf("ERROR: %s\n", error);
 
 	zbx_mock_assert_result_eq("return value", expected_ret, returned_ret);
 
