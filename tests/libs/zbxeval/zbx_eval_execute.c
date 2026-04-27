@@ -22,6 +22,30 @@
 #include "zbxlog.h"
 #include "mock_eval.h"
 
+
+static void	check_expected_error(const char *actual_error)
+{
+	zbx_mock_handle_t	param_handle;
+	const char		*expected_error;
+	zbx_mock_error_t	mock_ret;
+
+	mock_ret = zbx_mock_out_parameter("error", &param_handle);
+
+	if (ZBX_MOCK_SUCCESS != mock_ret)
+		fail_msg("Cannot get expected 'error' parameter: %s", zbx_mock_error_string(mock_ret));
+
+	mock_ret = zbx_mock_string(param_handle, &expected_error);
+
+	if (ZBX_MOCK_SUCCESS != mock_ret)
+		fail_msg("Cannot read expected 'error' string: %s", zbx_mock_error_string(mock_ret));
+
+	if (NULL == actual_error)
+		fail_msg("Expected error '%s' but got NULL", expected_error);
+
+	if (0 != strcmp(actual_error, expected_error))
+		fail_msg("Got\n'%s'\ninstead of\n'%s'", actual_error, expected_error);
+}
+
 void	zbx_mock_test_entry(void **state)
 {
 	zbx_eval_context_t	ctx;
@@ -39,6 +63,7 @@ void	zbx_mock_test_entry(void **state)
 	expected_ret = zbx_mock_str_to_return_code(zbx_mock_get_parameter_string("out.result"));
 
 	expression = zbx_mock_get_parameter_string("in.expression");
+
 #ifndef HAVE_LIBXML2
 	if (NULL != strstr(expression, "xmlxpath"))
 		skip();
@@ -46,17 +71,18 @@ void	zbx_mock_test_entry(void **state)
 
 	if (SUCCEED != zbx_eval_parse_expression(&ctx, expression, rules, &error))
 	{
-		if (SUCCEED != expected_ret)
-			goto out;
+		if (SUCCEED == expected_ret)
+			fail_msg("failed to parse expression: %s", error);
 
-		fail_msg("failed to parse expression: %s", error);
+		check_expected_error(error);
+		goto out;
 	}
 
 	mock_eval_read_values(&ctx, "in.replace");
 
 	if (ZBX_MOCK_SUCCESS == zbx_mock_parameter("in.time", &htime))
 	{
-		const char	*str;
+		const char *str;
 
 		if (ZBX_MOCK_SUCCESS != zbx_mock_string(htime, &str))
 			fail_msg("invalid in.time field");
@@ -64,7 +90,7 @@ void	zbx_mock_test_entry(void **state)
 		if (ZBX_MOCK_SUCCESS != zbx_strtime_to_timespec(str, &ts))
 			fail_msg("Invalid in.time format");
 
-		if (0 != setenv("TZ", zbx_mock_get_parameter_string("in.timezone"), 1))
+		if (0 != setenv("TZ",zbx_mock_get_parameter_string("in.timezone"), 1))
 				fail_msg("Cannot set 'TZ' environment variable: %s", zbx_strerror(errno));
 
 		pts = &ts;
@@ -73,14 +99,12 @@ void	zbx_mock_test_entry(void **state)
 	returned_ret = zbx_eval_execute(&ctx, pts, &value, &error);
 
 	if (SUCCEED != returned_ret)
-		printf("ERROR: %s\n", error);
+		printf("ERROR: %s\n", NULL != error ? error : "(null)");
 
 	zbx_mock_assert_result_eq("return value", expected_ret, returned_ret);
 
 	if (SUCCEED == expected_ret)
 	{
-		/* use custom epsilon for floating point values to account for */
-		/* rounding differences with various systems/libs              */
 		if (ZBX_VARIANT_DBL == value.type)
 		{
 			double	expected_value;
@@ -93,32 +117,14 @@ void	zbx_mock_test_entry(void **state)
 		else
 		{
 			zbx_mock_assert_str_eq("output value", zbx_mock_get_parameter_string("out.value"),
-				zbx_variant_value_desc(&value));
+					zbx_variant_value_desc(&value));
 		}
 
 		zbx_variant_clear(&value);
 	}
 	else
 	{
-		zbx_mock_handle_t	param_handle;
-		const char		*expected_error;
-		zbx_mock_error_t	mock_ret;
-
-		mock_ret = zbx_mock_out_parameter("error", &param_handle);
-
-		if (ZBX_MOCK_SUCCESS != mock_ret)
-			fail_msg("Cannot get expected 'error' parameter: %s", zbx_mock_error_string(mock_ret));
-
-		mock_ret = zbx_mock_string(param_handle, &expected_error);
-
-		if (ZBX_MOCK_SUCCESS != mock_ret)
-			fail_msg("Cannot read expected 'error' string: %s", zbx_mock_error_string(mock_ret));
-
-		if (NULL == error)
-			fail_msg("Expected error '%s' but got NULL", expected_error);
-
-		if (0 != strcmp(error, expected_error))
-			fail_msg("Got\n'%s'\ninstead of\n'%s'", error, expected_error);
+		check_expected_error(error);
 	}
 out:
 	zbx_free(error);

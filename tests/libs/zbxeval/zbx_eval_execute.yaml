@@ -40,7 +40,7 @@ in:
   replace:
   - {token: '{$M}', value: '2'}
 out:
-  error: 'BADGER'
+  error: 'invalid token starting with "{$M}"'
   result: FAIL
 ---
 test case: Expression '{M}'
@@ -60,7 +60,7 @@ in:
   replace:
   - {token: '{M}', value: '2'}
 out:
-  error: 'BADGER'
+  error: 'invalid token starting with "{M}"'
   result: FAIL
 ---
 test case: Expression '{123} with replace'
@@ -820,7 +820,7 @@ in:
   rules: [ZBX_EVAL_PARSE_VAR,ZBX_EVAL_PARSE_MATH,ZBX_EVAL_PARSE_GROUP,ZBX_EVAL_PARSE_COMPARE]
   expression: '1e+309<>0'
 out:
-  error: 'BADGER'
+  error: 'invalid token starting with "1e+309<>0"'
   result: FAIL
 ---
 test case: Expression '1e+309s<>0'
@@ -828,7 +828,7 @@ in:
   rules: [ZBX_EVAL_PARSE_VAR,ZBX_EVAL_PARSE_MATH,ZBX_EVAL_PARSE_GROUP,ZBX_EVAL_PARSE_COMPARE]
   expression: '1e+309s<>0'
 out:
-  error: 'BADGER'
+  error: 'invalid token starting with "1e+309s<>0"'
   result: FAIL
 ---
 test case: Expression '1e+308<>0'
@@ -852,7 +852,7 @@ in:
   rules: [ZBX_EVAL_PARSE_VAR,ZBX_EVAL_PARSE_MATH,ZBX_EVAL_PARSE_GROUP,ZBX_EVAL_PARSE_COMPARE]
   expression: '1e+308K<>0'
 out:
-  error: 'BADGER'
+  error: 'invalid token starting with "1e+308K<>0"'
   result: FAIL
 ---
 test case: Expression '1e+308K<>0'
@@ -912,7 +912,7 @@ in:
   rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_GROUP,ZBX_EVAL_PARSE_VAR]
   expression: 'min(2s, 1m),'
 out:
-  error: 'BADGER'
+  error: 'missing function argument separator for comma at","'
   result: FAIL
 ---
 test case: Expression '-60={$M}'
@@ -2226,7 +2226,7 @@ in:
   rules: [ZBX_EVAL_PARSE_FUNCTION,ZBX_EVAL_PARSE_GROUP,ZBX_EVAL_PARSE_VAR]
   expression: 'power(10,300)*power(10,300)'
 out:
-  error: 'BADGER'
+  error: 'invalid token starting with "*power(10,300)"'
   result: FAIL
 ---
 test case: Expression 'histogram_quantile(0.8, 0.1, 1, 0.2, 2, +Inf, 3)'
