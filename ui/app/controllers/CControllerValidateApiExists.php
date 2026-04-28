@@ -24,7 +24,8 @@ class CControllerValidateApiExists extends CController {
 
 	public static function getValidationRules(): array {
 		$api_services = ['host', 'template', 'item', 'itemprototype', 'hostgroup', 'templategroup', 'iconmap', 'image',
-			'mediatype', 'proxy', 'regexp', 'sla', 'token', 'user', 'role', 'hostprototype', 'maintenance', 'connector'
+			'mediatype', 'proxy', 'proxygroup', 'regexp', 'sla', 'token', 'user', 'role', 'hostprototype',
+			'maintenance', 'connector', 'correlation', 'graph', 'graphprototype'
 		];
 
 		return ['object', 'fields' => [
@@ -44,13 +45,20 @@ class CControllerValidateApiExists extends CController {
 						], 'when' => ['../api', 'in' => ['item', 'itemprototype']]],
 						['object', 'fields' => [
 							'name' => ['string', 'required', 'not_empty'],
+							'hostid' => ['id', 'required'],
+						], 'when' => ['../api', 'in' => ['graph', 'graphprototype']]],
+						['object', 'fields' => [
+							'name' => ['string', 'required', 'not_empty'],
 							'userid' => ['id', 'required'],
 						], 'when' => ['../api', 'in' => ['token']]],
 						['object', 'fields' => [
 							'name' => ['string', 'required', 'not_empty'],
-						], 'when' => ['../api', 'in' => ['hostgroup', 'templategroup', 'iconmap',
-							'image', 'mediatype', 'proxy', 'regexp', 'sla', 'role', 'maintenance', 'connector'
-						]]]
+						], 'when' => ['../api', 'in' => ['hostgroup', 'templategroup', 'iconmap', 'image', 'mediatype',
+							'proxy', 'proxygroup', 'regexp', 'sla', 'role', 'maintenance', 'connector', 'correlation'
+						]]],
+						['object', 'fields' => [
+							'username' => ['string', 'required', 'not_empty'],
+						], 'when' => ['../api', 'in' => ['user']]]
 					],
 					'discoveryids' => ['id', 'required', 'when' => ['../api', 'in' => ['hostprototype']]],
 				]],
