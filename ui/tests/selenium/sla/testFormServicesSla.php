@@ -419,7 +419,7 @@ class testFormServicesSla extends CWebTest {
 					]
 				]
 			],
-			// #8 TODO: remove the "'id:schedule_enabled_1' => true" line when ZBX-21084 is fixed.
+			// #8 TODO: remove the "'Monday' => true' => true" line when ZBX-21084 is fixed.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -436,7 +436,7 @@ class testFormServicesSla extends CWebTest {
 					]
 				]
 			],
-			// #9 TODO: remove the "'id:schedule_enabled_1' => true" line when ZBX-21084 is fixed.
+			// #9 TODO: remove the "'Monday' => true" line when ZBX-21084 is fixed.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -453,7 +453,7 @@ class testFormServicesSla extends CWebTest {
 					]
 				]
 			],
-			// #10 TODO: remove the "'id:schedule_enabled_1' => true" line when ZBX-21084 is fixed.
+			// #10 TODO: remove the "'Monday' => true' => true" line when ZBX-21084 is fixed.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -470,7 +470,7 @@ class testFormServicesSla extends CWebTest {
 					]
 				]
 			],
-			// #11 TODO: remove the "'id:schedule_enabled_1' => true" line when ZBX-21084 is fixed.
+			// #11 TODO: remove the "'Monday' => true' => true" line when ZBX-21084 is fixed.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -547,7 +547,7 @@ class testFormServicesSla extends CWebTest {
 					]
 				]
 			],
-			// #16 TODO: change the error message when ZBX-21085 will be fixed.
+			// #16.
 			[
 				[
 					'expected' => TEST_BAD,

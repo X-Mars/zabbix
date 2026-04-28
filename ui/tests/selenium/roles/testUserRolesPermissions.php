@@ -367,7 +367,7 @@ class testUserRolesPermissions extends CWebTest {
 			}
 
 			// For modal overlay form pages, click Cancel to properly close the overlay before navigating away.
-			// This preventing Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
+			// This prevents Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
 			if (in_array('Cancel', $data['form_button'])) {
 				$this->query('button:Cancel')->one()->click();
 				COverlayDialogElement::ensureNotPresent();

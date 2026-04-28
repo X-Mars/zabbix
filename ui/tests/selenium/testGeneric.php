@@ -173,13 +173,6 @@ class testGeneric extends CWebTest {
 			],
 			[
 				[
-					'url' => 'zabbix.php?action=popup&popup=scheduledreport.edit',
-					'title' => 'Scheduled report edit',
-					'modal' => true
-				]
-			],
-			[
-				[
 					'url' => 'zabbix.php?action=availabilityreport.list',
 					'title' => 'Availability report',
 					'header' => 'Availability report'
@@ -727,9 +720,7 @@ class testGeneric extends CWebTest {
 	public function testGeneric_Pages($data) {
 		$this->page->login()->open($data['url'])->waitUntilReady();
 		$this->page->assertTitle($data['title']);
-		if (array_key_exists('header', $data)) {
-			$this->page->assertHeader($data['header']);
-		}
+		$this->page->assertHeader($data['header']);
 
 		if (CTestArrayHelper::get($data, 'error', false)) {
 			// Error message is expected for 'Queue' pages as case is checked without running server.
@@ -744,13 +735,6 @@ class testGeneric extends CWebTest {
 		$menu_user = ['Support', 'Integrations', 'Help', 'User settings', 'Sign out'];
 		foreach ($menu_user as $text) {
 			$this->assertTrue($this->query('link', $text)->exists());
-		}
-
-		/* For modal overlay form pages, click Cancel to properly close the overlay before navigating away.
-		*  This preventing Chrome from logging a SEVERE console error about blocking the beforeunload dialog.
-		**/
-		if (array_key_exists('modal', $data)) {
-			$this->query('button:Cancel')->one()->click();
 		}
 	}
 }

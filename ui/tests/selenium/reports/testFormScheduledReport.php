@@ -374,10 +374,7 @@ class testFormScheduledReport extends CWebTest {
 						'Start date' => '2021-07-02',
 						'End date' => '2021-07-01'
 					],
-					//Flag left as multiple fields are not covered with inline validation.
-					'submit' => true,
-					'error_message_part' => 'add',
-					'message_details' => '"active_till" must be an empty string or greater than "active_since".'
+					'error_details' => '"active_till" must be an empty string or greater than "active_since".'
 				]
 			],
 			// #11.
@@ -542,9 +539,7 @@ class testFormScheduledReport extends CWebTest {
 							]
 						]
 					],
-					'submit' => true,
-					'error_message_part' => 'add',
-					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
+					'error_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 				]
 			],
 			// #3.
@@ -734,11 +729,6 @@ class testFormScheduledReport extends CWebTest {
 				$report[0]['fields']['Dashboard'] = 'Global view';
 			}
 
-			if ($report[0]['expected'] === TEST_BAD && array_key_exists('message_details', $report[0])) {
-				$report[0]['message_header'] = 'Cannot '.CTestArrayHelper::get($report[0], 'error_message_part', 'create').
-						' scheduled report';
-			}
-
 			$data[] = $report;
 		}
 
@@ -751,9 +741,7 @@ class testFormScheduledReport extends CWebTest {
 					'inline_errors' => [
 						'Name' => 'This field cannot be empty.',
 						'Dashboard' => 'This field cannot be empty.'
-					],
-					// Initially there is no focus on dashboard field.
-					'submit' => true
+					]
 				]
 			],
 			[
@@ -764,9 +752,7 @@ class testFormScheduledReport extends CWebTest {
 					],
 					'inline_errors' => [
 						'Dashboard' => 'This field cannot be empty.'
-					],
-					// Initially there is no focus on dashboard field.
-					'submit' => true
+					]
 				]
 			]
 		]);
@@ -792,11 +778,6 @@ class testFormScheduledReport extends CWebTest {
 			// Add prefix to the report name in the common data so that the names do not match with create data on page.
 			if (array_key_exists('Name', $report[0]['fields']) && $report[0]['fields']['Name'] !== 'Report for delete') {
 				$report[0]['fields']['Name'] = 'From dashboard - '.$report[0]['fields']['Name'];
-			}
-
-			if ($report[0]['expected'] === TEST_BAD && array_key_exists('message_details', $report[0])) {
-				$report[0]['message_header'] = 'Cannot '.CTestArrayHelper::get($report[0], 'error_message_part', 'create').
-						' scheduled report';
 			}
 
 			$data[] = $report;
@@ -857,7 +838,6 @@ class testFormScheduledReport extends CWebTest {
 		$data = [];
 
 		foreach ($this->getCommonValidationData() as $report) {
-			$report[0]['message_header'] = 'Cannot update scheduled report';
 			$data[] = $report;
 		}
 
@@ -955,9 +935,7 @@ class testFormScheduledReport extends CWebTest {
 							]
 						]
 					],
-					'message_header' => 'Cannot update scheduled report',
-					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.',
-					'submit' => true
+					'error_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 				]
 			],
 			// #5.
@@ -983,9 +961,7 @@ class testFormScheduledReport extends CWebTest {
 							]
 						]
 					],
-					'submit' => true,
-					'message_header' => 'Cannot update scheduled report',
-					'message_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
+					'error_details' => 'If no user groups are specified, at least one user must be included in the mailing list.'
 				]
 			],
 			// #6 Remove not required fields and remove subscriptions except user group.
@@ -1442,11 +1418,7 @@ class testFormScheduledReport extends CWebTest {
 	}
 
 	public function testFormScheduledReport_Delete() {
-		$reportid = CDataHelper::call('report.get', [
-			'output' => ['reportid'],
-			'filter' => ['name' => 'Report for delete']
-		])[0]['reportid'];
-
+		$reportid = CDataHelper::get('ScheduledReports.reportids.Report for delete');
 		$this->page->login()->open('zabbix.php?action=scheduledreport.list')->waitUntilReady();
 		$this->query('link:Report for delete')->waitUntilClickable()->one()->click();
 		COverlayDialogElement::find()->one()->query('button:Delete')->waitUntilClickable()->one()->click();
@@ -1502,25 +1474,23 @@ class testFormScheduledReport extends CWebTest {
 		$form->fill($data['fields']);
 		$this->fillSubscriptions($data);
 
-		if (!CTestArrayHelper::get($data, 'subscription_inline_errors')) {
-			if (CTestArrayHelper::get($data, 'submit') || $data['expected'] === TEST_GOOD) {
-				$form->submit();
-				$this->page->waitUntilReady();
+		// No more actions required in case of inline validation check in subscription overlay.
+		if (CTestArrayHelper::get($data, 'subscription_inline_errors')) {
+			return;
+		}
+
+		$form->submit();
+
+		if ($data['expected'] === TEST_BAD) {
+			if (array_key_exists('error_details', $data)) {
+				$title = 'Cannot '.(($action === 'update') ? 'update' : 'add').' scheduled report';
+				$this->assertMessage(TEST_BAD, $title, $data['error_details']);
 			}
 			else {
-				$this->page->removeFocus();
+				$this->assertInlineError($form, $data['inline_errors']);
 			}
 
-			if ($data['expected'] === TEST_BAD) {
-				if (array_key_exists('message_details', $data)) {
-					$this->assertMessage(TEST_BAD, $data['message_header'], $data['message_details']);
-				}
-				else {
-					$this->assertInlineError($form, $data['inline_errors']);
-				}
-
-				$this->assertEquals($old_hash, $this->getHash());
-			}
+			$this->assertEquals($old_hash, $this->getHash());
 		}
 
 		if ($data['expected'] === TEST_GOOD) {
@@ -1613,15 +1583,13 @@ class testFormScheduledReport extends CWebTest {
 					$form->fill($subscriber['fields']);
 				}
 
+				$form->submit();
+
 				if (CTestArrayHelper::get($data, 'subscription_inline_errors') && $i === ($subscriptions_count - 1)) {
 					// Check error in subscription overlay for last subscriber.
-					$this->page->removeFocus();
-					// Temporary workaround.
-					$form->submit();
 					$this->assertInlineError($form, $data['subscription_inline_errors']);
 				}
 				else {
-					$form->submit();
 					$overlay->waitUntilNotVisible();
 
 					// Wait for the subscriber to be added to the subscription table.
