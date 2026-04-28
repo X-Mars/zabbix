@@ -500,7 +500,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				'time_till' => $tm,
 				'countOutput' => true
 			]);
-			$this->assertEquals((string) self::LLD_DISCOVERY_COUNT, $response['result']);
+			$this->assertEquals((string) self::LLD_DISCOVERY_COUNT, $response['result'], json_encode($response));
 
 			// Verify sort + limit: returned records should be ordered by itemid DESC.
 			$response = $this->call('history.get', [
