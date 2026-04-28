@@ -894,7 +894,7 @@ if (hasRequest('form')) {
 	}
 
 	if ($data['type'] != ITEM_TYPE_TRAPPER && ($data['type'] != ITEM_TYPE_HTTPAGENT || $data['allow_traps'] == 0)) {
-		$data['trapper_hosts'] = '{$TRAPPER.ALLOWED_HOSTS}';
+		$data['trapper_hosts'] = ZBX_DEFAULT_TRAPPER_HOSTS;
 	}
 
 	$data['counter'] = null;

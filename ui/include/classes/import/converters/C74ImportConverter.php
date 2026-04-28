@@ -74,7 +74,7 @@ class C74ImportConverter extends CConverter {
 			}
 
 			if (self::shouldAssignDefaultTrapperHosts($discovery_rule)) {
-				$discovery_rule['allowed_hosts'] = '{$TRAPPER.ALLOWED_HOSTS}';
+				$discovery_rule['allowed_hosts'] = ZBX_DEFAULT_TRAPPER_HOSTS;
 			}
 
 		}
@@ -86,7 +86,7 @@ class C74ImportConverter extends CConverter {
 	private static function convertItems(array $items): array {
 		foreach ($items as &$item) {
 			if (self::shouldAssignDefaultTrapperHosts($item)) {
-				$item['allowed_hosts'] = '{$TRAPPER.ALLOWED_HOSTS}';
+				$item['allowed_hosts'] = ZBX_DEFAULT_TRAPPER_HOSTS;
 			}
 		}
 		unset($item);
@@ -102,6 +102,6 @@ class C74ImportConverter extends CConverter {
 	 */
 	private static function shouldAssignDefaultTrapperHosts(array $item): bool {
 		return empty($item['allowed_hosts']) && ($item['type'] == CXmlConstantName::TRAP
-				|| $item['type'] == CXmlConstantName::HTTP_AGENT && $item['allow_traps'] == 1);
+				|| $item['type'] == CXmlConstantName::HTTP_AGENT && $item['allow_traps'] == CXmlConstantName::YES);
 	}
 }
