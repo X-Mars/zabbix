@@ -363,13 +363,18 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			if (count($r['result']) !== self::$total_trigger_expected) {
 				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
 			}
+			$wrong_value = 0;
+			$wrong_state = 0;
 			foreach ($r['result'] as $trigger) {
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
-					return false;
+					$wrong_value++;
 				}
 				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
-					return false;
+					$wrong_state++;
 				}
+			}
+			if ($wrong_value > 0 || $wrong_state > 0) {
+				return $wrong_value.' triggers did not change value, '.$wrong_state.' triggers in wrong state';
 			}
 			return true;
 		});
