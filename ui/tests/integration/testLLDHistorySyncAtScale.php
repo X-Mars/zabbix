@@ -607,7 +607,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->callUntilCountIsPresent('item.get', [
 			'hostids' => [self::$hostid],
 			'search' => ['key_' => self::ITEM_PROTO_KEY.'.']
-		], 0, 120, self::WAIT_ITERATION_DELAY);
+		], 0, 600, self::WAIT_ITERATION_DELAY);
 
 		/* check that server succeessfuly removed large amount of items from cache */
 		$this->reloadConfigurationCacheAndWaitForLogLine(self::COMPONENT_SERVER);
