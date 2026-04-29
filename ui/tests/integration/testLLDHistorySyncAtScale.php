@@ -32,7 +32,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	const ITEM_PROTO_KEY = 'multiple.history.trap';
 	const SENSOR_BASE = 'sensor';
 	const LLD_DISCOVERY_COUNT = 10000;
-	const TRIGGER_WARMUP_ITERATIONS = 600;
+	const TRIGGER_WARMUP_ITERATIONS = 1400;
 	const LLD_ITERATIONS = 240;
 
 	private static $hostid;
