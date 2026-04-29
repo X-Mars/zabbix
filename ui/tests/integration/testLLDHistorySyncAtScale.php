@@ -381,7 +381,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				$tps = round($fired / $elapsed, 1);
 				return $wrong_value.' triggers did not change value, '.$wrong_state.' triggers in wrong state'
 					.'; trigger processing rate too low: '.$tps.' triggers/sec'
-					.' (waited '.self::WAIT_ITERATIONS.'x'.self::WAIT_ITERATION_DELAY.'s = '.$elapsed.'s)';
+					.' (waited '.self::TRIGGER_WARMUP_ITERATIONS.'x'.self::WAIT_ITERATION_DELAY.'s = '.$elapsed.'s)';
 			}
 			return true;
 		});
