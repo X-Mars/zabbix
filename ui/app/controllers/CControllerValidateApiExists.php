@@ -37,31 +37,31 @@ class CControllerValidateApiExists extends CController {
 					'filter' => [
 						['object', 'fields' => [
 							'name' => ['string'],
-							'host' => ['string'],
+							'host' => ['string']
 						], 'when' => ['../api', 'in' => ['host', 'template', 'hostprototype']]],
 						['object', 'fields' => [
 							'key_' => ['string', 'required', 'not_empty'],
-							'hostid' => ['id', 'required'],
+							'hostid' => ['id', 'required']
 						], 'when' => ['../api', 'in' => ['item', 'itemprototype']]],
 						['object', 'fields' => [
 							'name' => ['string', 'required', 'not_empty'],
-							'hostid' => ['id', 'required'],
+							'hostid' => ['id', 'required']
 						], 'when' => ['../api', 'in' => ['graph', 'graphprototype']]],
 						['object', 'fields' => [
 							'name' => ['string', 'required', 'not_empty'],
-							'userid' => ['id', 'required'],
+							'userid' => ['id', 'required']
 						], 'when' => ['../api', 'in' => ['token']]],
 						['object', 'fields' => [
-							'name' => ['string', 'required', 'not_empty'],
+							'name' => ['string', 'required', 'not_empty']
 						], 'when' => ['../api', 'in' => ['hostgroup', 'templategroup', 'iconmap', 'image', 'mediatype',
 							'proxy', 'proxygroup', 'regexp', 'sla', 'role', 'maintenance', 'connector', 'correlation',
 							'usergroup'
 						]]],
 						['object', 'fields' => [
-							'username' => ['string', 'required', 'not_empty'],
+							'username' => ['string', 'required', 'not_empty']
 						], 'when' => ['../api', 'in' => ['user']]]
 					],
-					'discoveryids' => ['id', 'required', 'when' => ['../api', 'in' => ['hostprototype']]],
+					'discoveryids' => ['id', 'required', 'when' => ['../api', 'in' => ['hostprototype']]]
 				]],
 				'exclude_id' => ['id'],
 				'error_msg' => ['string']
