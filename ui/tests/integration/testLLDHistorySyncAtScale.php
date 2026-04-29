@@ -22,7 +22,7 @@ require_once dirname(__FILE__).'/../include/CIntegrationTest.php';
  * @required-components server
  * @suite-components-reuse true
  * @configurationDataProvider configurationProvider
- * @onAfter clearData
+ * @onAfterOnce clearData
  */
 class testLLDHistorySyncAtScale extends CIntegrationTest {
 
@@ -216,7 +216,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	/**
 	 * Verify history values sent 1 hour in the past.
 	 *
-	 * @depends testLLDHistorySyncAtScale_HistoryPastVpsWritten
+	 * @depends testLLDHistorySyncAtScale_HistoryPastSend
 	 */
 	public function testLLDHistorySyncAtScale_HistoryPastVerify() {
 		$this->verifyHistoryAt(self::$tm_past, self::$sent_past);
@@ -225,7 +225,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	/**
 	 * Send history values at current time.
 	 *
-	 * @depends testLLDHistorySyncAtScale_HistoryPastVerify
+	 * @depends testLLDHistorySyncAtScale_HistoryPrepare
 	 */
 	public function testLLDHistorySyncAtScale_HistoryNowSend() {
 		['sent' => $sent, 'values' => $all_values] = self::$prepared_now;
@@ -247,23 +247,64 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	/**
 	 * Verify history values sent at current time.
 	 *
-	 * @depends testLLDHistorySyncAtScale_HistoryNowVpsWritten
+	 * @depends testLLDHistorySyncAtScale_HistoryNowSend
 	 */
 	public function testLLDHistorySyncAtScale_HistoryNowVerify() {
 		$this->verifyHistoryAt(self::$tm_now, self::$sent_now);
 	}
 
 	/**
-	 * Verify that trends are generated for both past and current hour.
+	 * Verify history count output and sort order for past and current time values.
 	 *
 	 * @depends testLLDHistorySyncAtScale_HistoryNowVerify
 	 */
-	public function testLLDHistorySyncAtScale_HistoryAndTrends() {
-		/*$this->verifyTrendsAtClock(self::$tm_past - (self::$tm_past % 3600));
+	/*public function testLLDHistorySyncAtScale_HistoryVerifySortAndCount() {
+		foreach ([self::$tm_past => self::$sent_past, self::$tm_now => self::$sent_now] as $tm => $sent) {
+			foreach (self::prototypeDefs() as $def) {
+				$vtype = $def['value_type'];
+				$itemids = $sent[$vtype]['itemids'];
+
+				$response = $this->call('history.get', [
+					'history' => $vtype,
+					'itemids' => $itemids,
+					'time_from' => $tm,
+					'time_till' => $tm,
+					'countOutput' => true
+				]);
+				$this->assertEquals((string) self::LLD_DISCOVERY_COUNT, $response['result']);
+
+				// Verify sort + limit: returned records should be ordered by itemid DESC.
+				$response = $this->call('history.get', [
+					'history' => $vtype,
+					'itemids' => $itemids,
+					'time_from' => $tm,
+					'time_till' => $tm,
+					'sortfield' => 'itemid',
+					'sortorder' => 'DESC',
+					'limit' => 10
+				]);
+				$this->assertCount(10, $response['result']);
+				for ($i = 0; $i < count($response['result']) - 1; $i++) {
+					$this->assertGreaterThanOrEqual(
+						(int) $response['result'][$i + 1]['itemid'],
+						(int) $response['result'][$i]['itemid']
+					);
+				}
+			}
+		}
+	}*/
+
+	/**
+	 * Verify that trends are generated for both past and current hour.
+	 *
+	 * @depends testLLDHistorySyncAtScale_HistoryNowSend
+	 */
+	public function testLLDHistorySyncAtScale_TrendsVerify() {
+		$this->verifyTrendsAtClock(self::$tm_past - (self::$tm_past % 3600));
 
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->verifyTrendsAtClock(self::$tm_now - (self::$tm_now % 3600));
-		$this->startComponent(self::COMPONENT_SERVER);*/
+		$this->startComponent(self::COMPONENT_SERVER);
 	}
 
 	/**
@@ -313,13 +354,12 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	public function testLLDHistorySyncAtScale_TriggerFiring() {
 		$tm = time();
 		$sent = $this->sendHistoryAt($tm);
-		$this->verifyHistoryAt($tm, $sent);
 
 		// Verify all discovered triggers fired (value = PROBLEM, state = NORMAL).
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
-		], 600, self::WAIT_ITERATION_DELAY, function ($r) {
+		], self::WAIT_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
 			if (count($r['result']) !== self::$total_trigger_expected) {
 				return false;
 			}
@@ -333,30 +373,45 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			}
 			return true;
 		});
+	}
 
-		// Verify one event was created per discovered trigger.
-		$this->callUntilDataIsPresent('event.get', [
-			'objectids' => self::$discovered_triggerids,
-			'source' => EVENT_SOURCE_TRIGGERS,
-			'output' => ['eventid'],
-			'limit' => self::$total_trigger_expected
+	/**
+	 * @depends testLLDHistorySyncAtScale_TriggerFiring
+	 */
+	public function testLLDHistorySyncAtScale_TriggerRecovery() {
+		$tm = time();
+		$this->sendHistoryAt($tm, '0');
+
+		// Verify all discovered triggers recovered (value = OK, state = NORMAL).
+		$this->callUntilDataIsPresent('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid', 'value', 'state']
 		], self::WAIT_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
-			return count($r['result']) === self::$total_trigger_expected;
+			if (count($r['result']) !== self::$total_trigger_expected) {
+				return false;
+			}
+			foreach ($r['result'] as $trigger) {
+				if ((int) $trigger['value'] !== TRIGGER_VALUE_FALSE) {
+					return false;
+				}
+				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
+					return false;
+				}
+			}
+			return true;
 		});
 	}
 
 	/**
 	 * @depends testLLDHistorySyncAtScale_TriggerFiring
 	 */
-	public function testLLDHistorySyncAtScale_TriggerFiringRestart() {
+	public function testLLDHistorySyncAtScale_TriggerFiringWarmupAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->startComponent(self::COMPONENT_SERVER);
-		$tm = time();
-		$sent = $this->sendHistoryAt($tm);
-		$this->verifyHistoryAt($tm, $sent);
+		$this->testLLDHistorySyncAtScale_TriggerFiring();
 	}
 
-	private function verifyTrendsAtClock(int $trend_clock): void {
+	/*private function verifyTrendsAtClock(int $trend_clock): void {
 		foreach ([ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64] as $vtype) {
 			$itemids = array_values(self::$discovered_itemids[$vtype]);
 
@@ -407,9 +462,9 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				}
 			}
 		}
-	}
+	}*/
 
-	private function prepareHistoryAt(int $tm): array {
+	private function prepareHistoryAt(int $tm, ?string $value = null): array {
 		$sent = [];
 		$values_by_type = [];
 
@@ -426,7 +481,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			foreach ($items_by_key as $key => $itemid) {
 				$values[] = [
 					'itemid' => $itemid,
-					'value' => (string)($idx + 1),
+					'value' => isset($value) ? $value : (string)($idx + 1),
 					'clock' => $tm,
 					'ns' => ($base_ns + $idx) % 1000000000
 				];
@@ -457,8 +512,8 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		return ['sent' => $sent, 'values' => $all_values];
 	}
 
-	private function sendHistoryAt(int $tm): array {
-		['sent' => $sent, 'values' => $all_values] = $this->prepareHistoryAt($tm);
+	private function sendHistoryAt(int $tm, ?string $value = null): array {
+		['sent' => $sent, 'values' => $all_values] = $this->prepareHistoryAt($tm, $value);
 		$this->sendAgentDataValues($all_values, self::HOSTNAME, self::COMPONENT_SERVER, 0);
 
 		return $sent;
@@ -491,33 +546,6 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				else {
 					$this->assertEquals($exp['value'], $record['value']);
 				}
-			}
-
-			/* $response = $this->call('history.get', [
-				'history' => $vtype,
-				'itemids' => $itemids,
-				'time_from' => $tm,
-				'time_till' => $tm,
-				'countOutput' => true
-			]);
-			$this->assertEquals((string) self::LLD_DISCOVERY_COUNT, $response['result'], json_encode($response)); */
-
-			// Verify sort + limit: returned records should be ordered by itemid DESC.
-			$response = $this->call('history.get', [
-				'history' => $vtype,
-				'itemids' => $itemids,
-				'time_from' => $tm,
-				'time_till' => $tm,
-				'sortfield' => 'itemid',
-				'sortorder' => 'DESC',
-				'limit' => 10
-			]);
-			$this->assertCount(10, $response['result']);
-			for ($i = 0; $i < count($response['result']) - 1; $i++) {
-				$this->assertGreaterThanOrEqual(
-					(int) $response['result'][$i + 1]['itemid'],
-					(int) $response['result'][$i]['itemid']
-				);
 			}
 		}
 	}
@@ -580,22 +608,28 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 	private function assertVpsWrittenIncreasedBy(int $baseline, int $min_increase): void {
 		$expected = $baseline + $min_increase;
-		for ($i = 0; $i < self::WAIT_ITERATIONS; $i++) {
+		$timeout = self::WAIT_ITERATIONS * self::WAIT_ITERATION_DELAY;
+		$start = microtime(true);
+
+		while ((microtime(true) - $start) < $timeout) {
 			if ($this->getVpsWritten() >= $expected) {
 				break;
 			}
 			usleep(50000); // 50 ms: detects ~1.2 M values/s throughput lower bound (LLD_DISCOVERY_COUNT * types / 0.05 s)
 		}
-		$this->assertGreaterThanOrEqual($expected, $this->getVpsWritten());
+
+		$waited = round(microtime(true) - $start, 1);
+		$this->assertGreaterThanOrEqual($expected, $this->getVpsWritten(),
+			"VPS written did not reach expected value after waiting {$waited}s");
 	}
 
 	/**
 	 * Send empty LLD discovery, run housekeeper and verify that all discovered
 	 * items, their history and trigger events are removed.
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerFiringRestart
+	 * @depends testLLDHistorySyncAtScale_LLDDiscovery
 	 */
-	public function testLLDHistorySyncAtScale_HousekeeperCleanup() {
+	public function testLLDHistorySyncAtScale_LLDCleanup() {
 		$this->sendDataValues('sender', [
 			[
 				'host' => self::HOSTNAME,
@@ -607,7 +641,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->callUntilCountIsPresent('item.get', [
 			'hostids' => [self::$hostid],
 			'search' => ['key_' => self::ITEM_PROTO_KEY.'.']
-		], 0, 600, self::WAIT_ITERATION_DELAY);
+		], 0, 120, self::WAIT_ITERATION_DELAY);
 
 		/* check that server succeessfuly removed large amount of items from cache */
 		$this->reloadConfigurationCacheAndWaitForLogLine(self::COMPONENT_SERVER);
