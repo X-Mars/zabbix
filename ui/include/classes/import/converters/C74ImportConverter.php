@@ -101,7 +101,8 @@ class C74ImportConverter extends CConverter {
 	 * @return bool
 	 */
 	private static function shouldAssignDefaultTrapperHosts(array $item): bool {
-		return empty($item['allowed_hosts']) && ($item['type'] == CXmlConstantName::TRAP
+		return (!array_key_exists('allowed_hosts', $item) || $item['allowed_hosts'] === '')
+			&& ($item['type'] == CXmlConstantName::TRAP
 				|| $item['type'] == CXmlConstantName::HTTP_AGENT && $item['allow_traps'] == CXmlConstantName::YES);
 	}
 }

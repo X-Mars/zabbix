@@ -345,8 +345,10 @@ abstract class CItemGeneral extends CApiService {
 			}
 
 			if ($item['type'] == ITEM_TYPE_TRAPPER || $item['type'] == ITEM_TYPE_HTTPAGENT && $item['allow_traps'] == 1) {
-				if ($db_item['type'] != ITEM_TYPE_TRAPPER && ($db_item['type'] != ITEM_TYPE_HTTPAGENT || $db_item['allow_traps'] != 1)) {
-					$item['trapper_hosts'] = ZBX_DEFAULT_TRAPPER_HOSTS;
+				if ($db_item !== null && $db_item['type'] != ITEM_TYPE_TRAPPER && ($db_item['type'] != ITEM_TYPE_HTTPAGENT || $db_item['allow_traps'] != 1)) {
+					$item['trapper_hosts'] = !array_key_exists('trapper_hosts', $item) || $item['trapper_hosts'] === ''
+						? ZBX_DEFAULT_TRAPPER_HOSTS
+						: $item['trapper_hosts'];
 				}
 			}
 
