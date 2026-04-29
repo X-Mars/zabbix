@@ -3451,6 +3451,8 @@ static int	async_task_process_task_snmp_cb(short event, void *data, int *fd, zbx
 					if (1 == engineid_cache_initialized)
 						snmp_identity_remove(addresses->values[0].ip);
 
+					SNMP_MT_UNLOCK;
+
 					return async_task_process_task_snmp_cb(0, data, fd, addresses, reverse_dns,
 							dnserr, timeout_event);
 				}
