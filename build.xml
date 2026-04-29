@@ -473,8 +473,8 @@
 {
    "settings": {
       "index": {
-         "number_of_replicas": 1,
-         "number_of_shards": 5
+         "number_of_replicas": 0,
+         "number_of_shards": 1
       }
    },
    "mappings": {
@@ -498,8 +498,8 @@
 {
    "settings": {
       "index": {
-         "number_of_replicas": 1,
-         "number_of_shards": 5
+         "number_of_replicas": 0,
+         "number_of_shards": 1
       }
    },
    "mappings": {
@@ -531,8 +531,8 @@
 {
    "settings": {
       "index": {
-         "number_of_replicas": 1,
-         "number_of_shards": 5
+         "number_of_replicas": 0,
+         "number_of_shards": 1
       }
    },
    "mappings": {
@@ -564,8 +564,8 @@
 {
    "settings": {
       "index": {
-         "number_of_replicas": 1,
-         "number_of_shards": 5
+         "number_of_replicas": 0,
+         "number_of_shards": 1
       }
    },
    "mappings": {
@@ -589,8 +589,8 @@
 		<property name="index-json"><![CDATA[
 {
    "settings": {
-      "number_of_shards": 5,
-      "number_of_replicas": 1
+      "number_of_replicas": 0,
+      "number_of_shards": 1
    },
    "mappings": {
       "dynamic": false,
