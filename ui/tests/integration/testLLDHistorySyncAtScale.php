@@ -32,6 +32,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	const ITEM_PROTO_KEY = 'multiple.history.trap';
 	const SENSOR_BASE = 'sensor';
 	const LLD_DISCOVERY_COUNT = 10000;
+	const TRIGGER_WARMUP_TIMEOUT = 180;
 
 	private static $hostid;
 	private static $discovered_itemids = [];
@@ -359,7 +360,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
-		], self::WAIT_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+		], self::TRIGGER_WARMUP_TIMEOUT, self::WAIT_ITERATION_DELAY, function ($r) {
 			if (count($r['result']) !== self::$total_trigger_expected) {
 				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
 			}
@@ -396,7 +397,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
-		], self::WAIT_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+		], self::TRIGGER_WARMUP_TIMEOUT, self::WAIT_ITERATION_DELAY, function ($r) {
 			if (count($r['result']) !== self::$total_trigger_expected) {
 				return false;
 			}
