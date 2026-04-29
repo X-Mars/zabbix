@@ -737,7 +737,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->page->login()->open('zabbix.php?action=iconmap.list')->waitUntilReady();
 		$this->query('link', $name)->waitUntilClickable()->one()->click();
-		$this->query('button:Clone')->waitUntilClickable()->one()->click();
+		$this->query('button:Clone')->waitUntilClickable()->one()->click()->waitUntilNotVisible();
 		$this->page->waitUntilReady();
 
 		$this->query('id:name')->one()->fill($data['new_name']);
@@ -746,7 +746,8 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 			$this->processExpressionRows($data['mappings']);
 		}
 
-		$this->page->removeFocus();
+		// Activate inline validation error.
+		$this->query('id:iconmap')->one()->asForm()->getField('Default icon')->click();
 
 		// Check the results in frontend.
 		$this->assertInlineError($this->query('id:iconmap')->asForm()->one(), $data['error']);
