@@ -521,7 +521,7 @@ class CSvgGraph {
 				if (show_hint) {
 					included_points.sort((p1, p2) => p1.y - p2.y);
 
-					html = this.#getValuesHintboxHtml(included_points, offsetX);
+					html = this.#getValuesHintboxHtml(included_points, e.offsetX);
 				}
 			}
 		}
