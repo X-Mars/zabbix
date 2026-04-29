@@ -361,7 +361,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			'output' => ['triggerid', 'value', 'state']
 		], self::WAIT_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
 			if (count($r['result']) !== self::$total_trigger_expected) {
-				return false;
+				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
 			}
 			foreach ($r['result'] as $trigger) {
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
