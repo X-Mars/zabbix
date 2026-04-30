@@ -23,9 +23,10 @@ class CControllerValidateApiExists extends CController {
 	}
 
 	public static function getValidationRules(): array {
-		$api_services = ['host', 'template', 'item', 'itemprototype', 'hostgroup', 'templategroup', 'iconmap', 'image',
-			'mediatype', 'proxy', 'proxygroup', 'regexp', 'sla', 'token', 'user', 'role', 'usergroup', 'hostprototype',
-			'maintenance', 'connector', 'correlation', 'graph', 'graphprototype'
+		$api_services = ['host', 'template', 'item', 'itemprototype', 'discoveryrule', 'discoveryruleprototype',
+			'hostgroup', 'templategroup', 'iconmap', 'image', 'mediatype', 'proxy', 'proxygroup', 'regexp', 'sla',
+			'token', 'user', 'role', 'usergroup', 'hostprototype', 'maintenance', 'connector', 'correlation',
+			'graph', 'graphprototype', 'report', 'script'
 		];
 
 		return ['object', 'fields' => [
@@ -42,7 +43,9 @@ class CControllerValidateApiExists extends CController {
 						['object', 'fields' => [
 							'key_' => ['string', 'required', 'not_empty'],
 							'hostid' => ['id', 'required']
-						], 'when' => ['../api', 'in' => ['item', 'itemprototype']]],
+						], 'when' => ['../api', 'in' => ['item', 'itemprototype', 'discoveryrule',
+							'discoveryruleprototype'
+						]]],
 						['object', 'fields' => [
 							'name' => ['string', 'required', 'not_empty'],
 							'hostid' => ['id', 'required']
@@ -52,10 +55,14 @@ class CControllerValidateApiExists extends CController {
 							'userid' => ['id', 'required']
 						], 'when' => ['../api', 'in' => ['token']]],
 						['object', 'fields' => [
+							'name' => ['string', 'required', 'not_empty'],
+							'menu_path' => ['string']
+						], 'when' => ['../api', 'in' => ['script']]],
+						['object', 'fields' => [
 							'name' => ['string', 'required', 'not_empty']
 						], 'when' => ['../api', 'in' => ['hostgroup', 'templategroup', 'iconmap', 'image', 'mediatype',
 							'proxy', 'proxygroup', 'regexp', 'sla', 'role', 'maintenance', 'connector', 'correlation',
-							'usergroup'
+							'usergroup', 'report'
 						]]],
 						['object', 'fields' => [
 							'username' => ['string', 'required', 'not_empty']
