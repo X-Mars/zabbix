@@ -742,7 +742,7 @@ static char	*get_item_community_context(const zbx_dc_item_t *item)
 		return item->snmpv3_contextname;
 
 	THIS_SHOULD_NEVER_HAPPEN;
-	exit(EXIT_FAILURE);
+	zbx_exit(EXIT_FAILURE);
 }
 
 static char	*get_item_security_name(const zbx_dc_item_t *item)
@@ -3397,6 +3397,8 @@ static int	async_task_process_task_snmp_cb(short event, void *data, int *fd, zbx
 		poller_config->state = ZBX_PROCESS_STATE_BUSY;
 	}
 
+	SNMP_MT_INITLOCK;
+
 	if (ZABBIX_ASYNC_STEP_REVERSE_DNS == snmp_context->step)
 	{
 		if (NULL != reverse_dns)
@@ -3690,6 +3692,8 @@ stop:
 		zabbix_log(LOG_LEVEL_DEBUG, "itemid: " ZBX_FS_UI64 " unhandled snmp error:'%s'",
 				snmp_context->item.itemid, snmp_error);
 	}
+
+	SNMP_MT_UNLOCK;
 
 	if (ZBX_ASYNC_TASK_STOP == task_ret && ZBX_ISSET_MSG(&snmp_context->item.result))
 	{
@@ -4322,17 +4326,21 @@ void	zbx_init_library_mt_snmp(const char *progname)
 void	zbx_shutdown_library_mt_snmp(const char *progname)
 {
 	if (1 == snmp_rwlock_init_done)
+		pthread_rwlock_wrlock(&snmp_exec_rwlock);
+
+	zbx_shutdown_snmp(progname);
+
+	if (1 == snmp_rwlock_init_done)
 	{
 		int	err;
 
-		pthread_rwlock_wrlock(&snmp_exec_rwlock);
+		pthread_rwlock_unlock(&snmp_exec_rwlock);
 
 		if (0 != (err = pthread_rwlock_destroy(&snmp_exec_rwlock)))
 			zabbix_log(LOG_LEVEL_WARNING, "cannot destroy snmp execute mutex: %s", zbx_strerror(err));
 		else
 			snmp_rwlock_init_done = 0;
 	}
-	zbx_shutdown_snmp(progname);
 }
 
 static void	process_snmp_result(void *data)
