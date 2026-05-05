@@ -593,7 +593,7 @@ class testFormHost extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'id:interfaces_1_port' => 'Port: Incorrect port.'
+						'id:interfaces_1_port' => 'Port: Value must be less than or equal to 65535.'
 					]
 				]
 			],
@@ -613,7 +613,7 @@ class testFormHost extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'id:interfaces_1_port' => 'Port: Incorrect port.'
+						'id:interfaces_1_port' => 'Port: Value is not a valid integer.'
 					]
 				]
 			],
@@ -633,7 +633,7 @@ class testFormHost extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'id:interfaces_1_port' => 'Port: Incorrect port.'
+						'id:interfaces_1_port' => 'Port: Value is not a valid integer.'
 					]
 				]
 			],
@@ -790,13 +790,13 @@ class testFormHost extends CWebTest {
 							'action' => USER_ACTION_ADD,
 							'type' => 'Agent',
 							'ip' => '127.1.1.1',
-							'port' => '111'
+							'port' => '1024'
 						],
 						[
 							'action' => USER_ACTION_ADD,
 							'type' => 'Agent',
 							'ip' => '127.2.2.2',
-							'port' => '222',
+							'port' => '32767',
 							'Default' => true
 						]
 					]
@@ -880,7 +880,7 @@ class testFormHost extends CWebTest {
 							'ip' => '::1',
 							'dns' => '1211',
 							'Connect to' => 'DNS',
-							'port' => '100'
+							'port' => '1025'
 						],
 						[
 							'action' => USER_ACTION_ADD,
@@ -935,7 +935,36 @@ class testFormHost extends CWebTest {
 						]
 					]
 				]
-			]
+			],
+			// #29 Agent port validation.
+			[
+				[
+					'expected' => TEST_BAD,
+					'default_values' => true,
+					'host_fields' => [
+						'Host name' => 'Host for port validation',
+						'Host groups' => 'Zabbix servers'
+					],
+					'interfaces' => [
+						[
+							'action' => USER_ACTION_ADD,
+							'type' => 'Agent',
+							'ip' => '127.1.1.1',
+							'port' => '1023',
+						],
+						[
+							'action' => USER_ACTION_ADD,
+							'type' => 'Agent',
+							'ip' => '127.2.2.2',
+							'port' => '32768'
+						]
+					],
+					'inline_errors' => [
+						'id:interfaces_1_port' => 'Port: Value must be greater than or equal to 1024.',
+						'id:interfaces_2_port' => 'Port: Value must be less than or equal to 32767.'
+					]
+				]
+			],
 		];
 	}
 
