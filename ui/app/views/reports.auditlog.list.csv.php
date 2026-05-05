@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types = 0);
 /*
 ** Copyright (C) 2001-2026 Zabbix SIA
 **
@@ -54,7 +54,7 @@ foreach ($data['auditlogs'] as $auditlog) {
 		? $data['actions'][$auditlog['action']]
 		: _('Unknown action');
 	$row[] = $auditlog['recordsetid'];
-	$row[] = $auditlog['details'];
+	$row[] = $auditlog['full_details'];
 
 	$csv[] = $row;
 }

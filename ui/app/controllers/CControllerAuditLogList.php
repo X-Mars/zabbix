@@ -295,10 +295,12 @@ class CControllerAuditLogList extends CController {
 	private function sanitizeDetails(array $auditlogs): array {
 		foreach ($auditlogs as &$auditlog) {
 			$auditlog['short_details'] = '';
+			$auditlog['full_details'] = '';
 			$auditlog['details_button'] = 0;
 
 			if ($auditlog['resourcename'] != '') {
 				$auditlog['short_details'] .= _('Description').': '.$auditlog['resourcename'];
+				$auditlog['full_details'] .= _('Description').': '.$auditlog['resourcename'];
 			}
 
 			if (!in_array($auditlog['action'], [CAudit::ACTION_ADD, CAudit::ACTION_UPDATE, CAudit::ACTION_EXECUTE,
@@ -318,6 +320,10 @@ class CControllerAuditLogList extends CController {
 				$auditlog['short_details'] .= "\n\n";
 			}
 
+			if ($auditlog['full_details'] != '') {
+				$auditlog['full_details'] .= "\n\n";
+			}
+
 			$details = $this->formatDetails($details);
 			$short_details = array_slice($details, 0, 2);
 
@@ -334,6 +340,7 @@ class CControllerAuditLogList extends CController {
 			unset($detail);
 
 			$auditlog['details'] = implode("\n", $details);
+			$auditlog['full_details'] .= implode("\n", $details);
 			$auditlog['short_details'] .= implode("\n", $short_details);
 
 			if (!$auditlog['details_button'] && count($details) > 2) {
