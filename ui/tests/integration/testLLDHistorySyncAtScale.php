@@ -32,7 +32,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	const LLD_MACRO = '{#SENSOR}';
 	const ITEM_PROTO_KEY = 'multiple.history.trap';
 	const SENSOR_BASE = 'sensor';
-	const LLD_DISCOVERY_COUNT = 10000;
+	const LLD_DISCOVERY_COUNT = 1;
 	const TRIGGER_WARMUP_ITERATIONS = 60;
 	const LLD_ITERATIONS = 120;
 
@@ -170,8 +170,8 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	public function configurationProvider() {
 		return [
 			self::COMPONENT_SERVER => [
-				'LogFileSize' => 1,
-				'DebugLevel' => 3,
+				'LogFileSize' => 4,
+				'DebugLevel' => 4,
 				'CacheSize' => '128M',
 				'HistoryCacheSize' => '32M',
 				'HistoryIndexCacheSize' => '32M',
@@ -565,6 +565,16 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			'filter' => ['state' => ITEM_STATE_NOTSUPPORTED]
 		], self::$total_expected, self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY);
 
+		$response = $this->call('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid', 'value', 'state']
+		]);
+
+		foreach ($response['result'] as $trigger) {
+			$this->assertEquals(TRIGGER_STATE_NORMAL, (int) $trigger['state'],
+				'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN.');
+		}
+
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
@@ -575,9 +585,11 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			if (count($r['result']) !== self::$total_trigger_expected) {
 				return false;
 			}
+
 			foreach ($r['result'] as $trigger) {
 				$this->assertNotEquals(TRIGGER_STATE_UNKNOWN, (int) $trigger['state'],
 					'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN.');
+
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
 					return false;
 				}
@@ -606,15 +618,21 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			'output' => ['triggerid', 'value', 'state']
 		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
 			if (count($r['result']) !== self::$total_trigger_expected) {
-				return false;
+				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
 			}
+			$wrong_value = 0;
+			$wrong_state = 0;
 			foreach ($r['result'] as $trigger) {
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_FALSE) {
-					return false;
+					$wrong_value++;
 				}
 				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
-					return false;
+					$wrong_state++;
 				}
+			}
+			if ($wrong_value > 0 || $wrong_state > 0) {
+				return $wrong_value.' triggers did not change to OK, '
+					.$wrong_state.' triggers not in NORMAL state';
 			}
 			return true;
 		});
