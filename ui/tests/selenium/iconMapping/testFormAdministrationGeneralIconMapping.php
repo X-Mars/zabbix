@@ -923,7 +923,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($name);
-		$this->query('button:delete')->one()->click();
+		$this->query('button:Delete')->one()->click();
 		$this->zbxTestAcceptAlert();
 
 		// Check the results in frontend.
