@@ -43,7 +43,7 @@ class testFormUserProfile extends CLegacyWebTest {
 
 		$this->zbxTestCheckTitle('Profile');
 
-		$this->zbxTestClickXpathWait('//button[text()="Update"]');
+		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
 		$this->assertMessage(TEST_GOOD, 'User updated');
 		$this->zbxTestCheckHeader('Global view');
 
@@ -266,7 +266,7 @@ class testFormUserProfile extends CLegacyWebTest {
 		$form = $this->query('name:userprofile_form')->asForm()->waitUntilVisible()->one();
 
 		$this->zbxTestInputTypeOverwrite('refresh', $data['refresh']);
-		$this->zbxTestClickXpathWait('//button[text()="Update"]');
+		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
 
 		switch ($data['expected']) {
 			case TEST_GOOD:
@@ -375,7 +375,7 @@ class testFormUserProfile extends CLegacyWebTest {
 
 		$this->zbxTestCheckboxSelect('autologout_visible', true);
 		$this->zbxTestInputTypeOverwrite('autologout', $data['autologout']);
-		$this->zbxTestClickXpathWait('//button[text()="Update"]');
+		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
 
 		switch ($data['expected']) {
 			case TEST_GOOD:
@@ -524,7 +524,7 @@ class testFormUserProfile extends CLegacyWebTest {
 			$this->zbxTestCheckboxSelect('messages_show_suppressed', $data['suppressed']);
 		}
 
-		$this->zbxTestClickXpathWait('//button[text()="Update"]');
+		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
 
 		switch ($data['expected']) {
 			case TEST_GOOD:
@@ -608,7 +608,7 @@ class testFormUserProfile extends CLegacyWebTest {
 			case TEST_GOOD:
 				$this->zbxTestWaitForPageToLoad();
 				COverlayDialogElement::ensureNotPresent();
-				$this->zbxTestClickXpathWait('//button[text()="Update"]');
+				$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
 				$this->assertMessage(TEST_GOOD, 'User updated');
 				$this->zbxTestCheckHeader('Global view');
 				$sql = "SELECT * FROM media WHERE sendto = '".$data['send_to']."'";

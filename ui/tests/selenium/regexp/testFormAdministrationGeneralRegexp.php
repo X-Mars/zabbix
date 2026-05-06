@@ -171,7 +171,7 @@ class testFormAdministrationGeneralRegexp extends CLegacyWebTest {
 		$this->zbxTestLogin('zabbix.php?action=regex.list');
 		$this->zbxTestCheckHeader('Regular expressions');
 		$this->zbxTestClickLinkText($this->regexp);
-		$this->zbxTestClickXpathWait('//button[text()="Clone"]');
+		$this->zbxTestClickXpathWait('//button[contains(@class,"js-clone")]');
 		$this->query('id:name')->one()->fill($this->regexp.'_clone');
 		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
 		$this->assertMessage(TEST_GOOD, 'Regular expression added');
@@ -197,7 +197,7 @@ class testFormAdministrationGeneralRegexp extends CLegacyWebTest {
 		$this->zbxTestCheckHeader('Regular expressions');
 		$this->zbxTestClickLinkTextWait($this->regexp2);
 
-		$this->zbxTestClickXpathWait('//button[text()="Delete"]');
+		$this->zbxTestClickXpathWait('//button[contains(@class,"js-delete")]');
 		$this->zbxTestAcceptAlert();
 		$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'Regular expression deleted');
 		$this->zbxTestTextPresent(['Regular expressions', 'Name', 'Expressions']);
