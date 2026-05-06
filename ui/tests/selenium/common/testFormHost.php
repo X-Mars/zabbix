@@ -1323,11 +1323,11 @@ class testFormHost extends CWebTest {
 						]
 					],
 					'inline_errors' => [
-						'id:interfaces_{id}_port' => 'Port: Incorrect port.'
+						'id:interfaces_{id}_port' => 'Port: Value must be less than or equal to 32767.'
 					]
 				]
 			],
-			// #17.
+			// #17 Port validation.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -1338,11 +1338,11 @@ class testFormHost extends CWebTest {
 						[
 							'action' => USER_ACTION_UPDATE,
 							'index' => 0,
-							'port' => 'test'
+							'port' => '1'
 						]
 					],
 					'inline_errors' => [
-						'id:interfaces_{id}_port' => 'Port: Incorrect port.'
+						'id:interfaces_{id}_port' => 'Port: Value must be greater than or equal to 1024.'
 					]
 				]
 			],
@@ -1357,15 +1357,34 @@ class testFormHost extends CWebTest {
 						[
 							'action' => USER_ACTION_UPDATE,
 							'index' => 0,
+							'port' => 'test'
+						]
+					],
+					'inline_errors' => [
+						'id:interfaces_{id}_port' => 'Port: Value is not a valid integer.'
+					]
+				]
+			],
+			// #19.
+			[
+				[
+					'expected' => TEST_BAD,
+					'host_fields' => [
+						'Host name' => 'Invalid port'
+					],
+					'interfaces' => [
+						[
+							'action' => USER_ACTION_UPDATE,
+							'index' => 0,
 							'port' => '10.5'
 						]
 					],
 					'inline_errors' => [
-						'id:interfaces_{id}_port' => 'Port: Incorrect port.'
+						'id:interfaces_{id}_port' => 'Port: Value is not a valid integer.'
 					]
 				]
 			],
-			// #19 Empty SNMP community.
+			// #20 Empty SNMP community.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -1384,7 +1403,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #20 Zero Max repetition count.
+			// #21 Zero Max repetition count.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -1405,7 +1424,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #21 Too high value in Max repetition count.
+			// #22 Too high value in Max repetition count.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -1426,7 +1445,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #22 Empty proxy.
+			// #23 Empty proxy.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -1440,7 +1459,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #23 Empty proxy group.
+			// #24 Empty proxy group.
 			[
 				[
 					'expected' => TEST_BAD,
