@@ -326,7 +326,7 @@ zabbix_export:
           tags:
             - tag: component
               value: configmap
-        - uuid: 6f22e81d69d04eeca88a7992463556a7
+        - uuid: 6c102df4a8c6469d94a5f309112a76e0
           name: 'CronJob count'
           type: DEPENDENT
           key: kube.cronjob.count
@@ -343,7 +343,7 @@ zabbix_export:
           tags:
             - tag: component
               value: cronjob
-        - uuid: 483fc2c315264ae5963d34a45f80156e
+        - uuid: 436f34ec7f3341aaaf19d72f18b31121
           name: 'Deployment count'
           type: DEPENDENT
           key: kube.deployment.count
@@ -360,7 +360,7 @@ zabbix_export:
           tags:
             - tag: component
               value: deployment
-        - uuid: 93126582e30e45b8a70f6e45402e2f54
+        - uuid: e1e82115e8a7414ab6fbe73d3a2551a3
           name: 'Endpoint count'
           type: DEPENDENT
           key: kube.endpoint.count
@@ -435,7 +435,7 @@ zabbix_export:
               tags:
                 - tag: scope
                   value: availability
-        - uuid: c08df3a8ae044ae9a331db33bcca7db3
+        - uuid: eed5d72fd3c84130a5cde58c702d8f9a
           name: 'Job count'
           type: DEPENDENT
           key: kube.job.count
@@ -452,7 +452,7 @@ zabbix_export:
           tags:
             - tag: component
               value: job
-        - uuid: d266edd6dda34e15888b572569a1f301
+        - uuid: 4d7723b132fc4d63aadcd01edddd2ba4
           name: 'Namespace count'
           type: DEPENDENT
           key: kube.namespace.count
@@ -469,7 +469,7 @@ zabbix_export:
           tags:
             - tag: component
               value: namespace
-        - uuid: 968e1dcaf76645aebd4979b9ad4eca9e
+        - uuid: e9962ff1012c4e0b84bc3844af97f52d
           name: 'Node count'
           type: DEPENDENT
           key: kube.node.count
@@ -835,7 +835,7 @@ zabbix_export:
           tags:
             - tag: component
               value: secret
-        - uuid: 262b0114fed14fec91d50589e97307a7
+        - uuid: 63254cde4d27445eb1479c0fe56a7a64
           name: 'Service count'
           type: DEPENDENT
           key: kube.service.count
@@ -852,7 +852,7 @@ zabbix_export:
           tags:
             - tag: component
               value: service
-        - uuid: 66e69f9970ce478f8f0ff13f26b248e3
+        - uuid: 2e80a68dd7b8488f80a2ecec3318c411
           name: 'Get state metrics'
           type: SCRIPT
           key: kube.state.metrics
@@ -1063,7 +1063,7 @@ zabbix_export:
               tags:
                 - tag: scope
                   value: availability
-        - uuid: 3940412bea334e139a72b223197582eb
+        - uuid: c9bc9dd0b6cd4a93bb05d32a2e4814f6
           name: 'StatefulSet count'
           type: DEPENDENT
           key: kube.statefulset.count
@@ -1470,7 +1470,7 @@ zabbix_export:
                 operator: NOT_MATCHES_REGEX
           lifetime: '0'
           item_prototypes:
-            - uuid: 434c913e7547435bb74c922f81f3ff7a
+            - uuid: 9666af4163b54a2fac9576f7999d521e
               name: 'Namespace [{#NAMESPACE}]: CPU: Total usage'
               type: DEPENDENT
               key: 'kube.namespace.cpu_total[{#NAMESPACE}]'
@@ -1633,7 +1633,7 @@ zabbix_export:
                   value: '{#NAMESPACE}'
               trigger_prototypes:
                 - uuid: 8998ea7c177c4a24b3bbe6b7a4b2724c
-                  expression: 'last(/Kubernetes Cluster by HTTP/kube.namespace.pod.pending[{#NAMESPACE}]) > {$KUBE.NAMESPACE.POD.FAILED.THRESHOLD:"{#NAMESPACE}"}'
+                  expression: 'last(/Kubernetes Cluster by HTTP/kube.namespace.pod.pending[{#NAMESPACE}]) > {$KUBE.NAMESPACE.POD.PENDING.THRESHOLD:"{#NAMESPACE}"}'
                   name: 'Kubernetes Cluster: Namespace [{#NAMESPACE}]: Pods pending high'
                   priority: HIGH
                   tags:
@@ -1747,7 +1747,7 @@ zabbix_export:
             - type: DISCARD_UNCHANGED_HEARTBEAT
               parameters:
                 - 3h
-        - uuid: 9d161120d2be48d1abb6e56107057874
+        - uuid: 0151ac62b97d47d788530e28806bb983
           name: 'Node discovery'
           type: DEPENDENT
           key: kube.node.discovery
@@ -1874,7 +1874,7 @@ zabbix_export:
                 - tag: pod
                   value: '{#NAME}'
               trigger_prototypes:
-                - uuid: 5bf79dee7b974064b5848a7dcf6428c2
+                - uuid: b2f77c48689d48f085d85212e8674467
                   expression: 'count(/Kubernetes Cluster by HTTP/kube.pod.status_phase[{#NAMESPACE}/{#NAME}],2m,,3)>=2'
                   name: 'Kubernetes Cluster: Namespace [{#NAMESPACE}] Pod [{#NAME}]: Pod failed phase'
                   priority: AVERAGE
@@ -2073,7 +2073,7 @@ zabbix_export:
                 - tag: pv
                   value: '{#NAME}'
               trigger_prototypes:
-                - uuid: ccc486f937bd454e9e7193181a998bdb
+                - uuid: 83f5b1a92c7d40c887763d09cd074e58
                   expression: 'count(/Kubernetes Cluster by HTTP/kube.pv.status_phase[{#NAME}],2m,,3)>=2'
                   name: 'Kubernetes Cluster: PV [{#NAME}]: PV has failed'
                   priority: WARNING
@@ -2136,7 +2136,7 @@ zabbix_export:
                 operator: NOT_MATCHES_REGEX
           lifetime: '0'
           item_prototypes:
-            - uuid: 9187144531f145398bfbe7281290533d
+            - uuid: 94942fd9f1ba43d2894c6eee470473f3
               name: 'Namespace [{#NAMESPACE}] PVC [{#NAME}] Requested storage'
               type: DEPENDENT
               key: 'kube.pvc.requested.storage[{#NAMESPACE}/{#NAME}]'
@@ -2159,7 +2159,7 @@ zabbix_export:
                   value: '{#NAMESPACE}'
                 - tag: pvc
                   value: '{#NAME}'
-            - uuid: 41bc1f54992a492da414846b91d48b0e
+            - uuid: aea1cb93adaa4d509fbd16a5c29aad05
               name: 'Namespace [{#NAMESPACE}] PVC status phase: Bound, sum'
               type: DEPENDENT
               key: 'kube.pvc.status_phase.bound.sum[{#NAMESPACE}]'
@@ -2183,7 +2183,7 @@ zabbix_export:
                   value: '{#NAMESPACE}'
                 - tag: phase
                   value: bound
-            - uuid: f3b3979c04424b908b514589c2995ff8
+            - uuid: 6dea3a26a14044abb20b9c498d024bc5
               name: 'Namespace [{#NAMESPACE}] PVC status phase: Lost, sum'
               type: DEPENDENT
               key: 'kube.pvc.status_phase.lost.sum[{#NAMESPACE}]'
@@ -2207,7 +2207,7 @@ zabbix_export:
                   value: '{#NAMESPACE}'
                 - tag: phase
                   value: lost
-            - uuid: 237d8ee073c04c21a14269f15ab679fd
+            - uuid: d8b5cb658c9c425494919e51e0110d24
               name: 'Namespace [{#NAMESPACE}] PVC status phase: Pending, sum'
               type: DEPENDENT
               key: 'kube.pvc.status_phase.pending.sum[{#NAMESPACE}]'
@@ -2231,7 +2231,7 @@ zabbix_export:
                   value: '{#NAMESPACE}'
                 - tag: phase
                   value: pending
-            - uuid: f036e514626b4610b531f9be09289daa
+            - uuid: 3ba5992f31364ebb96f091ef31ae9418
               name: 'Namespace [{#NAMESPACE}] PVC [{#NAME}] Status phase'
               type: DEPENDENT
               key: 'kube.pvc.status_phase[{#NAMESPACE}/{#NAME}]'
@@ -2260,7 +2260,7 @@ zabbix_export:
                 - tag: pvc
                   value: '{#NAME}'
               trigger_prototypes:
-                - uuid: 6cdf93dad1c647239570cbb3789f1a2c
+                - uuid: 633457562e564b19bfbe5670040dadf5
                   expression: 'count(/Kubernetes Cluster by HTTP/kube.pvc.status_phase[{#NAMESPACE}/{#NAME}],2m,,5)>=2'
                   name: 'Kubernetes Cluster: NS [{#NAMESPACE}] PVC [{#NAME}]: PVC is pending'
                   priority: WARNING
@@ -2475,6 +2475,16 @@ zabbix_export:
             section_name: Filters
             label: 'Persistent Volume Exclude Filter'
             description: 'A regex to exclude discovered persistent volumes by name.'
+        - macro: '{$KUBE.NAMESPACE.POD.PENDING.THRESHOLD}'
+          value: '3'
+          description: 'The number of pending pods used in triggers.'
+          config:
+            type: TEXT
+            priority: '19'
+            section_name: Other
+            label: 'Number of Pending Pods in namespace'
+            description: 'The number of pending pods used in triggers.'
+            regex: '^-?([0-9]+|(([0-9]+)\.([0-9]+)))$'
         - macro: '{$KUBE.NODE.EXPORTER.PORT}'
           value: '9100'
           description: 'Kubernetes prometheus-node-exporter metrics endpoint port.'
@@ -3599,7 +3609,7 @@ zabbix_export:
                       name: secondary_label_decimal_places
                       value: '0'
       valuemaps:
-        - uuid: a435f7e23050406ca40cf6f5f872b5a7
+        - uuid: 14d4a75e03094fa1b056b5233619ef5a
           name: 'Boolean format'
           mappings:
             - value: '0'
@@ -3635,7 +3645,7 @@ zabbix_export:
               newvalue: Unknown
             - value: '5'
               newvalue: Running
-        - uuid: f5aa4a786972420b859029116aac8a2f
+        - uuid: 5b91b74ac35c40c8b3b37aa28141a9fb
           name: 'PV and PVC status phases'
           mappings:
             - value: '1'

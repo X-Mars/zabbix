@@ -101,6 +101,7 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 |{$KUBE.NODE.NUMBER.THRESHOLD}|<p>The number of nodes in the cluster used in triggers.</p>|`2`|
 |{$KUBE.CLUSTER.POD.PENDING.THRESHOLD}|<p>The number of pending pods used in triggers.</p>|`5`|
 |{$KUBE.CLUSTER.POD.FAILED.THRESHOLD}|<p>The number of failed pods used in triggers.</p>|`5`|
+|{$KUBE.NAMESPACE.POD.PENDING.THRESHOLD}|<p>The number of pending pods used in triggers.</p>|`3`|
 
 ### Items
 
@@ -186,7 +187,7 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Kubernetes Cluster: Namespace [{#NAMESPACE}]: Pods pending high||`last(/Kubernetes Cluster by HTTP/kube.namespace.pod.pending[{#NAMESPACE}]) > {$KUBE.NAMESPACE.POD.FAILED.THRESHOLD:"{#NAMESPACE}"}`|High||
+|Kubernetes Cluster: Namespace [{#NAMESPACE}]: Pods pending high||`last(/Kubernetes Cluster by HTTP/kube.namespace.pod.pending[{#NAMESPACE}]) > {$KUBE.NAMESPACE.POD.PENDING.THRESHOLD:"{#NAMESPACE}"}`|High||
 |Kubernetes Cluster: Namespace [{#NAMESPACE}]: Terminated||`count(/Kubernetes Cluster by HTTP/kube.namespace.status_phase[{#NAMESPACE}],2m,,2)>=2`|Warning||
 
 ### LLD rule Deployment discovery
