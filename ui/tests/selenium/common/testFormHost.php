@@ -950,7 +950,7 @@ class testFormHost extends CWebTest {
 							'action' => USER_ACTION_ADD,
 							'type' => 'Agent',
 							'ip' => '127.1.1.1',
-							'port' => '1023',
+							'port' => '1023'
 						],
 						[
 							'action' => USER_ACTION_ADD,
@@ -964,7 +964,7 @@ class testFormHost extends CWebTest {
 						'id:interfaces_2_port' => 'Port: Value must be less than or equal to 32767.'
 					]
 				]
-			],
+			]
 		];
 	}
 
