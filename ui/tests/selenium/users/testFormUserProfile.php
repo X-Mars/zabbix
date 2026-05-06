@@ -43,7 +43,7 @@ class testFormUserProfile extends CLegacyWebTest {
 
 		$this->zbxTestCheckTitle('Profile');
 
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
+		$this->query('button:Update')->waitUntilClickable()->one()->click();
 		$this->assertMessage(TEST_GOOD, 'User updated');
 		$this->zbxTestCheckHeader('Global view');
 
@@ -59,7 +59,7 @@ class testFormUserProfile extends CLegacyWebTest {
 		$this->zbxTestCheckHeader('Profile');
 		$this->zbxTestInputTypeOverwrite('refresh', '60');
 
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-cancel")]');
+		$this->query('button:Cancel')->waitUntilClickable()->one()->click();
 		$this->zbxTestCheckHeader('Global view');
 
 		$this->assertEquals($oldHashUsers, CDBHelper::getHash($sqlHashUsers));
@@ -266,7 +266,7 @@ class testFormUserProfile extends CLegacyWebTest {
 		$form = $this->query('name:userprofile_form')->asForm()->waitUntilVisible()->one();
 
 		$this->zbxTestInputTypeOverwrite('refresh', $data['refresh']);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
+		$this->query('button:Update')->waitUntilClickable()->one()->click();
 
 		switch ($data['expected']) {
 			case TEST_GOOD:
@@ -375,7 +375,7 @@ class testFormUserProfile extends CLegacyWebTest {
 
 		$this->zbxTestCheckboxSelect('autologout_visible', true);
 		$this->zbxTestInputTypeOverwrite('autologout', $data['autologout']);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
+		$this->query('button:Update')->waitUntilClickable()->one()->click();
 
 		switch ($data['expected']) {
 			case TEST_GOOD:
@@ -524,7 +524,7 @@ class testFormUserProfile extends CLegacyWebTest {
 			$this->zbxTestCheckboxSelect('messages_show_suppressed', $data['suppressed']);
 		}
 
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
+		$this->query('button:Update')->waitUntilClickable()->one()->click();
 
 		switch ($data['expected']) {
 			case TEST_GOOD:

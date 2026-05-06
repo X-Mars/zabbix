@@ -343,7 +343,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 		$this->zbxTestLogin('zabbix.php?action=iconmap.edit');
 		$this->zbxTestInputTypeWait('name', 'CancelCreation');
 		$this->zbxTestInputTypeWait('mappings_0_expression', 'CancelCreation');
-		$this->zbxTestClickXpath('//button[contains(@class,"js-cancel")]');
+		$this->query('button:Cancel')->one()->click();
 
 		// Check the results in frontend.
 		$this->zbxTestCheckTitle('Configuration of icon mapping');
@@ -368,7 +368,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 		foreach (CDBHelper::getAll('SELECT name FROM icon_map') as $iconmap) {
 			$this->zbxTestClickLinkText($iconmap['name']);
 			$this->zbxTestWaitForPageToLoad();
-			$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
+			$this->query('button:Update')->waitUntilClickable()->one()->click();
 			$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'Icon map updated');
 		}
 
@@ -482,7 +482,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 		}
 
 		$form = $this->query('id:iconmap')->asForm()->one();
-		$this->zbxTestClickXpath('//button[contains(@class,"js-submit")]');
+		$this->query('button:Update')->one()->click();
 		$form->query('button:Update')->one()->waitUntilClassesNotPresent('is-loading');
 
 		// Check the results in frontend.
@@ -595,7 +595,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 			$this->zbxTestDropdownSelect('default-mapping-icon', $data['default_icon']);
 		}
 
-		$this->zbxTestClickXpath('//button[contains(@class,"js-submit")]');
+		$this->query('button:Update')->one()->click();
 
 		// Check the results in frontend.
 		$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'Icon map updated');
@@ -643,7 +643,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 		foreach (CDBHelper::getAll('SELECT name FROM icon_map LIMIT 1') as $iconmap) {
 			$this->zbxTestClickLinkText($iconmap['name']);
 			$this->zbxTestInputTypeOverwrite('name', $iconmap['name'].' (updated)');
-			$this->zbxTestClickXpath('//button[contains(@class,"js-cancel")]');
+			$this->query('button:Cancel')->one()->click();
 			$this->zbxTestCheckTitle('Configuration of icon mapping');
 			$this->zbxTestCheckHeader('Icon mapping');
 			$this->zbxTestTextNotPresent($iconmap['name'].' (updated)');
@@ -737,7 +737,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($name);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-clone")]');
+		$this->query('button:Clone')->waitUntilClickable()->one()->click();
 		$this->zbxTestWaitForPageToLoad();
 
 		$this->zbxTestInputType('name', $data['new_name']);
@@ -839,7 +839,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 	public function testFormAdministrationGeneralIconMapping_Clone($data) {
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($data['old_name']);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-clone")]');
+		$this->query('button:Clone')->waitUntilClickable()->one()->click();
 		$this->query('button:Update')->waitUntilNotVisible();
 		if (array_key_exists('name', $data)) {
 			$this->zbxTestInputTypeOverwrite('name', $data['name']);
@@ -923,7 +923,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($name);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-delete")]');
+		$this->query('button:delete')->one()->click();
 		$this->zbxTestAcceptAlert();
 
 		// Check the results in frontend.
@@ -945,7 +945,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($name);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-delete")]');
+		$this->query('button:Delete')->waitUntilClickable()->one()->click();
 		$this->zbxTestDismissAlert();
 
 		// Check the results in frontend.
@@ -966,7 +966,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($name);
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-delete")]');
+		$this->query('button:Delete')->waitUntilClickable()->one()->click();
 		$this->zbxTestAcceptAlert();
 
 		// Check the results in frontend.
