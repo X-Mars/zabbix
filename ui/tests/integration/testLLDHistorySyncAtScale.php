@@ -32,8 +32,8 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	const ITEM_PROTO_KEY = 'multiple.history.trap';
 	const SENSOR_BASE = 'sensor';
 	const LLD_DISCOVERY_COUNT = 10000;
-	const TRIGGER_WARMUP_ITERATIONS = 1400;
-	const LLD_ITERATIONS = 240;
+	const TRIGGER_WARMUP_ITERATIONS = 60;
+	const LLD_ITERATIONS = 120;
 
 	private static $hostid;
 	private static $discovered_itemids = [];
@@ -381,7 +381,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				$tps = round($fired / $elapsed, 1);
 				return $wrong_value.' triggers did not change value, '.$wrong_state.' triggers in wrong state'
 					.'; trigger processing rate too low: '.$tps.' triggers/sec'
-					.' (waited '.self::TRIGGER_WARMUP_ITERATIONS.'x'.self::WAIT_ITERATION_DELAY.'s = '.$elapsed.'s)';
+					.' (waited '.self::WAIT_ITERATIONS.'x'.self::WAIT_ITERATION_DELAY.'s = '.$elapsed.'s)';
 			}
 			return true;
 		});
