@@ -77,10 +77,9 @@ class testPageAdministrationGeneralImages extends CLegacyWebTest {
 		$this->page->waitUntilReady();
 		$this->zbxTestCheckHeader('Images');
 		$this->zbxTestTextPresent(['Name', 'Upload', 'Image']);
-		$this->zbxTestAssertElementPresentXpath('//button[contains(@class,"js-submit")]');
-		$this->zbxTestAssertElementPresentXpath('//button[contains(@class,"js-delete")]');
-		$this->zbxTestAssertElementPresentXpath('//button[contains(@class,"js-cancel")]');
-		$this->zbxTestClickXpathWait('//button[contains(@class,"js-submit")]');
+		$this->zbxTestAssertElementPresentXpath('//button[text()="Delete"]');
+		$this->zbxTestAssertElementPresentXpath('//button[text()="Cancel"]');
+		$this->zbxTestClickButtonText('Update');
 		$this->zbxTestWaitUntilMessageTextPresent('msg-good', 'Image updated');
 
 		$this->assertEquals($old_image_hash, CDBHelper::getHash($sql_image));
