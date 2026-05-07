@@ -646,7 +646,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
-		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+		], 120, self::WAIT_ITERATION_DELAY, function ($r) {
 
 			$this->sendAgentPing();
 
