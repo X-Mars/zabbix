@@ -915,5 +915,16 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 		/* check that server succeessfuly removed large amount of items from cache */
 		$this->reloadConfigurationCacheAndWaitForLogLine(self::COMPONENT_SERVER);
+
+	}
+
+	/**
+	 * Delete the test host and verify the deletion succeeded.
+	 */
+	public function testLLDHistorySyncAtScale_HostDelete() {
+		$response = $this->call('host.delete', [self::$hostid]);
+		$this->assertArrayHasKey('hostids', $response['result']);
+		$this->assertContains((string) self::$hostid, $response['result']['hostids']);
+		self::$hostid = null;
 	}
 }
