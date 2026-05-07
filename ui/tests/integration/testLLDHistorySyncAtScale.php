@@ -540,29 +540,26 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 		$this->sendDiscoveryData();
 
-		// Wait until a trigger instance is created for every discovered sensor and non-JSON type
-		// and its description carries the updated "NoData " prefix.
-		$response = $this->callUntilDataIsPresent('trigger.get', [
+		// Wait until a trigger instance with the updated "NoData Sensor " description prefix exists
+		// for every discovered sensor and non-JSON type.
+		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
-			'output' => ['triggerid', 'description', 'status']
+			'search' => ['description' => 'NoData Sensor '],
+			'startSearch' => true,
+			'countOutput' => true
 		], self::LLD_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
-			if (count($r['result']) !== self::$total_trigger_expected) {
-				return false;
-			}
-			foreach ($r['result'] as $trigger) {
-				if (strpos($trigger['description'], 'NoData Sensor ') !== 0) {
-					return false;
-				}
-			}
-			return true;
+			return (int) $r['result'] === self::$total_trigger_expected;
 		});
+
+		$response = $this->call('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid']
+		]);
 
 		$this->assertCount(self::$total_trigger_expected, $response['result'],
 			'Not all '.self::$total_trigger_expected.' discovered triggers were created.');
 
 		foreach ($response['result'] as $trigger) {
-			$this->assertStringStartsWith('NoData Sensor ', $trigger['description'],
-				'Discovered trigger description was not updated: '.$trigger['description']);
 			self::$discovered_triggerids[] = (int) $trigger['triggerid'];
 		}
 
