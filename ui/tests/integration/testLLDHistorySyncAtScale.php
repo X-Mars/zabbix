@@ -148,19 +148,22 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			]
 		], self::HOSTNAME, self::COMPONENT_SERVER, 0, self::PROXY_NAME);
 	}
-	public static function clearData(): void {
+	public function clearData(): void {
 		if (self::$hostid !== null) {
-			CDataHelper::call('host.delete', [self::$hostid]);
+			$response = $this->call('host.delete', [self::$hostid]);
+			$this->assertArrayHasKey('hostids', $response['result']);
+			$this->assertContains((string) self::$hostid, $response['result']['hostids']);
+			self::$hostid = null;
 		}
 
 		if (self::$proxyid !== null) {
-			CDataHelper::call('proxy.delete', [self::$proxyid]);
+			$response = $this->call('proxy.delete', [self::$proxyid]);
+			$this->assertArrayHasKey('proxyids', $response['result']);
+			$this->assertContains((string) self::$proxyid, $response['result']['proxyids']);
+			self::$proxyid = null;
 		}
 
-		self::$hostid = null;
-		self::$proxyid = null;
-
-		CDataHelper::call('settings.update', ['auditlog_enabled' => 1, 'auditlog_mode' => 1]);
+		$this->call('settings.update', ['auditlog_enabled' => 1, 'auditlog_mode' => 1]);
 	}
 	/**
 	 * Component configuration provider.
@@ -919,12 +922,9 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	}
 
 	/**
-	 * Delete the test host and verify the deletion succeeded.
+	 * Delete the test host and proxy and verify the deletions succeeded.
 	 */
 	public function testLLDHistorySyncAtScale_HostDelete() {
-		$response = $this->call('host.delete', [self::$hostid]);
-		$this->assertArrayHasKey('hostids', $response['result']);
-		$this->assertContains((string) self::$hostid, $response['result']['hostids']);
-		self::$hostid = null;
+		$this->clearData();
 	}
 }
