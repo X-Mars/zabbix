@@ -598,10 +598,9 @@ class CIntegrationTest extends CAPITest {
 			$db['DBSchema'] = $DB['SCHEMA'];
 		}
 
-		if (isset($HISTORY_PROVIDERS)) {
-			$db_history['HistoryProvider'] = 'elasticsearch;'.
-				'value_types="'.implode(',', $HISTORY_PROVIDERS[0]['types']).'",'.
-				'url='.$HISTORY_PROVIDERS[0]['url'];
+		if (isset($HISTORY)) {
+			$db_history['HistoryStorageURL'] = reset($HISTORY['url']);
+			$db_history['HistoryStorageTypes'] = implode(',', $HISTORY['types']);
 		}
 
 		$configuration = [
@@ -973,10 +972,6 @@ class CIntegrationTest extends CAPITest {
 		$client = $this->getClient($component);
 		$session = md5(uniqid('', true));
 		$result = $client->sendAgentDataValues($values, $session, $host, '8.0.0', $proxy);
-
-		/*$this->assertTrue(($result !== false),
-			sprintf('Component "%s" failed to receive data: %s', $component, $client->getError())
-		);*/
 
 		if ($proxy === null) {
 			$this->assertTrue(array_key_exists('processed', $result),
