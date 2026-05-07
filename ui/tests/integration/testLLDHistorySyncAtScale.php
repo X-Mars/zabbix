@@ -562,7 +562,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 * Resend NOTSUPPORTED data and verify that nodata-based triggers remain firing
 	 * (value = PROBLEM, state = NORMAL) regardless of item state.
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataRecovery
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataNotSupported() {
 		$tm = time();

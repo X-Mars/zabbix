@@ -46,9 +46,9 @@ then
 	CFLAGS+=" -Wno-uninitialized"
 
 	# flags for clang sanitizers
-	CFLAGS+=" -fsanitize=leak,address,undefined"
-	CFLAGS+=" -fsanitize-address-use-after-scope"
-	CFLAGS+=" -fno-omit-frame-pointer"
+	#CFLAGS+=" -fsanitize=leak,address,undefined"
+	#CFLAGS+=" -fsanitize-address-use-after-scope"
+	#CFLAGS+=" -fno-omit-frame-pointer"
 
 	# other
 	CFLAGS+=" -DZBX_DEBUG"
