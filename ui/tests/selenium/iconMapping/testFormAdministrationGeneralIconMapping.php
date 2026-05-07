@@ -482,8 +482,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 		}
 
 		$form = $this->query('id:iconmap')->asForm()->one();
-		$this->query('button:Update')->one()->click()->waitUntilClassesNotPresent('is-loading');;
-		$form->query('button:Update')->one()->waitUntilClassesNotPresent('is-loading');
+		$form->query('button:Update')->one()->click()->waitUntilClassesNotPresent('is-loading');
 
 		// Check the results in frontend.
 		if (array_key_exists('error_inline', $data)) {
