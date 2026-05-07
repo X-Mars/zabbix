@@ -597,7 +597,36 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #16.
+			// #16 Agent port validation.
+			[
+				[
+					'expected' => TEST_BAD,
+					'default_values' => true,
+					'host_fields' => [
+						'Host name' => 'Host for port validation',
+						'Host groups' => 'Zabbix servers'
+					],
+					'interfaces' => [
+						[
+							'action' => USER_ACTION_ADD,
+							'type' => 'Agent',
+							'ip' => '127.1.1.1',
+							'port' => '1023'
+						],
+						[
+							'action' => USER_ACTION_ADD,
+							'type' => 'Agent',
+							'ip' => '127.2.2.2',
+							'port' => '32768'
+						]
+					],
+					'inline_errors' => [
+						'id:interfaces_1_port' => 'Port: Value must be greater than or equal to 1024.',
+						'id:interfaces_2_port' => 'Port: Value must be less than or equal to 32767.'
+					]
+				]
+			],
+			// #17.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -617,7 +646,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #17.
+			// #18.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -637,7 +666,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #18 Empty SNMP community.
+			// #19 Empty SNMP community.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -657,7 +686,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #19 Too low max repetition count.
+			// #20 Too low max repetition count.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -677,7 +706,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #20 Empty proxy multiselect.
+			// #21 Empty proxy multiselect.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -692,7 +721,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #21 Empty proxy group multiselect.
+			// #22 Empty proxy group multiselect.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -707,7 +736,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #22 Too high value in Max repetition count.
+			// #23 Too high value in Max repetition count.
 			[
 				[
 					'expected' => TEST_BAD,
@@ -726,7 +755,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #23 Host without interface.
+			// #24 Host without interface.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -736,7 +765,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #24 UTF8MB4 check.
+			// #25 UTF8MB4 check.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -748,7 +777,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #25 Default values of all interfaces.
+			// #26 Default values of all interfaces.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -776,7 +805,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #26 Change default host interface.
+			// #27 Change default host interface.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -802,7 +831,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #27 Different versions of SNMP interface and encryption.
+			// #28 Different versions of SNMP interface and encryption.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -860,7 +889,7 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #28 All interfaces and all fields in form.
+			// #29 All interfaces and all fields in form.
 			[
 				[
 					'expected' => TEST_GOOD,
@@ -936,35 +965,6 @@ class testFormHost extends CWebTest {
 					]
 				]
 			],
-			// #29 Agent port validation.
-			[
-				[
-					'expected' => TEST_BAD,
-					'default_values' => true,
-					'host_fields' => [
-						'Host name' => 'Host for port validation',
-						'Host groups' => 'Zabbix servers'
-					],
-					'interfaces' => [
-						[
-							'action' => USER_ACTION_ADD,
-							'type' => 'Agent',
-							'ip' => '127.1.1.1',
-							'port' => '1023'
-						],
-						[
-							'action' => USER_ACTION_ADD,
-							'type' => 'Agent',
-							'ip' => '127.2.2.2',
-							'port' => '32768'
-						]
-					],
-					'inline_errors' => [
-						'id:interfaces_1_port' => 'Port: Value must be greater than or equal to 1024.',
-						'id:interfaces_2_port' => 'Port: Value must be less than or equal to 32767.'
-					]
-				]
-			]
 		];
 	}
 
