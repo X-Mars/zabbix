@@ -580,11 +580,15 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$tm = time();
 		$this->sendHistoryAt($tm, 'item is not supported', ITEM_STATE_NOTSUPPORTED);
 
-		$this->callUntilCountIsPresent('item.get', [
+		$this->callUntilDataIsPresent('item.get', [
 			'hostids' => [self::$hostid],
 			'search' => ['key_' => self::ITEM_PROTO_KEY.'.'],
 			'filter' => ['state' => ITEM_STATE_NOTSUPPORTED]
-		], self::$total_expected, self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY);
+		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+			$this->sendAgentPing();
+
+			return count($r['result']) === self::$total_expected;
+		});
 
 		$response = $this->call('trigger.get', [
 			'hostids' => [self::$hostid],
