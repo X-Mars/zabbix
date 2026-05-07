@@ -964,7 +964,7 @@ class testFormHost extends CWebTest {
 						]
 					]
 				]
-			],
+			]
 		];
 	}
 
