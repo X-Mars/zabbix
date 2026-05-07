@@ -1203,8 +1203,9 @@ class CIntegrationTest extends CAPITest {
 			try {
 				$response = $this->call($method, $count_params);
 
-				if (isset($response['result']) && $response['result'] == $expected_count
-						&& ($callback === null || call_user_func($callback, $response))) {
+				$callback_ok = ($callback === null || call_user_func($callback, $response) === true);
+
+				if (isset($response['result']) && $response['result'] == $expected_count && $callback_ok) {
 					if (static::$trace_delays) {
 						self::recordDelay('call_count_present', microtime(true) - $start);
 					}
