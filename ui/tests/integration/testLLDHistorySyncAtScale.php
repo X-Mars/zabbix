@@ -524,41 +524,6 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	}
 
 	/**
-	 * Verify that discovered triggers fire after the no-data window elapses
-	 * (value = PROBLEM, state = NORMAL).
-	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
-	 */
-	public function testLLDHistorySyncAtScale_TriggerNoDataFiring() {
-		$this->callUntilDataIsPresent('trigger.get', [
-			'hostids' => [self::$hostid],
-			'output' => ['triggerid', 'value', 'state']
-		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
-
-			$this->sendAgentPing();
-
-			if (count($r['result']) !== self::$total_trigger_expected) {
-				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
-			}
-			$wrong_value = 0;
-			$wrong_state = 0;
-			foreach ($r['result'] as $trigger) {
-				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
-					$wrong_value++;
-				}
-				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
-					$wrong_state++;
-				}
-			}
-			if ($wrong_value > 0 || $wrong_state > 0) {
-				return $wrong_value.' triggers did not change to PROBLEM, '
-					.$wrong_state.' triggers not in NORMAL state';
-			}
-			return true;
-		});
-	}
-
-	/**
 	 * Resend NOTSUPPORTED data and verify that nodata-based triggers remain firing
 	 * (value = PROBLEM, state = NORMAL) regardless of item state.
 	 *
@@ -641,6 +606,44 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			}
 			if ($wrong_value > 0 || $wrong_state > 0) {
 				return $wrong_value.' triggers did not change to OK, '
+					.$wrong_state.' triggers not in NORMAL state';
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Verify that discovered triggers fire after the no-data window elapses
+	 * (value = PROBLEM, state = NORMAL).
+	 *
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
+	 */
+	public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
+		$this->stopComponent(self::COMPONENT_SERVER);
+		$this->startComponent(self::COMPONENT_SERVER);
+
+		$this->callUntilDataIsPresent('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid', 'value', 'state']
+		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+
+			$this->sendAgentPing();
+
+			if (count($r['result']) !== self::$total_trigger_expected) {
+				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
+			}
+			$wrong_value = 0;
+			$wrong_state = 0;
+			foreach ($r['result'] as $trigger) {
+				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
+					$wrong_value++;
+				}
+				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
+					$wrong_state++;
+				}
+			}
+			if ($wrong_value > 0 || $wrong_state > 0) {
+				return $wrong_value.' triggers did not change to PROBLEM, '
 					.$wrong_state.' triggers not in NORMAL state';
 			}
 			return true;
