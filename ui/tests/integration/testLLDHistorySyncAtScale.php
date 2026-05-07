@@ -32,7 +32,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	const LLD_MACRO = '{#SENSOR}';
 	const ITEM_PROTO_KEY = 'multiple.history.trap';
 	const SENSOR_BASE = 'sensor';
-	const LLD_DISCOVERY_COUNT = 10;
+	const LLD_DISCOVERY_COUNT = 10000;
 	const TRIGGER_WARMUP_ITERATIONS = 60;
 	const LLD_ITERATIONS = 120;
 
@@ -170,8 +170,8 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	public function configurationProvider() {
 		return [
 			self::COMPONENT_SERVER => [
-				'LogFileSize' => 4,
-				'DebugLevel' => 4,
+				'LogFileSize' => 1,
+				'DebugLevel' => 3,
 				'CacheSize' => '128M',
 				'HistoryCacheSize' => '32M',
 				'HistoryIndexCacheSize' => '32M',
