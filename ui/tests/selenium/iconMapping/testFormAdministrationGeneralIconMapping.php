@@ -482,7 +482,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 		}
 
 		$form = $this->query('id:iconmap')->asForm()->one();
-		$this->query('button:Update')->one()->click();
+		$this->query('button:Update')->one()->click()->waitUntilClassesNotPresent('is-loading');;
 		$form->query('button:Update')->one()->waitUntilClassesNotPresent('is-loading');
 
 		// Check the results in frontend.
@@ -923,7 +923,7 @@ class testFormAdministrationGeneralIconMapping extends CLegacyWebTest {
 
 		$this->zbxTestLogin('zabbix.php?action=iconmap.list');
 		$this->zbxTestClickLinkTextWait($name);
-		$this->query('button:Delete')->one()->click();
+		$this->query('button:Delete')->waitUntilClickable()->one()->click();
 		$this->zbxTestAcceptAlert();
 
 		// Check the results in frontend.
