@@ -590,6 +590,13 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			return count($r['result']) === self::$total_expected;
 		});
 
+		$response = $this->call('proxy.get', [
+			'proxyids' => [self::$proxyid],
+			'output' => ['lastaccess']
+		]);
+		$this->assertLessThanOrEqual(10, time() - (int) $response['result'][0]['lastaccess'],
+				'Proxy lastaccess is older than 10 seconds.');
+
 		$response = $this->call('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
