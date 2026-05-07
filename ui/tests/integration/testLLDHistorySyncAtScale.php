@@ -537,6 +537,15 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			$this->assertCount(1, $response['result']['triggerids']);
 		}
 
+		$response = $this->call('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid']
+		]);
+		if (!empty($response['result'])) {
+			$this->call('trigger.delete', array_column($response['result'], 'triggerid'));
+		}
+		self::$discovered_triggerids = [];
+
 		$this->sendDiscoveryData();
 
 		// Wait until a trigger instance is created for every discovered sensor and non-JSON type.
