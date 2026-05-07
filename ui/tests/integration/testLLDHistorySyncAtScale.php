@@ -179,7 +179,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				'HistoryCacheSize' => '32M',
 				'HistoryIndexCacheSize' => '32M',
 				'ValueCacheSize' => '128M',
-				'LogSlowQueries' => '50000',
+				'LogSlowQueries' => '60000',
 				'StartDBSyncers' => '32' /* LLD_DISCOVERY_COUNT * types / ZBX_HC_SYNC_MAX  */
 			]
 		];
