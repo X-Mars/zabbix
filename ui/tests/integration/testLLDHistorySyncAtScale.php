@@ -476,6 +476,37 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	}
 
 	/**
+	 * @depends testLLDHistorySyncAtScale_TriggerFiring
+	 */
+	public function testLLDHistorySyncAtScale_TriggerUnknown() {
+		$tm = time();
+		$this->sendHistoryAt($tm, 'item is not supported', ITEM_STATE_NOTSUPPORTED);
+
+		// Verify all discovered triggers became unknown (state = UNKNOWN).
+		$this->callUntilDataIsPresent('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid', 'value', 'state']
+		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+			if (count($r['result']) !== self::$total_trigger_expected) {
+				return false;
+			}
+			foreach ($r['result'] as $trigger) {
+				if ((int) $trigger['state'] !== TRIGGER_STATE_UNKNOWN) {
+					return false;
+				}
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * @depends testLLDHistorySyncAtScale_TriggerUnknown
+	 */
+	public function testLLDHistorySyncAtScale_TriggerRecoverUnknown() {
+		$this-> testLLDHistorySyncAtScale_TriggerRecovery();
+	}
+
+	/**
 	 * Update each trigger prototype expression to nodata(...,30s)=1 and verify that
 	 * all discovered triggers fire after the no-data window elapses.
 	 *
