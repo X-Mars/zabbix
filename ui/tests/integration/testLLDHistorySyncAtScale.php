@@ -592,8 +592,8 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			}
 
 			foreach ($r['result'] as $trigger) {
-				/*$this->assertNotEquals(TRIGGER_STATE_UNKNOWN, (int) $trigger['state'],
-					'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN.');*/
+				$this->assertNotEquals(TRIGGER_STATE_UNKNOWN, (int) $trigger['state'],
+					'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN.');
 
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
 					return false;
@@ -610,7 +610,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 * Restart the server and verify that nodata-based triggers recover again
 	 * once normal data resumes flowing.
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataNotSupported
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
@@ -647,7 +647,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 * Verify that discovered triggers fire after the no-data window elapses
 	 * (value = PROBLEM, state = NORMAL).
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
