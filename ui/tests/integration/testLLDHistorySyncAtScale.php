@@ -546,6 +546,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'description', 'status']
 		], self::LLD_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+			$this->sendAgentPing();
 			if (count($r['result']) !== self::$total_trigger_expected) {
 				return false;
 			}
