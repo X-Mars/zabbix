@@ -467,6 +467,15 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	}
 
 	/**
+	 * @depends testLLDHistorySyncAtScale_TriggerFiring
+	 */
+	public function testLLDHistorySyncAtScale_TriggerRecoveryWarmupAfterRestart() {
+		$this->stopComponent(self::COMPONENT_SERVER);
+		$this->startComponent(self::COMPONENT_SERVER);
+		$this-> testLLDHistorySyncAtScale_TriggerRecovery();
+	}
+
+	/**
 	 * Update each trigger prototype expression to nodata(...,30s)=1 and verify that
 	 * all discovered triggers fire after the no-data window elapses.
 	 *
