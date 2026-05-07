@@ -573,7 +573,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state']
-		], self::TRIGGER_WARMUP_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+		], 120, self::WAIT_ITERATION_DELAY, function ($r) {
 
 			$this->sendAgentPing();
 
@@ -600,7 +600,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 * Restart the server and verify that nodata-based triggers recover again
 	 * once normal data resumes flowing.
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataNotSupported
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
