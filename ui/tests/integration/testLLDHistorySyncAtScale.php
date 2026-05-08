@@ -599,17 +599,17 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 		$response = $this->call('trigger.get', [
 			'hostids' => [self::$hostid],
-			'output' => ['triggerid', 'value', 'state']
+			'output' => ['triggerid', 'value', 'state', 'error']
 		]);
 
 		foreach ($response['result'] as $trigger) {
 			$this->assertEquals(TRIGGER_STATE_NORMAL, (int) $trigger['state'],
-				'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN.');
+				'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN. Error:'.$trigger['error']);
 		}
 
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
-			'output' => ['triggerid', 'value', 'state']
+			'output' => ['triggerid', 'value', 'state', 'error']
 		], 120, self::WAIT_ITERATION_DELAY, function ($r) {
 
 			$this->sendAgentPing();
@@ -620,7 +620,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 			foreach ($r['result'] as $trigger) {
 				$this->assertEquals(TRIGGER_STATE_NORMAL, (int) $trigger['state'],
-					'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN.');
+					'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN. Error:'.$trigger['error']);
 			}
 			foreach ($r['result'] as $trigger) {
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
