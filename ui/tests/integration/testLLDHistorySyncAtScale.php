@@ -639,11 +639,6 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 		$this->sendHistoryAt($tm, 'item is not supported', ITEM_STATE_NOTSUPPORTED);
 
-		for ($i = 0; $i < 30; $i++) {
-			$this->sendAgentPing();
-			sleep(1);
-		}
-
 		$this->callUntilCountIsPresent('item.get', [
 			'hostids' => [self::$hostid],
 			'search' => ['key_' => self::ITEM_PROTO_KEY.'.'],
