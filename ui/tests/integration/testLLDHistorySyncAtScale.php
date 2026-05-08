@@ -636,7 +636,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataNotSupported() {
 		$tm = time();
-		
+
 		$this->sendHistoryAt($tm, 'item is not supported', ITEM_STATE_NOTSUPPORTED);
 
 		for ($i = 0; $i < 30; $i++) {
