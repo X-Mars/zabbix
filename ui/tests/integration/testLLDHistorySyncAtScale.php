@@ -571,10 +571,26 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	}
 
 	/**
+	 * Verify that an agent ping through the proxy updates proxy lastaccess
+	 * within 3 seconds.
+	 *
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
+	 */
+	public function testLLDHistorySyncAtScale_ProxyLastaccess() {
+		$this->callUntilDataIsPresent('proxy.get', [
+			'proxyids' => [self::$proxyid],
+			'output' => ['lastaccess']
+		], self::WAIT_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+			$this->sendAgentPing();
+			return (time() - (int) $r['result'][0]['lastaccess']) <= 3;
+		});
+	}
+
+	/**
 	 * Resend NOTSUPPORTED data and verify that nodata-based triggers remain firing
 	 * (value = PROBLEM, state = NORMAL) regardless of item state.
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
+	 * @depends testLLDHistorySyncAtScale_ProxyLastaccess
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataNotSupported() {
 		$tm = time();
