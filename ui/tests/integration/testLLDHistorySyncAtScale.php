@@ -613,16 +613,19 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->assertLessThanOrEqual(10, time() - (int) $response['result'][0]['lastaccess'],
 				'Proxy lastaccess is older than 10 seconds.');
 
+		$trigger_unknown_error = null;
+
 		$this->callUntilDataIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'output' => ['triggerid', 'value', 'state', 'error']
-		], 120, self::WAIT_ITERATION_DELAY, function ($r) {
+		], 120, self::WAIT_ITERATION_DELAY, function ($r) use (&$trigger_unknown_error) {
 
 			$this->sendAgentPing();
 
 			foreach ($r['result'] as $trigger) {
-				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
-					return 'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN. Error:'.$trigger['error'];
+				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL && $trigger_unknown_error === null) {
+					$trigger_unknown_error = 'Trigger '.$trigger['triggerid'].
+							' transitioned to UNKNOWN. Error:'.$trigger['error'];
 				}
 			}
 
@@ -637,6 +640,8 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			}
 			return true;
 		});
+
+		$this->assertNull($trigger_unknown_error, (string) $trigger_unknown_error);
 	}
 
 	/**
