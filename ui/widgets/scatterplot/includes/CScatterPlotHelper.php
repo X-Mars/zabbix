@@ -246,8 +246,8 @@ class CScatterPlotHelper {
 				: CColorPicker::getPaletteColors($data_set['color_palette'], count($items_by_hosts));
 
 			$data_set = array_diff_key($data_set, array_flip(['x_axis_references', 'y_axis_references', 'color_palette',
-				'hostgroupids', 'host_tags_evaltype', 'host_tags', 'dataset_type', 'override_hostid', 'hosts',
-				'x_axis_itemids', 'y_axis_itemids'
+				'hostgroupids', 'host_tags_evaltype', 'host_tags', 'override_hostid', 'hosts', 'x_axis_itemids',
+				'y_axis_itemids'
 			]));
 
 			foreach ($items_by_hosts as $items_by_host) {
@@ -369,7 +369,7 @@ class CScatterPlotHelper {
 
 			$data_set = array_diff_key($data_set, array_flip(['x_axis_itemids', 'y_axis_itemids', 'x_axis_references',
 				'y_axis_references', 'hostgroupids', 'hosts', 'host_tags', 'host_tags_evaltype', 'color_palette',
-				'override_hostid', 'x_axis_items', 'y_axis_items', 'dataset_type'
+				'override_hostid', 'x_axis_items', 'y_axis_items'
 			]));
 
 			if ($result['x_axis_itemids'] && $result['y_axis_itemids']) {
@@ -593,14 +593,29 @@ class CScatterPlotHelper {
 			foreach (['x_axis_items', 'y_axis_items'] as $axis) {
 				$names = [];
 
-				foreach ($metric[$axis] as $item) {
-					$names[$item['itemid']] = $show_hostnames
-						? $item['hosts'][0]['name'].NAME_DELIMITER.$item['name']
-						: $item['name'];
+				if ($metric['options']['dataset_type'] == CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM) {
+					foreach ($metric[$axis] as $item) {
+						$metric['hostname'] = '';
+
+						$names[$item['itemid']] = $show_hostnames
+							? $item['hosts'][0]['name'].NAME_DELIMITER.$item['name']
+							: $item['name'];
+					}
+				}
+				else {
+					foreach ($metric[$axis] as $item) {
+						$metric['hostname'] = $show_hostnames
+							? $item['hosts'][0]['name'].NAME_DELIMITER
+							: '';
+
+						$names[$item['itemid']] = $item['name'];
+					}
 				}
 
 				$metric[$axis.'_name'] = $names;
 			}
+
+			unset($metric['options']['dataset_type']);
 		}
 		unset($metric);
 	}
@@ -862,7 +877,7 @@ class CScatterPlotHelper {
 						$names[$axis] .= ', ';
 					}
 
-					$names[$axis] .= $item_name;
+					$names[$axis] .= $metric['hostname'].$item_name;
 
 					$count++;
 				}

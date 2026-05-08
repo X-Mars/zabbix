@@ -179,6 +179,7 @@ class CScatterPlot extends CSvg {
 
 			$this->metrics[$index] = [
 				'data_set' => $metric['data_set'],
+				'hostname' => $metric['hostname'],
 				'x_axis_items_name' => $metric['x_axis_items_name'],
 				'y_axis_items_name' => $metric['y_axis_items_name'],
 				'x_units' => $metric['x_units'],
@@ -526,6 +527,8 @@ class CScatterPlot extends CSvg {
 		$templates = new CTag('defs', true);
 		$existing_templates = [];
 
+		$count = 0;
+
 		foreach ($this->metrics as $index => $metric) {
 			if (array_key_exists($index, $this->paths)) {
 				$marker_type = $this->datasets[$metric['data_set']]['marker'];
@@ -547,12 +550,15 @@ class CScatterPlot extends CSvg {
 				}
 
 				foreach ($this->paths[$index] as $path) {
+					$count++;
 					$this->addItem(
 						new CScatterPlotMetricPoint($path, $this->id_prefix, $marker_type, $marker_size)
 					);
 				}
 			}
 		}
+
+		sdff($count, '/home/test/work/logs/zabbix.log');
 
 		$this->addItem($templates);
 	}
@@ -590,6 +596,7 @@ class CScatterPlot extends CSvg {
 
 			$metrics[$index] = [
 				'data_set' => $metric['data_set'],
+				'hostname' => $metric['hostname'],
 				'x_items' => $metric['x_axis_items_name'],
 				'y_items' => $metric['y_axis_items_name']
 			];

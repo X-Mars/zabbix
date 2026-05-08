@@ -106,14 +106,13 @@ class CScatterPlotMetricPoint extends CTag {
 
 	public function toString($destroy = true): string {
 		$this
+			->addClass('svg-scatter-plot-point')
 			->addClass('point-'.round($this->point[0]).'-'.round($this->point[1]))
 			->setAttribute('href', '#point_'.$this->prefix.'_'.$this->marker_type.'_'.$this->marker_size)
 			->setAttribute('x', $this->point[0])
 			->setAttribute('y', $this->point[1])
-			->setAttribute('fill-opacity', 1)
-			->setAttribute('fill', $this->point[4])
-			->setAttribute('stroke', $this->point[4])
-			->setAttribute('data-id', $this->prefix.'_'.$this->marker_type.'_'.$this->marker_size);
+			->setAttribute('data-id', $this->prefix.'_'.$this->marker_type.'_'.$this->marker_size)
+			->addStyle('--color: '.$this->point[4].';');
 
 		return parent::toString($destroy);
 	}

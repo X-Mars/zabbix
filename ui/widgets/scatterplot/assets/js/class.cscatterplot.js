@@ -338,7 +338,7 @@ class CScatterPlot {
 							item_span.classList.add('has-broadcast-data');
 							item_span.dataset.itemid = itemid;
 							item_span.dataset.ds = ds_id;
-							item_span.innerText = name;
+							item_span.innerText = `${metric.hostname}${name}`;
 
 							axis.append(item_span);
 						}
