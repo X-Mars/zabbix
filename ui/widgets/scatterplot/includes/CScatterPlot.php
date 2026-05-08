@@ -527,8 +527,6 @@ class CScatterPlot extends CSvg {
 		$templates = new CTag('defs', true);
 		$existing_templates = [];
 
-		$count = 0;
-
 		foreach ($this->metrics as $index => $metric) {
 			if (array_key_exists($index, $this->paths)) {
 				$marker_type = $this->datasets[$metric['data_set']]['marker'];
@@ -550,15 +548,12 @@ class CScatterPlot extends CSvg {
 				}
 
 				foreach ($this->paths[$index] as $path) {
-					$count++;
 					$this->addItem(
 						new CScatterPlotMetricPoint($path, $this->id_prefix, $marker_type, $marker_size)
 					);
 				}
 			}
 		}
-
-		sdff($count, '/home/test/work/logs/zabbix.log');
 
 		$this->addItem($templates);
 	}
