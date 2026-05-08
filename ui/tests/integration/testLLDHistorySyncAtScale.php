@@ -538,6 +538,15 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			$this->assertCount(1, $response['result']['triggerids']);
 		}
 
+		$response = $this->call('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid']
+		]);
+		if (!empty($response['result'])) {
+			$triggerids = array_column($response['result'], 'triggerid');
+			$this->call('trigger.delete', $triggerids);
+		}
+
 		$this->sendDiscoveryData();
 
 		// Wait until a trigger instance is created for every discovered sensor and non-JSON type
@@ -571,6 +580,39 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	}
 
 	/**
+	 *
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataDiscovery
+	 */
+	public function testLLDHistorySyncAtScale_TriggerNoDataFiring() {
+		$this->callUntilDataIsPresent('trigger.get', [
+			'hostids' => [self::$hostid],
+			'output' => ['triggerid', 'value', 'state']
+		], 120, self::WAIT_ITERATION_DELAY, function ($r) {
+
+			$this->sendAgentPing();
+
+			if (count($r['result']) !== self::$total_trigger_expected) {
+				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
+			}
+			$wrong_value = 0;
+			$wrong_state = 0;
+			foreach ($r['result'] as $trigger) {
+				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
+					$wrong_value++;
+				}
+				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
+					$wrong_state++;
+				}
+			}
+			if ($wrong_value > 0 || $wrong_state > 0) {
+				return $wrong_value.' triggers did not change to PROBLEM, '
+					.$wrong_state.' triggers not in NORMAL state';
+			}
+			return true;
+		});
+	}
+
+	/**
 	 * Verify that an agent ping through the proxy updates proxy lastaccess
 	 * within 3 seconds.
 	 *
@@ -594,7 +636,13 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataNotSupported() {
 		$tm = time();
+		
 		$this->sendHistoryAt($tm, 'item is not supported', ITEM_STATE_NOTSUPPORTED);
+
+		for ($i = 0; $i < 30; $i++) {
+			$this->sendAgentPing();
+			sleep(1);
+		}
 
 		$this->callUntilCountIsPresent('item.get', [
 			'hostids' => [self::$hostid],
@@ -626,6 +674,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL && $trigger_unknown_error === null) {
 					$trigger_unknown_error = 'Trigger '.$trigger['triggerid'].
 							' transitioned to UNKNOWN. Error:'.$trigger['error'];
+					return true;
 				}
 			}
 
@@ -690,33 +739,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->startComponent(self::COMPONENT_SERVER);
-
-		$this->callUntilDataIsPresent('trigger.get', [
-			'hostids' => [self::$hostid],
-			'output' => ['triggerid', 'value', 'state']
-		], 120, self::WAIT_ITERATION_DELAY, function ($r) {
-
-			$this->sendAgentPing();
-
-			if (count($r['result']) !== self::$total_trigger_expected) {
-				return 'Expected '.self::$total_trigger_expected.' triggers, got '.count($r['result']);
-			}
-			$wrong_value = 0;
-			$wrong_state = 0;
-			foreach ($r['result'] as $trigger) {
-				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
-					$wrong_value++;
-				}
-				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
-					$wrong_state++;
-				}
-			}
-			if ($wrong_value > 0 || $wrong_state > 0) {
-				return $wrong_value.' triggers did not change to PROBLEM, '
-					.$wrong_state.' triggers not in NORMAL state';
-			}
-			return true;
-		});
+		$this->testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart();
 	}
 
 	private function verifyTrendsAtClock(int $trend_clock): void {
