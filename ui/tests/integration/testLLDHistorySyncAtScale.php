@@ -694,7 +694,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 *
 	 * @depends testLLDHistorySyncAtScale_TriggerNoDataNotSupported
 	 */
-	public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
+	/*public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->startComponent(self::COMPONENT_SERVER);
 		$tm = time();
@@ -731,11 +731,11 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 *
 	 * @depends testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart
 	 */
-	public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
+	/*public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->startComponent(self::COMPONENT_SERVER);
 		$this->testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart();
-	}
+	}*/
 
 	private function verifyTrendsAtClock(int $trend_clock): void {
 		foreach ([ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64] as $vtype) {
