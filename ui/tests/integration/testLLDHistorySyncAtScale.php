@@ -621,8 +621,9 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			$this->sendAgentPing();
 
 			foreach ($r['result'] as $trigger) {
-				$this->assertEquals(TRIGGER_STATE_NORMAL, (int) $trigger['state'],
-					'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN. Error:'.$trigger['error']);
+				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
+					return 'Trigger '.$trigger['triggerid'].' transitioned to UNKNOWN. Error:'.$trigger['error'];
+				}
 			}
 
 			if (count($r['result']) !== self::$total_trigger_expected) {
@@ -631,9 +632,6 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 			foreach ($r['result'] as $trigger) {
 				if ((int) $trigger['value'] !== TRIGGER_VALUE_TRUE) {
-					return false;
-				}
-				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL) {
 					return false;
 				}
 			}
