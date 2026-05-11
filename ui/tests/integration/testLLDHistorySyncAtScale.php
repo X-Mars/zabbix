@@ -687,7 +687,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 * Restart the server and verify that nodata-based triggers recover again
 	 * once normal data resumes flowing.
 	 *
-	 * @depends testLLDHistorySyncAtScale_TriggerNoDataNotSupported
+	 * @depends testLLDHistorySyncAtScale_TriggerNoDataFiring
 	 */
 	public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
