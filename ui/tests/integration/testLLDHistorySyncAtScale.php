@@ -16,8 +16,11 @@
 require_once dirname(__FILE__).'/../include/CIntegrationTest.php';
 
 /**
- * Test suite to verify that history.get correctly returns values for
- * a large set of LLD-discovered items across all supported value types.
+ * Test suite that exercises the server at scale through an active proxy across
+ * 10000 LLD-discovered items of every supported value type: first verifying
+ * history and trends without triggers, then adding last()- and nodata()-based
+ * trigger prototypes and verifying firing, recovery, UNKNOWN state, proxy
+ * lastaccess, behavior across server restarts and final LLD cleanup.
  *
  * @required-components server
  * @suite-components-reuse true
@@ -40,7 +43,6 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	private static $proxyid;
 	private static $lld_ruleid;
 	private static $discovered_itemids = [];
-	private static $discovered_triggerids = [];
 	private static $total_expected;
 	private static $total_trigger_expected;
 	private static $tm_past;
@@ -138,12 +140,12 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		return true;
 	}
 
-	private function sendAgentPing(?int $tm = null): void {
+	private function sendAgentPing(): void {
 		$this->sendAgentDataValues([
 			[
 				'itemid' => self::$agent_ping_itemid,
 				'value' => '1',
-				'clock' => isset($tm) ? $tm : time(),
+				'clock' => time(),
 				'ns' => (int)(microtime(true) * 1e9) % 1000000000
 			]
 		], self::HOSTNAME, self::COMPONENT_SERVER, 0, self::PROXY_NAME);
@@ -382,19 +384,9 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->sendDiscoveryData();
 
 		// Wait until a trigger instance is created for every discovered sensor and non-JSON type.
-		$response = $this->callUntilDataIsPresent('trigger.get', [
-			'hostids' => [self::$hostid],
-			'output' => ['triggerid']
-		], self::LLD_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
-			return count($r['result']) === self::$total_trigger_expected;
-		});
-
-		$this->assertCount(self::$total_trigger_expected, $response['result'],
-			'Not all '.self::$total_trigger_expected.' discovered triggers were created.');
-
-		foreach ($response['result'] as $trigger) {
-			self::$discovered_triggerids[] = (int) $trigger['triggerid'];
-		}
+		$this->callUntilCountIsPresent('trigger.get', [
+			'hostids' => [self::$hostid]
+		], self::$total_trigger_expected, self::LLD_ITERATIONS, self::WAIT_ITERATION_DELAY);
 
 		$this->reloadConfigurationCacheAndWaitForLogLine(self::COMPONENT_SERVER);
 	}
@@ -554,22 +546,14 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 		// Wait until a trigger instance is created for every discovered sensor and non-JSON type
 		// and its description carries the updated "NoData " prefix.
-		$response = $this->callUntilDataIsPresent('trigger.get', [
+		$this->callUntilCountIsPresent('trigger.get', [
 			'hostids' => [self::$hostid],
 			'search' => ['description' => 'NoData Sensor '],
-			'startSearch' => true,
-			'output' => ['triggerid', 'status']
-		], self::LLD_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
+			'startSearch' => true
+		], self::$total_trigger_expected, self::LLD_ITERATIONS, self::WAIT_ITERATION_DELAY, function ($r) {
 			$this->sendAgentPing();
-			return count($r['result']) === self::$total_trigger_expected;
+			return true;
 		});
-
-		$this->assertCount(self::$total_trigger_expected, $response['result'],
-			'Not all '.self::$total_trigger_expected.' discovered triggers were created.');
-
-		foreach ($response['result'] as $trigger) {
-			self::$discovered_triggerids[] = (int) $trigger['triggerid'];
-		}
 
 		$this->reloadConfigurationCacheAndWaitForLogLine(self::COMPONENT_SERVER);
 	}
@@ -916,7 +900,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 
 	private function getVpsWritten(): int {
 		$result = $this->testItemOnServer((string) self::$hostid,
-			['value_type' => '3', 'type' => '5', 'key' => 'zabbix[vps,written]']
+			['value_type' => ITEM_VALUE_TYPE_UINT64, 'type' => ITEM_TYPE_INTERNAL, 'key' => 'zabbix[vps,written]']
 		);
 		$this->assertNotFalse($result);
 		$this->assertArrayHasKey('item', $result);
