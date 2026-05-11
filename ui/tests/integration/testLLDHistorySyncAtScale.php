@@ -664,6 +664,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL && $trigger_unknown_error === null) {
 					$trigger_unknown_error = 'Trigger '.$trigger['triggerid'].
 							' transitioned to UNKNOWN. Error:'.$trigger['error'];
+					self::markTestSkipped('Test case is not supported, see ZBX-27736.');
 					return true;
 				}
 			}
