@@ -726,11 +726,11 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 *
 	 * @depends testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart
 	 */
-	/*public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
+	public function testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->startComponent(self::COMPONENT_SERVER);
-		$this->testLLDHistorySyncAtScale_TriggerNoDataFiringAfterRestart();
-	}*/
+		$this->testLLDHistorySyncAtScale_TriggerNoDataFiring();
+	}
 
 	private function verifyTrendsAtClock(int $trend_clock): void {
 		foreach ([ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64] as $vtype) {
@@ -967,11 +967,4 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 		$this->reloadConfigurationCacheAndWaitForLogLine(self::COMPONENT_SERVER);
 
 	}
-
-	/**
-	 * Delete the test host and proxy and verify the deletions succeeded.
-	 */
-	/*public function testLLDHistorySyncAtScale_HostDelete() {
-		$this->clearData();
-	}*/
 }
