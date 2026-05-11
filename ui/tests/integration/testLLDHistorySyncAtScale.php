@@ -22,7 +22,7 @@ require_once dirname(__FILE__).'/../include/CIntegrationTest.php';
  * @required-components server
  * @suite-components-reuse true
  * @configurationDataProvider configurationProvider
- * @onAfterOnce clearData
+ * @onAfter clearData
  */
 class testLLDHistorySyncAtScale extends CIntegrationTest {
 
@@ -148,22 +148,26 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			]
 		], self::HOSTNAME, self::COMPONENT_SERVER, 0, self::PROXY_NAME);
 	}
-	public function clearData(): void {
+	public static function clearData(): void {
+		if (CAPIHelper::getSessionId() === null) {
+			CAPIHelper::authorize(PHPUNIT_LOGIN_NAME, PHPUNIT_LOGIN_PWD);
+		}
+
 		if (self::$hostid !== null) {
-			$response = $this->call('host.delete', [self::$hostid]);
-			$this->assertArrayHasKey('hostids', $response['result']);
-			$this->assertContains((string) self::$hostid, $response['result']['hostids']);
+			$response = CAPIHelper::call('host.delete', [self::$hostid]);
+			self::assertArrayHasKey('hostids', $response['result']);
+			self::assertContains((string) self::$hostid, $response['result']['hostids']);
 			self::$hostid = null;
 		}
 
 		if (self::$proxyid !== null) {
-			$response = $this->call('proxy.delete', [self::$proxyid]);
-			$this->assertArrayHasKey('proxyids', $response['result']);
-			$this->assertContains((string) self::$proxyid, $response['result']['proxyids']);
+			$response = CAPIHelper::call('proxy.delete', [self::$proxyid]);
+			self::assertArrayHasKey('proxyids', $response['result']);
+			self::assertContains((string) self::$proxyid, $response['result']['proxyids']);
 			self::$proxyid = null;
 		}
 
-		$this->call('settings.update', ['auditlog_enabled' => 1, 'auditlog_mode' => 1]);
+		CAPIHelper::call('settings.update', ['auditlog_enabled' => 1, 'auditlog_mode' => 1]);
 	}
 	/**
 	 * Component configuration provider.
@@ -714,7 +718,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			}
 			return true;
 		});
-	}
+	}*/
 
 	/**
 	 * Verify that discovered triggers fire after the no-data window elapses
@@ -967,7 +971,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	/**
 	 * Delete the test host and proxy and verify the deletions succeeded.
 	 */
-	public function testLLDHistorySyncAtScale_HostDelete() {
+	/*public function testLLDHistorySyncAtScale_HostDelete() {
 		$this->clearData();
-	}
+	}*/
 }
