@@ -164,7 +164,7 @@ const view = new class {
 			verify_host.removeAttribute('disabled');
 		}
 
-		db_host_row.querySelector('button').classList.toggle('btn-icon', db_type !== ZBX_DB_MYSQL);
+		db_host_row.querySelector('button').classList.toggle(ZBX_STYLE_BTN_ICON, db_type !== ZBX_DB_MYSQL);
 	}
 
 	#updateEncryptionFields() {
