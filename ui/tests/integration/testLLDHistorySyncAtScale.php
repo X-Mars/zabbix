@@ -664,7 +664,6 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 				if ((int) $trigger['state'] !== TRIGGER_STATE_NORMAL && $trigger_unknown_error === null) {
 					$trigger_unknown_error = 'Trigger '.$trigger['triggerid'].
 							' transitioned to UNKNOWN. Error:'.$trigger['error'];
-					self::markTestSkipped('Test case is not supported, see ZBX-27736.');
 					return true;
 				}
 			}
@@ -681,7 +680,9 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			return true;
 		});
 
-		$this->assertNull($trigger_unknown_error, (string) $trigger_unknown_error);
+		if ($trigger_unknown_error !== null) {
+			self::markTestSkipped('Test case is not supported, see ZBX-27736.');
+		}
 	}
 
 	/**
