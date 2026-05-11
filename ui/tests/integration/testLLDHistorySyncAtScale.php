@@ -689,7 +689,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 	 *
 	 * @depends testLLDHistorySyncAtScale_TriggerNoDataNotSupported
 	 */
-	/*public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
+	public function testLLDHistorySyncAtScale_TriggerNoDataRecoveryAfterRestart() {
 		$this->stopComponent(self::COMPONENT_SERVER);
 		$this->startComponent(self::COMPONENT_SERVER);
 		$tm = time();
@@ -718,7 +718,7 @@ class testLLDHistorySyncAtScale extends CIntegrationTest {
 			}
 			return true;
 		});
-	}*/
+	}
 
 	/**
 	 * Verify that discovered triggers fire after the no-data window elapses
