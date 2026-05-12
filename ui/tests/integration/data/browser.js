@@ -239,7 +239,7 @@ try
 
 		browser2.setElementWaitTimeout(0);
 
-		findElementStrict(browser2, "xpath", "//div[contains(@class, 'no-data-message')]");
+		findElementStrict(browser2, "xpath", "//div[@class='no-data-message']");
 
 		browser2.setElementWaitTimeout(3000);
 
@@ -419,7 +419,6 @@ catch (err)
 }
 
 result = browser.getResult();
-result.browserDashboard = browserDashboardResult;
 
 Zabbix.log(3, "finished");
 return JSON.stringify(result);
