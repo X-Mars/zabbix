@@ -106,8 +106,9 @@ class testBrowserMonitoring extends CIntegrationTest {
 		$this->assertArrayHasKey('value', $response['result'][0], json_encode($response['result']));
 
 		$result = json_decode($response['result'][0]['value'], true);
+		$this->assertNotNull($result, json_encode($response['result']));
 
-		$this->assertArrayHasKey('performance_data', $result, json_encode($response['result']));
+		$this->assertArrayHasKey('performance_data', $result, json_encode($result));
 		$this->assertArrayHasKey('details', $result['performance_data'], json_encode($result));
 		$this->assertArrayHasKey('summary', $result['performance_data'], json_encode($result));
 		$this->assertArrayHasKey('navigation', $result['performance_data']['summary'], json_encode($result));
