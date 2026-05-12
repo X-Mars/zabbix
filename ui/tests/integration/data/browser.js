@@ -239,9 +239,7 @@ try
 
 		browser2.setElementWaitTimeout(0);
 
-		Zabbix.log(5, "screenshot: " + browser2.getScreenshot());
-
-		findElementStrict(browser2, "xpath", "//div[@class='no-data-message']");
+		findElementStrict(browser2, "xpath", "//div[contains(@class, 'no-data-message')]");
 
 		browser2.setElementWaitTimeout(3000);
 
