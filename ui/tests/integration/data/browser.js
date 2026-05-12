@@ -240,7 +240,7 @@ try
 		browser2.setElementWaitTimeout(0);
 
 		try {
-			findElementStrict(browser2, "xpath", "//div[@class='test-no-data-message']");
+			findElementStrict(browser2, "xpath", "//div[@class='no-data-message']");
 		}
 		catch (error) {
 			Zabbix.log(5, "screenshot: " + browser2.getScreenshot());
