@@ -318,6 +318,9 @@ try
 	}
 	catch (error)
 	{
+		if (null !== browser2.getError())
+			browser.setError(browser2.getError());
+
 		throw error;
 	}
 
