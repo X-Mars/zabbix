@@ -35,7 +35,7 @@ Template needs to use authorization via API token.
 
 Set the `{$KUBE.API.URL}` such as `<scheme>://<host>:<port>`.
 
-Get the service account name. If a different release name is used.
+Get the service account name (if a specific release name is used):
 
 `kubectl get serviceaccounts -n monitoring`
 
@@ -59,7 +59,7 @@ Set up macros to filter metrics by namespace:
 - {$KUBE.LLD.FILTER.NAMESPACE.MATCHES}
 - {$KUBE.LLD.FILTER.NAMESPACE.NOT_MATCHES}
 
-**Note:** If you have a large cluster, it is highly recommended to set a filter in values of the chart Zabbix Helm Chart. For getting only necessary metric in raw data, before it going in Zabbix.
+**Note:** If you have a large cluster, it is highly recommended to set a filter in values of the chart Zabbix Helm Chart to get only the necessary metrics in raw data before they go into Zabbix.
 
 Use the `metricLabelsAllowlist` and `metricAnnotationsAllowList` fields in KSM for advanced filtering by labels and annotations.
 
@@ -122,27 +122,27 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 |Node count|<p>The number of nodes.</p>|Dependent item|kube.node.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_node_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Node Ready count|<p>The number of Ready nodes.</p>|Dependent item|kube.node.ready.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Node Not Ready count|<p>The number of Not Ready nodes.</p>|Dependent item|kube.node.not_ready.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
-|Configmap count|<p>The number of configmap.</p>|Dependent item|kube.configmap.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_configmap_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Configmap count|<p>The number of configmaps.</p>|Dependent item|kube.configmap.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_configmap_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |PVC count|<p>The number of PVC.</p>|Dependent item|kube.persistentvolumeclaim.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_persistentvolumeclaim_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |PV count|<p>The number of PV.</p>|Dependent item|kube.persistentvolume.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_persistentvolume_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
-|Secret count|<p>The number of secret.</p>|Dependent item|kube.secret.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_secret_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Secret count|<p>The number of secrets.</p>|Dependent item|kube.secret.count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_secret_created)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Memory allocatable|<p>The memory allocatable in the cluster calculated as a sum of allocatable memory on all nodes.</p>|Dependent item|kube.cluster.memory_allocatable<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_node_status_allocatable{resource="memory"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 |Memory limits|<p>The memory limits in the cluster calculated as a sum of memory limits on all pods.</p>|Dependent item|kube.cluster.memory_limits<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_container_resource_limits{resource="memory"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 |Memory requests|<p>The memory requests in the cluster calculated as a sum of memory requests on all pods.</p>|Dependent item|kube.cluster.memory_requests<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_container_resource_requests{resource="memory"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
-|Memory usage|<p>The available memory in the cluster calculated as a sum of available memory on all nodes.</p>|Dependent item|kube.cluster.memory_usage<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(node_memory_working_set_bytes)`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
+|Memory usage|<p>The memory usage in the cluster calculated as a sum of working set memory on all nodes.</p>|Dependent item|kube.cluster.memory_usage<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(node_memory_working_set_bytes)`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 |Memory utilization|<p>Cluster memory utilization calculated as a percentage of used memory from total memory.</p>|Calculated|kube.cluster.memory_utilization|
 |CPU allocatable|<p>The CPU allocatable in the cluster calculated as a sum of allocatable CPU on all nodes.</p>|Dependent item|kube.cluster.cpu_allocatable<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_node_status_allocatable{resource="cpu"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 |CPU limits|<p>The CPU limits in the cluster calculated as a sum of CPU limits on all pods.</p>|Dependent item|kube.cluster.cpu_limits<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_container_resource_limits{resource="cpu"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 |CPU requests|<p>The CPU requests in the cluster calculated as a sum of CPU requests on all pods.</p>|Dependent item|kube.cluster.cpu_requests<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_container_resource_requests{resource="cpu"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 |CPU usage|<p>The CPU usage in the cluster calculated as a sum of CPU seconds on all nodes.</p>|Dependent item|kube.cluster.cpu_usage<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(node_cpu_usage_seconds_total)`</p><p>⛔️Custom on fail: Discard value</p></li><li>Change per second</li></ul>|
 |CPU utilization|<p>The CPU utilization in the cluster calculated as a percentage of used CPU from allocatable CPU.</p>|Calculated|kube.cluster.cpu_utilization|
-|Running pods|<p>The number of pods.</p>|Dependent item|kube.pod.running<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_status_phase{phase="Running"})`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Running pods|<p>The number of running pods.</p>|Dependent item|kube.pod.running<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_status_phase{phase="Running"})`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Pod pending|<p>The number of pods in pending state.</p>|Dependent item|kube.pod.pending<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_status_phase{phase="Pending"})`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Pod failed|<p>The number of pods in failed state.</p>|Dependent item|kube.pod.failed<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_status_phase{phase="Failed"})`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Containers running|<p>The number of running containers in the cluster.</p>|Dependent item|kube.pod.containers_running<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(kube_pod_container_status_running)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |ReplicaSets count|<p>The number of ReplicaSets in the cluster.</p>|Dependent item|kube.pod.replicaset_count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_replicaset_owner)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
-|Daemonset count|<p>The number of Daemonset in the cluster.</p>|Dependent item|kube.pod.daemonset_count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_daemonset_labels)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
-|Ingress count|<p>The number of Ingress in the cluster.</p>|Dependent item|kube.pod.ingress_count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_ingress_info)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Daemonset count|<p>The number of DaemonSets in the cluster.</p>|Dependent item|kube.pod.daemonset_count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_daemonset_labels)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Ingress count|<p>The number of Ingresses in the cluster.</p>|Dependent item|kube.pod.ingress_count<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `COUNT(kube_ingress_info)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 
 ### Triggers
 
@@ -151,7 +151,7 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 |Kubernetes Cluster: Readyz is unhealthy||`count(/Kubernetes Cluster by HTTP/kube.get.readyz,#2,"ne","1")=2 and length(last(/Kubernetes Cluster by HTTP/kube.get.readyz))>0`|Average||
 |Kubernetes Cluster: Livez is unhealthy||`count(/Kubernetes Cluster by HTTP/kube.get.livez,#2,"ne","1")=2 and length(last(/Kubernetes Cluster by HTTP/kube.get.livez))>0`|Average||
 |Kubernetes Cluster: Failed to get kube-state-metrics data|<p>Failed to get kube-state-metrics.</p>|`length(last(/Kubernetes Cluster by HTTP/kube.state.metrics.check))>0`|Warning||
-|Kubernetes Cluster: No Ready nodes|<p>There are no Ready nodes in the cluster.</p>|`last(/Kubernetes Cluster by HTTP/kube.node.ready.count)=0 and last(/Kubernetes Cluster by HTTP/kube.node.count)>0`|Disaster||
+|Kubernetes Cluster: No Ready nodes|<p>There are no Ready nodes in the cluster.</p>|`last(/Kubernetes Cluster by HTTP/kube.node.ready.count)=0 and last(/Kubernetes Cluster by HTTP/kube.node.count)>0`|High||
 |Kubernetes Cluster: Low number of Ready nodes|<p>The number of Ready nodes in the cluster is less than `{$KUBE.NODE.NUMBER.THRESHOLD}`.</p>|`last(/Kubernetes Cluster by HTTP/kube.node.ready.count)< {$KUBE.NODE.NUMBER.THRESHOLD} and last(/Kubernetes Cluster by HTTP/kube.node.count)>0`|High|**Depends on**:<br><ul><li>Kubernetes Cluster: No Ready nodes</li></ul>|
 |Kubernetes Cluster: High memory utilization|<p>The cluster memory utilization has exceeded `{$KUBE.CLUSTER.MEMORY.UTIL.CRIT}`%.</p>|`min(/Kubernetes Cluster by HTTP/kube.cluster.memory_utilization,5m) > {$KUBE.CLUSTER.MEMORY.UTIL.CRIT}`|Average||
 |Kubernetes Cluster: High memory utilization|<p>The cluster memory utilization has exceeded `{$KUBE.CLUSTER.MEMORY.UTIL.WARN}`%.</p>|`min(/Kubernetes Cluster by HTTP/kube.cluster.memory_utilization,5m) > {$KUBE.CLUSTER.MEMORY.UTIL.WARN}`|Warning|**Depends on**:<br><ul><li>Kubernetes Cluster: High memory utilization</li></ul>|
@@ -164,7 +164,7 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Namespace discovery||Dependent item|kube.namespace.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `kube_namespace_created`</p></li><li><p>Discard unchanged with heartbeat: `3h`</p></li></ul>|
+|Namespace discovery||Dependent item|kube.namespace.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `kube_namespace_created`</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 
 ### Item prototypes for Namespace discovery
 
@@ -174,7 +174,7 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 |Namespace [{#NAMESPACE}]: CPU: Limits|<p>The CPU limits in the namespace calculated as a sum of CPU limits on all pods in the namespace.</p>|Dependent item|kube.namespace.limits.cpu[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Namespace [{#NAMESPACE}]: CPU: Requests|<p>The number of requested CPU cores by a container.</p>|Dependent item|kube.pod.containers.requests.cpu[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Namespace [{#NAMESPACE}]: CPU: Usage, %|<p>The CPU usage in the namespace calculated as a percentage of used CPU from allocatable CPU in the cluster.</p>|Calculated|kube.namespace.cpu_usage[{#NAMESPACE}]|
-|Namespace [{#NAMESPACE}]: Memory: Total usage|<p>The total memory usage in bytes the namespace calculated as a sum of used memory on all containers in the namespace.</p>|Dependent item|kube.namespace.memory_usage[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Set value to: `0`</p></li></ul>|
+|Namespace [{#NAMESPACE}]: Memory: Total usage|<p>The total memory usage in bytes in the namespace calculated as a sum of used memory on all containers in the namespace.</p>|Dependent item|kube.namespace.memory_usage[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Set value to: `0`</p></li></ul>|
 |Namespace [{#NAMESPACE}]: Memory: Usage, %|<p>The memory usage in the namespace calculated as a percentage of used memory from allocatable memory in the cluster.</p>|Calculated|kube.namespace.memory_usage_percentage[{#NAMESPACE}]|
 |Namespace [{#NAMESPACE}]: Memory: Limits|<p>The memory limits in the namespace calculated as a sum of memory limits on all pods in the namespace.</p>|Dependent item|kube.namespace.limits.memory[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Namespace [{#NAMESPACE}]: Memory: Requests|<p>The memory requests in the namespace calculated as a sum of memory requests on all pods in the namespace.</p>|Dependent item|kube.namespace.requests.memory[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
@@ -194,20 +194,20 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Deployment discovery||Dependent item|kube.deployment.discovery[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `The text is too long. Please see the template.`</p></li><li><p>JavaScript: `The text is too long. Please see the template.`</p></li></ul>|
+|Deployment discovery||Dependent item|kube.deployment.discovery[{#NAMESPACE}]<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `The text is too long. Please see the template.`</p></li><li><p>JavaScript: `The text is too long. Please see the template.`</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 
 ### Item prototypes for Deployment discovery
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Deployment [{#DEPLOYMENT}]: CPU: Total usage|<p>The total CPU usage in the namespace calculated as a sum of non-idle CPU seconds on all containers in the deployment.</p>|Dependent item|kube.deployment.cpu_total[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Set value to: `0`</p></li><li>Change per second</li></ul>|
-|Deployment [{#DEPLOYMENT}]: CPU: Limits|<p>The CPU limits in the namespace calculated as a sum of CPU limits on all pods in the namespace.</p>|Dependent item|kube.deployment.limits.cpu[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Deployment [{#DEPLOYMENT}]: CPU: Total usage|<p>The total CPU usage in the deployment calculated as a sum of non-idle CPU seconds on all containers in the deployment.</p>|Dependent item|kube.deployment.cpu_total[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Set value to: `0`</p></li><li>Change per second</li></ul>|
+|Deployment [{#DEPLOYMENT}]: CPU: Limits|<p>The CPU limits in the deployment calculated as a sum of CPU limits on all pods in the deployment.</p>|Dependent item|kube.deployment.limits.cpu[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Deployment [{#DEPLOYMENT}]: CPU: Requests|<p>The number of requested CPU cores by a container.</p>|Dependent item|kube.deployment.requests.cpu[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Deployment [{#DEPLOYMENT}]: CPU: Usage, %|<p>The CPU usage in the deployment calculated as a percentage of used CPU from allocatable CPU in the cluster.</p>|Calculated|kube.deployment.cpu_usage[{#NAMESPACE}/{#DEPLOYMENT}]|
-|Deployment [{#DEPLOYMENT}]: Memory: Total usage|<p>The total memory usage in bytes the namespace calculated as a sum of used memory on all containers in the namespace.</p>|Dependent item|kube.deployment.memory_usage[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Set value to: `0`</p></li></ul>|
-|Deployment [{#DEPLOYMENT}]: Memory: Usage, %|<p>The memory usage in the namespace calculated as a percentage of used memory from allocatable memory in the cluster.</p>|Calculated|kube.deployment.memory_usage_percentage[{#NAMESPACE}/{#DEPLOYMENT}]|
-|Deployment [{#DEPLOYMENT}]: Memory: Limits|<p>The memory limits in the namespace calculated as a sum of memory limits on all pods in the namespace.</p>|Dependent item|kube.deployment.containers.limits.memory[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
-|Deployment [{#DEPLOYMENT}]: Memory: Requests|<p>The memory requests in the namespace calculated as a sum of memory requests on all pods in the namespace.</p>|Dependent item|kube.deployment.containers.requests.memory[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Deployment [{#DEPLOYMENT}]: Memory: Total usage|<p>The total memory usage in bytes in the deployment calculated as a sum of used memory on all containers in the deployment.</p>|Dependent item|kube.deployment.memory_usage[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Set value to: `0`</p></li></ul>|
+|Deployment [{#DEPLOYMENT}]: Memory: Usage, %|<p>The memory usage in the deployment calculated as a percentage of used memory from allocatable memory in the cluster.</p>|Calculated|kube.deployment.memory_usage_percentage[{#NAMESPACE}/{#DEPLOYMENT}]|
+|Deployment [{#DEPLOYMENT}]: Memory: Limits|<p>The memory limits in the deployment calculated as a sum of memory limits on all pods in the deployment.</p>|Dependent item|kube.deployment.containers.limits.memory[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Deployment [{#DEPLOYMENT}]: Memory: Requests|<p>The memory requests in the deployment calculated as a sum of memory requests on all pods in the deployment.</p>|Dependent item|kube.deployment.containers.requests.memory[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Deployment [{#DEPLOYMENT}]: Replicas desired|<p>Number of desired pods for a deployment.</p>|Dependent item|kube.deployment.replicas_desired[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Deployment [{#DEPLOYMENT}]: Replicas available|<p>The number of available replicas per deployment.</p>|Dependent item|kube.deployment.replicas_available[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `The text is too long. Please see the template.`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Deployment [{#DEPLOYMENT}]: Replicas mismatched|<p>The number of available replicas not matching the desired number of replicas.</p>|Dependent item|kube.deployment.replicas_mismatched[{#NAMESPACE}/{#DEPLOYMENT}]<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `The text is too long. Please see the template.`</p></li><li><p>JavaScript: `The text is too long. Please see the template.`</p></li></ul>|
@@ -222,7 +222,7 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|PVC discovery||Dependent item|kube.pvc.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `kube_persistentvolumeclaim_info`</p></li><li><p>JavaScript: `The text is too long. Please see the template.`</p></li><li><p>Discard unchanged with heartbeat: `3h`</p></li></ul>|
+|PVC discovery||Dependent item|kube.pvc.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `kube_persistentvolumeclaim_info`</p></li><li><p>JavaScript: `The text is too long. Please see the template.`</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 
 ### Item prototypes for PVC discovery
 
@@ -296,8 +296,13 @@ You can also set up evaluation periods for replica mismatch triggers (Deployment
 
 ## Overview
 
-include: ./node/docs/overview.txt
+The template to monitor Kubernetes Node by Zabbix that works without any external scripts.
+Most of the metrics are collected in one go, thanks to Zabbix bulk data collection.
 
+Template `Kubernetes Node by HTTP` - collects metrics by HTTP agent from Prometheus metrics endpoint.
+Metrics are collected by requests to prometheus-node-exporter.
+
+**Note:** Some metrics may not be collected depending on your Kubernetes instance version and configuration.
 
 ## Requirements
 
@@ -314,8 +319,9 @@ This template has been tested on:
 
 ## Setup
 
-include: ./node/docs/setup.md
+Internal service metrics are collected from Prometheus metrics endpoint.
 
+This template is used in low-level discovery and will be auto-assigned to host prototypes. Additional configuration is not required.
 
 ### Macros used
 
@@ -328,8 +334,8 @@ include: ./node/docs/setup.md
 |{$KUBE.NODE.NETWORK.IF.NAME.MATCHES}|<p>Filter of discoverable network interfaces.</p>|`.*`|
 |{$KUBE.NODE.NETWORK.IF.NAME.NOT_MATCHES}|<p>Filter to exclude discovered network interfaces.</p>|`CHANGE_IF_NEEDED`|
 |{$KUBE.NODE.NETWORK.IF.OPERSTATUS.MATCHES}|<p>Used for network interface discovery. Can be overridden on the host or linked template level.</p>|`^.*$`|
-|{$KUBE.NODE.NETWORK.IF.OPERSTATUS.NOT_MATCHES}|<p>Used for network interface discovery. Can be overridden on the host or linked template level.</p>|`<CHANGE_IF_NEEDED>`|
-|{$KUBE.NODE.NETWORK.IF.ADMINSTATUS.MATCHES}||`^.*$`|
+|{$KUBE.NODE.NETWORK.IF.OPERSTATUS.NOT_MATCHES}|<p>Used for network interface discovery. Can be overridden on the host or linked template level.</p>|`CHANGE_IF_NEEDED`|
+|{$KUBE.NODE.NETWORK.IF.ADMINSTATUS.MATCHES}|<p>Filter of discoverable network interfaces by administrative status.</p>|`^.*$`|
 |{$KUBE.NODE.NETWORK.IF.ADMINSTATUS.NOT_MATCHES}|<p>Ignore the `down` administrative status.</p>|`^down$`|
 |{$KUBE.NODE.CPU.UTILIZATION.CRIT}|<p>Critical threshold of CPU utilization expressed in %.</p>|`90`|
 |{$KUBE.NODE.LOAD_AVG_PER_CPU.MAX.WARN}|<p>The CPU load per core is considered sustainable. If necessary, it can be tuned.</p>|`1.5`|
@@ -338,6 +344,7 @@ include: ./node/docs/setup.md
 |{$IFCONTROL}|<p>Macro for operational state of the interface for link down trigger. Can be used with interface name as context.</p>|`1`|
 |{$KUBE.NODE.FILESYSTEM.MATCHES}|<p>Filter of discoverable filesystem mount points.</p>|`.*`|
 |{$KUBE.NODE.FILESYSTEM.NOT_MATCHES}|<p>Filter to exclude discovered filesystem mount points.</p>|`^(/sys\|/proc\|/dev\|/run/containerd)`|
+|{$KUBE.NODE.IO.UTIL.HIGH}|<p>High I/O utilization threshold for disk.</p>|`80`|
 |{$KUBE.NODE.FS.PUSED.MAX.WARN}|<p>Warning threshold of the filesystem utilization. In the range from 0 to 100 inclusive.</p>|`80`|
 |{$KUBE.NODE.FS.PUSED.MAX.CRIT}|<p>Critical threshold of the filesystem utilization. In the range from 0 to 100 inclusive.</p>|`90`|
 |{$KUBE.NODE.PSI.CPU.WARN}|<p>Warning threshold for CPU pressure (% of time processes are waiting for CPU).</p>|`20`|
@@ -359,7 +366,7 @@ include: ./node/docs/setup.md
 |Memory: Swap total|<p>Swap total memory in bytes.</p>|Dependent item|kube.node.memory_swap_total<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_memory_SwapTotal_bytes)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Memory: Swap free|<p>Free swap total memory in bytes.</p>|Dependent item|kube.node.memory_swap_free<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_memory_SwapFree_bytes)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Memory: Swap used|<p>Used swap memory in bytes.</p>|Calculated|kube.node.memory_swap_used|
-|Memory: Utilization|<p>Nod memory utilization calculated as a percentage of used memory from total memory.</p>|Calculated|kube.node.memory_utilization|
+|Memory: Utilization|<p>Node memory utilization calculated as a percentage of used memory from total memory.</p>|Calculated|kube.node.memory_utilization|
 |CPU: Load average 1min|<p>System load average over 1 minute.</p>|Dependent item|kube.node.load_avg_1min<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_load1)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |CPU: Load average 5min|<p>System load average over 5 minutes.</p>|Dependent item|kube.node.load_avg_5min<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_load5)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |CPU: Load average 15min|<p>System load average over 15 minutes.</p>|Dependent item|kube.node.load_avg_15min<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_load15)`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
@@ -379,7 +386,7 @@ include: ./node/docs/setup.md
 |Kubernetes Node: High CPU utilization|<p>CPU utilization is over {$KUBE.NODE.CPU.UTILIZATION.CRIT}% for 5 minutes.</p>|`min(/Kubernetes Node by HTTP/kube.node.cpu_utilization, 5m) > {$KUBE.NODE.CPU.UTILIZATION.CRIT}`|High||
 |Kubernetes Node: High memory utilization|<p>The system is running out of free memory.</p>|`min(/Kubernetes Node by HTTP/kube.node.memory_utilization,5m)>{$KUBE.NODE.MEMORY.UTIL.MAX}`|Average||
 |Kubernetes Node: Load average is too high|<p>The load average per CPU is too high. The system may be slow to respond.</p>|`min(/Kubernetes Node by HTTP/kube.node.load_avg_1min,5m)/last(/Kubernetes Node by HTTP/kube.node.cpu_core)>{$KUBE.NODE.LOAD_AVG_PER_CPU.MAX.WARN} and last(/Kubernetes Node by HTTP/kube.node.load_avg_5min)>0 and last(/Kubernetes Node by HTTP/kube.node.load_avg_15min)>0`|Average||
-|Kubernetes Node: Node has been restarted|<p>Uptime is less than 10 minutes.</p>|`last(/Kubernetes Node by HTTP/kube.node.boot_time)<10`|Info||
+|Kubernetes Node: Node has been restarted|<p>Uptime is less than 10 minutes.</p>|`last(/Kubernetes Node by HTTP/kube.node.boot_time)<10`|Info|**Manual close**: Yes|
 |Kubernetes Node: High CPU pressure|<p>Node CPU pressure is above {$KUBE.NODE.PSI.CPU.WARN}%. Processes are spending significant time waiting for CPU scheduling, indicating CPU saturation.</p>|`last(/Kubernetes Node by HTTP/kube.node.cpu_pressure_waiting) > {$KUBE.NODE.PSI.CPU.WARN}`|Warning|**Depends on**:<br><ul><li>Kubernetes Node: Critical CPU pressure</li></ul>|
 |Kubernetes Node: Critical CPU pressure|<p>Node CPU pressure is critically high (>{$KUBE.NODE.PSI.CPU.CRIT}%). Severe CPU saturation detected.</p>|`last(/Kubernetes Node by HTTP/kube.node.cpu_pressure_waiting) > {$KUBE.NODE.PSI.CPU.CRIT}`|High||
 |Kubernetes Node: High memory pressure|<p>Node memory pressure is above {$KUBE.NODE.PSI.MEMORY.WARN}%. Processes are experiencing significant memory contention.</p>|`last(/Kubernetes Node by HTTP/kube.node.memory_pressure_waiting) > {$KUBE.NODE.PSI.MEMORY.WARN}`|Warning|**Depends on**:<br><ul><li>Kubernetes Node: Critical memory pressure</li></ul>|
@@ -389,7 +396,7 @@ include: ./node/docs/setup.md
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Storage discovery|<p>Discovery Node disk.</p>|Dependent item|kube.node.storage.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `node_disk_written_bytes_total`</p></li></ul>|
+|Storage discovery|<p>Discovery Node disk.</p>|Dependent item|kube.node.storage.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `node_disk_written_bytes_total`</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 
 ### Item prototypes for Storage discovery
 
@@ -405,13 +412,13 @@ include: ./node/docs/setup.md
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Kubernetes Node: Disk [{#NAME}]: Low I/O utilization is too high|<p>Current disk `{#NAME}` IO utilization has exceeded `{$KUBE.NODE.IO.UTIL.HIGH:"{#NAME}"}`%.</p>|`min(/Kubernetes Node by HTTP/kube.node.disk_io_utilization[{#NAME}],5m)>={$KUBE.NODE.IO.UTIL.HIGH:"{#NAME}"}`|High||
+|Kubernetes Node: Disk [{#NAME}]: I/O utilization is too high|<p>Current disk `{#NAME}` IO utilization has exceeded `{$KUBE.NODE.IO.UTIL.HIGH:"{#NAME}"}`%.</p>|`min(/Kubernetes Node by HTTP/kube.node.disk_io_utilization[{#NAME}],5m)>={$KUBE.NODE.IO.UTIL.HIGH:"{#NAME}"}`|High||
 
 ### LLD rule Filesystem discovery
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Filesystem discovery|<p>Discovery of filesystem mount points from node-exporter metrics.</p>|Dependent item|kube.node.filesystem.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `node_filesystem_avail_bytes`</p></li></ul>|
+|Filesystem discovery|<p>Discovery of filesystem mount points from node-exporter metrics.</p>|Dependent item|kube.node.filesystem.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `node_filesystem_avail_bytes`</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 
 ### Item prototypes for Filesystem discovery
 
@@ -426,20 +433,20 @@ include: ./node/docs/setup.md
 
 |Name|Description|Expression|Severity|Dependencies and additional info|
 |----|-----------|----------|--------|--------------------------------|
-|Kubernetes Node: Filesystem [{#FSNAME}]: Low available space|<p>Filesystem `{#FSNAME}` available space is lower than {$KUBE.NODE.FS.PUSED.MAX.WARN:"{#FSNAME}"} bytes.</p>|`min(/Kubernetes Node by HTTP/kube.node.filesystem.utilization[{#FSNAME}], 5m) > {$KUBE.NODE.FS.PUSED.MAX.WARN:"{#FSNAME}"}`|Warning|**Depends on**:<br><ul><li>Kubernetes Node: Filesystem [{#FSNAME}]: Critical available space</li></ul>|
+|Kubernetes Node: Filesystem [{#FSNAME}]: Low available space|<p>Filesystem `{#FSNAME}` available space is lower than {$KUBE.NODE.FS.PUSED.MAX.WARN:"{#FSNAME}"}%.</p>|`min(/Kubernetes Node by HTTP/kube.node.filesystem.utilization[{#FSNAME}], 5m) > {$KUBE.NODE.FS.PUSED.MAX.WARN:"{#FSNAME}"}`|Warning|**Depends on**:<br><ul><li>Kubernetes Node: Filesystem [{#FSNAME}]: Critical available space</li></ul>|
 |Kubernetes Node: Filesystem [{#FSNAME}]: Critical available space|<p>Filesystem `{#FSNAME}` available space is critically low (< {$KUBE.NODE.FS.PUSED.MAX.CRIT:"{#FSNAME}"}).</p>|`min(/Kubernetes Node by HTTP/kube.node.filesystem.utilization[{#FSNAME}], 5m) > {$KUBE.NODE.FS.PUSED.MAX.CRIT:"{#FSNAME}"}`|High||
 
 ### LLD rule Network interface discovery
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Network interface discovery|<p>Discovery of network interfaces from node-exporter metrics.</p>|Dependent item|kube.node.network.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `node_network_info`</p></li></ul>|
+|Network interface discovery|<p>Discovery of network interfaces from node-exporter metrics.</p>|Dependent item|kube.node.network.discovery<p>**Preprocessing**</p><ul><li><p>Prometheus to JSON: `node_network_info`</p></li><li><p>Discard unchanged with heartbeat: `1h`</p></li></ul>|
 
 ### Item prototypes for Network interface discovery
 
 |Name|Description|Type|Key and additional info|
 |----|-----------|----|-----------------------|
-|Network [{#IFNAME}]: Operational status|<p>Network interface `{#IFNAME}` speed in bytes per second.</p>|Dependent item|kube.node.network.if.oper.status[{#IFNAME}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_network_up{device="{#IFNAME}"})`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
+|Network [{#IFNAME}]: Operational status|<p>Current operational status of network interface `{#IFNAME}`.</p>|Dependent item|kube.node.network.if.oper.status[{#IFNAME}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_network_up{device="{#IFNAME}"})`</p><p>⛔️Custom on fail: Discard value</p></li></ul>|
 |Network [{#IFNAME}]: Speed|<p>Network interface `{#IFNAME}` speed in bytes per second.</p>|Dependent item|kube.node.network.if.speed[{#IFNAME}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `VALUE(node_network_speed_bytes{device="{#IFNAME}"})`</p><p>⛔️Custom on fail: Discard value</p></li><li><p>Custom multiplier: `8`</p></li></ul>|
 |Network [{#IFNAME}]: Receive bytes|<p>Network interface `{#IFNAME}` bytes received per second.</p>|Dependent item|kube.node.net.if.receive_bytes[{#IFNAME}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(node_network_receive_bytes_total{device="{#IFNAME}"})`</p><p>⛔️Custom on fail: Discard value</p></li><li>Change per second</li><li><p>Custom multiplier: `8`</p></li></ul>|
 |Network [{#IFNAME}]: Transmit bytes|<p>Network interface `{#IFNAME}` bytes transmitted per second.</p>|Dependent item|kube.node.net.if.transmit_bytes[{#IFNAME}]<p>**Preprocessing**</p><ul><li><p>Prometheus pattern: `SUM(node_network_transmit_bytes_total{device="{#IFNAME}"})`</p><p>⛔️Custom on fail: Discard value</p></li><li>Change per second</li><li><p>Custom multiplier: `8`</p></li></ul>|
