@@ -917,7 +917,7 @@ function getExpressionTree(string $expression, array $tokens, int $start, int $e
 							}
 
 							$expressions[] = getExpressionTree($expression, $tokens, $openSymbolNum, $closeSymbolNum,
-								$calls++
+								++$calls
 							);
 							$openSymbolNum = $i + $tokens[$i]['length'];
 							$operatorFound = true;
@@ -939,7 +939,7 @@ function getExpressionTree(string $expression, array $tokens, int $start, int $e
 		 * expression on the right.
 		 */
 		if ($operatorFound) {
-			$expressions[] = getExpressionTree($expression, $tokens, $openSymbolNum, $closeSymbolNum, $calls++);
+			$expressions[] = getExpressionTree($expression, $tokens, $openSymbolNum, $closeSymbolNum, ++$calls);
 
 			// Trim blank symbols in the beginning of the trigger expression.
 			$openSymbolNum = $start;
@@ -969,7 +969,7 @@ function getExpressionTree(string $expression, array $tokens, int $start, int $e
 				$openSymbolNum++;
 				$closeSymbolNum--;
 
-				$expressionTree = getExpressionTree($expression, $tokens, $openSymbolNum, $closeSymbolNum, $calls++);
+				$expressionTree = getExpressionTree($expression, $tokens, $openSymbolNum, $closeSymbolNum, ++$calls);
 			}
 			// No extra parentheses remain, return the result.
 			else {
