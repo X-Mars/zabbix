@@ -276,7 +276,7 @@ try
 		el = browser2.findElement("link text", "Sign out");
 
 		Zabbix.log(3, "collect performance entries");
-		browser2.collectPerfEntries();
+		browser2.collectPerfEntries();	// only collect, dashboard performance entries are too big to fit into history table
 
 		try
 		{
