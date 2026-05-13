@@ -7714,6 +7714,9 @@ z-select[disabled] .focusable, z-textarea-flexible textarea[disabled], input[dis
     float: right;
     line-height: 24px; }
 
+.modal-popup.modal-popup-static.modal-popup-sla-edit, .modal-popup.modal-popup-static.modal-popup-proxy-edit, .modal-popup.modal-popup-static.modal-popup-connector-edit {
+  --modal-max-width: 750px; }
+
 .multilineinput-control {
   display: flex;
   width: 100%; }
